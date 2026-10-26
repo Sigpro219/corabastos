@@ -64,6 +64,35 @@ flowchart LR
 
 ---
 
+### 1.3 Marco Jurídico y Normativo Oficial: Reglamento Interno de Funcionamiento (Directiva de Gerencia No. 033-06)
+
+La auditoría forense del documento oficial `ReglamentoInterno.pdf` (Título VII, Capítulos I y II, Artículos 42 al 47 y subsiguientes) dictamina las siguientes directrices legales que gobiernan el sistema:
+
+1. **Naturaleza Jurídica: "Transferencia de Servicios Públicos" (Artículo 46):**
+   - Corabastos S.A. **no es una Empresa de Servicios Públicos Domiciliarios (ESP)**, sino un gran suscriptor corporativo ante Enel-Codensa y Acueducto de Bogotá.
+   - La recuperación de costos se rige jurídicamente bajo la figura de **"Liquidación y Transferencia de Servicios Públicos"** bajo un **régimen de solidaridad y a prorrata del área ocupada/arrendada ($m^2$)**, mientras concluye el proyecto de independización técnica total.
+
+2. **Fórmulas Legales de Cobro (Título VII, Capítulo II):**
+   - **Acueducto y Alcantarillado:** $\text{Total} = (\text{Consumo Contador } m^3 \times \text{Tarifa } m^3) + \text{Cuota Comunal Proporcional por Área } (m^2)$.
+   - **Energía Eléctrica:** $\text{Total} = (\text{Consumo Contador } kWh \times \text{Tarifa } kWh) + \text{Alumbrado de Zonas Comunes / Aleros} + \text{Sobretasa Regulatoria CREG}$.
+   - **Facultad de Aforos Técnicos:** Para locales con alto consumo o actividades especiales (lavaderos de canastillas, cuartos fríos, procesadoras), Corabastos está facultada legalmente para realizar **Aforos Técnicos de Capacidad** periódicos.
+
+3. **Marco Regulatorio Ambiental PGIRS (Artículos 42 y 43):**
+   - Regula el manejo y cobro de aseo y residuos sólidos bajo el **Plan de Gestión Integral de Residuos Sólidos (PGIRS)**.
+   - Obliga a la separación en la fuente y fundamenta jurídicamente las tarifas diferenciales por nivel generador: **NP (No Productor / Productor Menor)**, **MP (Mediano Productor)** y **P (Gran Productor)**.
+   - Prohíbe expresamente el ingreso clandestino de residuos externos a la corporación (tipificado como falta grave sujeta a sanción y sobretasa).
+
+4. **Protocolo Legal de Reclamaciones de Facturación (Páginas 24–25):**
+   - Todo comerciante inconforme con su liquidación dispone de un término perentorio para radicar reclamación formal ante el **Grupo de Facturación**.
+   - **Visita Técnica Obligatoria:** La norma exige de forma taxativa que el personal técnico de Corabastos **debe practicar una visita técnica de inspección ocular al medidor y a las instalaciones del local** antes de emitir respuesta o ajustar la liquidación.
+   - *Impacto en Corabastos OS:* Valida y blinda como requerimiento de ley el **Anillo 5 (Módulo SAC / PQRS)** y la **Terminal Móvil de Lecturas** con registro fotográfico georreferenciado e historial de anomalías (`C, DETENIDO`, `C, TAPADO`, saltos de consumo).
+
+5. **Régimen de Cobro, Mora y Suspensión Física:**
+   - La mora en el pago de la transferencia de servicios genera intereses moratorios comerciales y faculta a la Subgerencia Operativa a ejecutar la **suspensión y corte físico de la acometida**.
+   - Se tipifica como infracción grave la manipulación de sellos, puentes clandestinos o reconexiones no autorizadas.
+
+---
+
 ## 2. Restricciones Técnicas & Stack (`Help! On Risks / Seguridad Standard`)
 
 - **Framework & Runtime:** Next.js 16 (App Router con Turbopack) + React 19 + TypeScript 5 (`strict: true`, cero `any`).
