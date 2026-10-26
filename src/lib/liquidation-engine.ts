@@ -124,15 +124,43 @@ export function computeWaterCommunalHierarchy(
 
 /**
  * Recalcula dinámicamente la liquidación de los 5.318 locales ante cambios en:
- * - Lecturas de medidores individuales en terreno
- * - Tarifas o montos de los recibos maestros (Energía, Agua, Vigilancia, Policía, Aseo, Residuos NP/MP/P)
+ * - Lecturas de medidores individuales en terreno (conmutando a prorrateo por m² si el contador está defectuoso, Art. 46)
+ * - Tarifas o montos de los recibos maestros según las fórmulas exactas del Reglamento Interno (Directiva de Gerencia No. 033-06)
  */
 export function recalculateAllLocales(
   locales: LocalUnitRecord[],
   receipts: MasterReceiptsConfig
 ): ComputedLocalLiquidation[] {
-  const kwhRatio = receipts.energia.tarifaKwh / 720.48;
-  const m3Ratio = receipts.acueducto.tarifaM3 / 10921.4494;
+  // Factores y Tarifas Oficiales del Reglamento Interno (Art. 46)
+  const baseKwhTariff = 720.48;
+  const currentKwhTariff = receipts.energia.tarifaKwh;
+  const isKwhModified = Math.abs(currentKwhTariff - baseKwhTariff) > 0.001;
+
+  const baseM3Tariff = 10921.4494;
+  const currentM3Tariff = receipts.acueducto.tarifaM3;
+  const isM3Modified = Math.abs(currentM3Tariff - baseM3Tariff) > 0.001;
+
+  const tarifaAlumbradoM2 =
+    receipts.energia.alumbradoGeneral.areaTotalM2 > 0
+      ? receipts.energia.alumbradoGeneral.bolsaTotal / receipts.energia.alumbradoGeneral.areaTotalM2
+      : receipts.energia.alumbradoGeneral.tarifaPorM2;
+
+  const tarifaProrrateoEnergiaM2 =
+    receipts.energia.principal.areaProrrateoM2 > 0
+      ? receipts.energia.principal.bolsaProrrateo / receipts.energia.principal.areaProrrateoM2
+      : 10548.66;
+
+  const topeMinimaEnergia = receipts.energia.principal.topeMinimaCop;
+
+  const tarifaAguaComunalM2 =
+    receipts.acueducto.areaComunalGeneralM2 > 0
+      ? receipts.acueducto.bolsaAguaComunalGeneral / receipts.acueducto.areaComunalGeneralM2
+      : 198.2038;
+
+  const tarifaAguaProrrateoM2 =
+    receipts.acueducto.areaProrrateoM2 > 0
+      ? receipts.acueducto.bolsaProrrateo / receipts.acueducto.areaProrrateoM2
+      : 1249.4436;
 
   const tarifaAseoM2 =
     receipts.expensas.aseo.areaTotalM2 > 0
@@ -149,7 +177,7 @@ export function recalculateAllLocales(
       ? receipts.expensas.policia.valorFactura / receipts.expensas.policia.localesActivosDivisor
       : receipts.expensas.policia.cuotaFijaPorLocal;
 
-  // Residuos ECSA factors (NP = 0.4, MP = 1.2, P = remainder)
+  // Residuos ECSA factors (NP = 0.4, MP = 1.2, P = remainder) - PGIRS Art. 42 y 43
   const resCfg = receipts.expensas.residuosEcsa;
   const tarifaBaseResiduosM2 =
     resCfg.areaTotalProrrateoM2 > 0
@@ -163,24 +191,101 @@ export function recalculateAllLocales(
   const tarifaPM2 = resCfg.areaPM2 > 0 ? bolsaP / resCfg.areaPM2 : resCfg.tarifaEfectivaPM2;
 
   return locales.map((loc) => {
-    // 1. Energía: Si el operario editó la lectura en terreno, ajusta por delta kWh
-    const origEnergyCop = loc.energiaBpCop + loc.energiaPrincipalCop;
-    const currentConsumoKw =
-      loc.modalidadEnergia === "CONTADOR" && loc.energiaLecturaAct >= loc.energiaLecturaAnt
-        ? loc.energiaConsumoIndivKw
-        : loc.energiaConsumoIndivKw;
-    const calcEnergiaCop = Math.round(origEnergyCop * kwhRatio);
+    // -------------------------------------------------------------
+    // 1. ENERGÍA ELÉCTRICA (Reglamento Interno Art. 46)
+    // Fórmula: (Consumo kWh * Tarifa kWh) + (Alumbrado Comunal m²) + (20% Sobrecosto CREG 079/97)
+    // Excepción reglamentaria: Si el contador está defectuoso o detenido, liquidación a prorrata de área.
+    // -------------------------------------------------------------
+    let calcEnergiaCop = loc.energiaBpCop + loc.energiaPrincipalCop;
 
-    // 2. Acueducto
-    const calcAcueductoCop = Math.round(loc.acueductoCop * m3Ratio);
+    const isMeterDefective =
+      loc.energiaObs.includes("DETENIDO") ||
+      loc.energiaObs.includes("DEFECTUOSO") ||
+      loc.energiaObs.includes("RETIRADO");
 
-    // 3. Aseo (Factor Área m2)
+    const readingChanged =
+      loc.modalidadEnergia === "CONTADOR" &&
+      Math.abs(loc.energiaLecturaAct - loc.energiaLecturaAnt - loc.energiaConsumoIndivKw) > 0.01;
+
+    if (isMeterDefective && loc.modalidadEnergia === "CONTADOR") {
+      // Mandato legal Art. 46: Liquidación por área arrendada a prorrata
+      calcEnergiaCop = Math.round(loc.areaM2 * tarifaProrrateoEnergiaM2);
+    } else if (readingChanged || isKwhModified) {
+      if (loc.modalidadEnergia === "CONTADOR" && loc.bloqueEnergia === "PRINCIPAL") {
+        const indivKw = Math.max(0, loc.energiaLecturaAct - loc.energiaLecturaAnt);
+        const totalKw = indivKw + loc.energiaConsumoAleroKw + loc.energiaConsumoComunalKw;
+        const costoConsumo = totalKw * currentKwhTariff;
+        const alumbrado = loc.areaM2 * tarifaAlumbradoM2;
+        const creg = (costoConsumo + alumbrado) * 0.20;
+        let subtotal = costoConsumo + alumbrado + creg;
+        if (subtotal > 0 && subtotal < topeMinimaEnergia) {
+          subtotal = topeMinimaEnergia;
+        }
+        calcEnergiaCop = Math.round(subtotal);
+      } else if (loc.modalidadEnergia === "CONTADOR" && loc.bloqueEnergia === "BODEGA_POPULAR") {
+        // En Bodega Popular contadores miden con reducción 1/8 y CREG al 15.7%
+        const indivKw = Math.max(0, loc.energiaLecturaAct - loc.energiaLecturaAnt) / 8;
+        const totalKw = indivKw + loc.energiaConsumoComunalKw;
+        const costoConsumo = totalKw * currentKwhTariff;
+        const alumbrado = loc.areaM2 * tarifaAlumbradoM2;
+        const creg = (costoConsumo + alumbrado) * (receipts.energia.bodegaPopular.tasaCregPct || 0.157);
+        let subtotal = costoConsumo + alumbrado + creg;
+        if (subtotal > 0 && subtotal < receipts.energia.bodegaPopular.topeMinimaCop) {
+          subtotal = receipts.energia.bodegaPopular.topeMinimaCop;
+        }
+        calcEnergiaCop = Math.round(subtotal);
+      } else {
+        // Modalidad Comunal o Prorrateo escalada proporcionalmente por tarifa
+        calcEnergiaCop = Math.round(calcEnergiaCop * (currentKwhTariff / baseKwhTariff));
+      }
+    }
+
+    // -------------------------------------------------------------
+    // 2. ACUEDUCTO Y ALCANTARILLADO (Reglamento Interno Art. 46)
+    // Fórmula: (Consumo m³ * Valor m³) + (Cuota Comunal Proporcional por m²)
+    // Mandato legal expreso: "Cuando los contadores de acueducto se encuentran defectuosos,
+    // y no sea posible realizar la distribución por consumo de contador, se realizará la distribución por área."
+    // -------------------------------------------------------------
+    let calcAcueductoCop = loc.acueductoCop;
+
+    const isWaterDefective =
+      loc.aguaObs.includes("DEFECTUOSO") ||
+      loc.aguaObs.includes("TAPADO") ||
+      loc.aguaObs.includes("DETENIDO") ||
+      loc.aguaObs.includes("REVISAR");
+
+    const waterReadingChanged =
+      loc.modalidadAcueducto === "CONTADOR" &&
+      Math.abs(loc.aguaLecturaAct - loc.aguaLecturaAnt - loc.aguaConsumoIndivM3) > 0.01;
+
+    if (isWaterDefective && loc.modalidadAcueducto === "CONTADOR") {
+      // Mandato legal Art. 46: Sustitución por área a prorrata
+      calcAcueductoCop = Math.round(loc.areaM2 * tarifaAguaProrrateoM2);
+    } else if (waterReadingChanged || isM3Modified) {
+      if (loc.modalidadAcueducto === "CONTADOR") {
+        const indivM3 = Math.max(0, loc.aguaLecturaAct - loc.aguaLecturaAnt);
+        const costoIndiv = indivM3 * currentM3Tariff;
+        const costoComunalBodega = loc.aguaConsumoComunalM3 * currentM3Tariff;
+        const cuotaComunalArea = loc.areaM2 * tarifaAguaComunalM2;
+        calcAcueductoCop = Math.round(costoIndiv + costoComunalBodega + cuotaComunalArea);
+      } else {
+        calcAcueductoCop = Math.round(loc.acueductoCop * (currentM3Tariff / baseM3Tariff));
+      }
+    }
+
+    // -------------------------------------------------------------
+    // 3. ASEO Y BARRIDO COMUNAL (Reglamento Interno Art. 46)
+    // Distribución solidaria por área ocupada (m²)
+    // -------------------------------------------------------------
     const calcAseoCop =
       loc.aseoCop > 0
         ? Math.round(loc.areaM2 * tarifaAseoM2 * (loc.aseoCop / Math.max(1, loc.areaM2 * 1631.1436)))
         : 0;
 
-    // 4. Residuos Sólidos ECSA (NP 0.4 / MP 1.2 / P Saldo)
+    // -------------------------------------------------------------
+    // 4. RESIDUOS SÓLIDOS ECSA (Reglamento Interno Art. 42 y 43 - PGIRS)
+    // Separación en fuente y tarifas escalonadas NP (0.4) / MP (1.2) / P (Saldo)
+    // -------------------------------------------------------------
     let calcResiduosCop = loc.residuosCop;
     if (loc.residuosCop > 0 && loc.categoriaResiduos !== "BASICOS") {
       if (loc.categoriaResiduos === "NP") {
@@ -192,13 +297,19 @@ export function recalculateAllLocales(
       }
     }
 
-    // 5. Vigilancia (Factor Área m2)
+    // -------------------------------------------------------------
+    // 5. VIGILANCIA PRIVADA (Reglamento Interno Art. 46)
+    // Distribución proporcional al área comercial (m²)
+    // -------------------------------------------------------------
     const calcVigilanciaCop =
       loc.vigilanciaCop > 0
         ? Math.round(loc.areaM2 * tarifaVigilanciaM2 * (loc.vigilanciaCop / Math.max(1, loc.areaM2 * 13785.9124)))
         : 0;
 
-    // 6. Policía (Partes Iguales = $215.384.615 / 5.300)
+    // -------------------------------------------------------------
+    // 6. POLICÍA NACIONAL (Reglamento Interno Art. 46)
+    // Cuota fija solidaria en partes iguales entre los locales comerciales activos
+    // -------------------------------------------------------------
     const calcPoliciaCop = loc.policiaCop > 0 ? Math.round(cuotaPolicia) : 0;
 
     const calcTotalCop =
@@ -211,8 +322,6 @@ export function recalculateAllLocales(
 
     const variacionTotalPct =
       loc.totalAnteriorCop > 0 ? (calcTotalCop - loc.totalAnteriorCop) / loc.totalAnteriorCop : 0;
-
-    void currentConsumoKw;
 
     return {
       ...loc,
