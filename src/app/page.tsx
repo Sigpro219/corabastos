@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Link from "next/link";
 import { useCorabastos } from "@/context/CorabastosContext";
 import { MobileFieldCaptureView } from "@/components/MobileFieldCaptureView";
 import { MasterReceiptsSimulatorView } from "@/components/MasterReceiptsSimulatorView";
@@ -16,13 +17,15 @@ import {
   Zap,
   Droplets,
   ShieldCheck,
+  ExternalLink,
+  Activity,
 } from "lucide-react";
 
-type ActiveTab = "TERRENO" | "RECIBOS" | "SABANA" | "ERP_ROADMAP";
+type ActiveTab = "SABANA" | "RECIBOS" | "TERRENO" | "ERP_ROADMAP";
 
 export default function CorabastosDashboardPage() {
-  const { locales, energyCommunal, waterCommunal, receipts } = useCorabastos();
-  const [activeTab, setActiveTab] = useState<ActiveTab>("TERRENO");
+  const { locales, energyCommunal, waterCommunal, receipts, recentFieldUpdates } = useCorabastos();
+  const [activeTab, setActiveTab] = useState<ActiveTab>("SABANA");
 
   const totalLiquidadoMes = locales.reduce((acc, l) => acc + l.calcTotalCop, 0);
   const totalContadoresEnergia = locales.filter((l) => l.modalidadEnergia === "CONTADOR").length;
@@ -43,30 +46,47 @@ export default function CorabastosDashboardPage() {
               </span>
               <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
                 <CheckCircle2 className="w-3 h-3" />
-                SDD v1.0 · PUERTO 3013
+                CONSOLA GERENCIAL & FACTURACIÓN
               </span>
             </div>
             <p className="text-[10px] text-slate-400 hidden sm:block">
-              Motor de Captura Móvil de Contadores, Liquidación de Servicios Públicos & ERP Corporativo
+              Mesa de Control Financiero, Desacoplo de Macromedidores & Sábana Oficial de 5.318 Locales
             </p>
           </div>
         </div>
 
-        {/* Telemetría Rápida en Cabecera */}
-        <div className="flex items-center gap-4 text-xs">
-          <div className="hidden md:block text-right">
-            <span className="text-[10px] uppercase text-slate-400 block">Censo Activo</span>
-            <span className="font-mono font-bold text-white">
-              {locales.length.toLocaleString("es-CO")} Locales · {energyCommunal.length + waterCommunal.length} Macromedidores
+        {/* ACCESO DIRECTO DESTACADO: APP MÓVIL DEL OPERADOR */}
+        <div className="flex items-center gap-3">
+          <Link
+            href="/captura"
+            target="_blank"
+            className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs transition-all shadow-md active:scale-95 cursor-pointer"
+          >
+            <Smartphone className="w-4 h-4" />
+            <span className="hidden sm:inline">App Móvil Operador</span>
+            <span className="sm:hidden">App Móvil</span>
+            <span className="px-1.5 py-0.2 rounded-full bg-slate-900 text-emerald-300 text-[10px] font-mono">
+              /captura
             </span>
-          </div>
-          <div className="text-right bg-white/5 px-3 py-1 rounded-xl border border-white/10">
-            <span className="text-[10px] uppercase text-sky-300 block">
-              Liquidación {receipts.nombrePeriodo}
-            </span>
-            <span className="font-mono font-bold text-emerald-400 text-xs sm:text-sm">
-              ${totalLiquidadoMes.toLocaleString("es-CO")} COP
-            </span>
+            <ExternalLink className="w-3.5 h-3.5 text-slate-900" />
+          </Link>
+
+          {/* Telemetría Rápida en Cabecera */}
+          <div className="hidden lg:flex items-center gap-4 text-xs">
+            <div className="text-right">
+              <span className="text-[10px] uppercase text-slate-400 block">Censo Activo</span>
+              <span className="font-mono font-bold text-white">
+                {locales.length.toLocaleString("es-CO")} Locales · {energyCommunal.length + waterCommunal.length} Macromedidores
+              </span>
+            </div>
+            <div className="text-right bg-white/5 px-3 py-1 rounded-xl border border-white/10">
+              <span className="text-[10px] uppercase text-sky-300 block">
+                Liquidación {receipts.nombrePeriodo}
+              </span>
+              <span className="font-mono font-bold text-emerald-400 text-xs sm:text-sm">
+                ${totalLiquidadoMes.toLocaleString("es-CO")} COP
+              </span>
+            </div>
           </div>
         </div>
       </header>
@@ -85,26 +105,27 @@ export default function CorabastosDashboardPage() {
             <span className="font-mono">{totalContadoresAgua.toLocaleString("es-CO")}</span> locales (${receipts.acueducto.tarifaM3.toFixed(0)}/m³)
           </span>
           <span className="flex items-center gap-1">
-            <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-            <strong>Factores Activos:</strong> Policía ($40.638,61/local) · Vigilancia ($13.785,91/m²) · Aseo ($1.631,14/m²) · Residuos ECSA (NP 0.4 / MP 1.2 / P Saldo)
+            <Activity className="w-3.5 h-3.5 text-emerald-400" />
+            <strong>Lecturas Recibidas en Campo:</strong>{" "}
+            <span className="font-mono font-bold text-emerald-300">{recentFieldUpdates.length}</span> sincronizadas
           </span>
         </div>
       </div>
 
-      {/* BARRA DE NAVEGACIÓN DE MÓDULOS 1-TAP */}
+      {/* BARRA DE NAVEGACIÓN DE MÓDULOS GERENCIALES */}
       <div className="bg-white border-b border-slate-200 px-4 lg:px-8 py-2.5 shadow-2xs">
         <div className="max-w-[1600px] mx-auto flex flex-wrap items-center gap-2">
           <button
             type="button"
-            onClick={() => setActiveTab("TERRENO")}
+            onClick={() => setActiveTab("SABANA")}
             className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-              activeTab === "TERRENO"
-                ? "bg-[#E73A46] text-white shadow-sm"
+              activeTab === "SABANA"
+                ? "bg-[#1D3557] text-white shadow-sm"
                 : "bg-slate-100 text-[#1D3557] hover:bg-slate-200"
             }`}
           >
-            <Smartphone className="w-4 h-4" />
-            1. App Móvil Terreno (Captura de Contadores & Desacoplo Padre-Hijo)
+            <TableProperties className="w-4 h-4" />
+            1. Sábana Maestra 5.318 Locales, Planos ERP & Estados de Cuenta PDF
           </button>
 
           <button
@@ -122,15 +143,15 @@ export default function CorabastosDashboardPage() {
 
           <button
             type="button"
-            onClick={() => setActiveTab("SABANA")}
+            onClick={() => setActiveTab("TERRENO")}
             className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-              activeTab === "SABANA"
-                ? "bg-[#1D3557] text-white shadow-sm"
+              activeTab === "TERRENO"
+                ? "bg-emerald-700 text-white shadow-sm"
                 : "bg-slate-100 text-[#1D3557] hover:bg-slate-200"
             }`}
           >
-            <TableProperties className="w-4 h-4" />
-            3. Sábana Maestra 5.318 Locales, Planos ERP & Estados de Cuenta PDF
+            <Smartphone className="w-4 h-4" />
+            3. Monitor de Capturas & Desacoplo Macromedidores
           </button>
 
           <button
@@ -150,9 +171,36 @@ export default function CorabastosDashboardPage() {
 
       {/* CONTENEDOR CENTRAL ESTÁNDAR 1600PX */}
       <main className="flex-1 w-full max-w-[1600px] mx-auto px-4 lg:px-8 py-6">
-        {activeTab === "TERRENO" && <MobileFieldCaptureView />}
-        {activeTab === "RECIBOS" && <MasterReceiptsSimulatorView />}
         {activeTab === "SABANA" && <LiquidationMatrixView />}
+        {activeTab === "RECIBOS" && <MasterReceiptsSimulatorView />}
+        {activeTab === "TERRENO" && (
+          <div className="space-y-4">
+            <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-emerald-600 flex items-center justify-center text-white font-bold">
+                  <Smartphone className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-900 text-sm">
+                    Módulo de Captura Desacoplado para Operarios de Terreno
+                  </h3>
+                  <p className="text-xs text-slate-600">
+                    Los operarios acceden a una PWA aislada en <code className="font-mono font-bold text-emerald-800 bg-emerald-100 px-1.5 py-0.5 rounded">/captura</code> sin acceso a estados de cuenta ni finanzas corporativas.
+                  </p>
+                </div>
+              </div>
+              <Link
+                href="/captura"
+                target="_blank"
+                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow"
+              >
+                <span>Abrir Terminal Móvil (/captura)</span>
+                <ExternalLink className="w-3.5 h-3.5" />
+              </Link>
+            </div>
+            <MobileFieldCaptureView />
+          </div>
+        )}
         {activeTab === "ERP_ROADMAP" && <ErpRoadmapExpansionView />}
       </main>
     </div>

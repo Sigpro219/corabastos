@@ -25,6 +25,10 @@
    - Ninguna lectura de medidor ni periodo de liquidación cambia de estado en memoria volátil; toda transición persiste en Firebase v12 (`firestore`) con fallback offline-first en `localStorage`/`IndexedDB` para operación sin señal dentro de bodegas y sótanos de Corabastos.
 5. **Iconografía Vectorial Exclusiva `lucide-react`:**
    - Prohibición total de emojis de texto Unicode (`⚡`, `💧`, `⚠️`, `✅`, etc.) en cualquier componente visual, botón, badge o reporte PDF. Uso exclusivo de íconos vectoriales `lucide-react` (`strokeWidth={1.75}`).
+6. **Aislamiento Estricto de Interfaces & Frontera RBAC (`/captura` vs `/`):**
+   - **Prohibición de Filtración Financiera:** El operario/lecturista en terreno NO debe tener visibilidad ni acceso a cifras globales de facturación corporativa, estados de cuenta de terceros, simulador de tarifas ni planos contables.
+   - **Ruta `/captura` (PWA Móvil del Lecturista):** Dedicada exclusivamente a la captura ágil in-situ, navegación ergonómica por bodegas, selector de medidores pendientes vs leídos, captura fotográfica probatoria y registro de novedades reglamentarias (`C, DETENIDO`, `C, TAPADO`, etc.).
+   - **Ruta `/` (Consola Gerencial & Facturación):** Consola administrativa para la Dirección Financiera y Operativa con la sábana de 5.318 locales, telemetría en tiempo real de avance de campo, simulación tarifaria y exportación contable.
 
 ---
 
