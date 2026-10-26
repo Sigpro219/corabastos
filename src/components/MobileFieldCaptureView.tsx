@@ -75,7 +75,7 @@ export function MobileFieldCaptureView() {
 
   const [inputReading, setInputReading] = useState<string>("");
   const [selectedObs, setSelectedObs] = useState<string>("VERIFICADO POR IMAGEN");
-  const [photoCaptured, setPhotoCaptured] = useState<boolean>(true);
+  const [photoCaptured, setPhotoCaptured] = useState<boolean>(false);
   const [ocrSimulating, setOcrSimulating] = useState<boolean>(false);
   const [savedToast, setSavedToast] = useState<string | null>(null);
 
@@ -98,6 +98,8 @@ export function MobileFieldCaptureView() {
       : currentLocal.aguaPromMax
     : 0;
 
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+
   const isOutOfHistoricalBand =
     promMax > 0 && (estimatedSubtotal < promMin * 0.85 || estimatedSubtotal > promMax * 1.15);
 
@@ -105,18 +107,17 @@ export function MobileFieldCaptureView() {
     setSelectedIndex(idx);
     setInputReading("");
     setSelectedObs("VERIFICADO POR IMAGEN");
-    setPhotoCaptured(true);
+    setPhotoCaptured(false);
+    setPhotoFile(null);
   };
 
-  const handleSimulateOcrCamera = () => {
-    if (!currentLocal) return;
-    setOcrSimulating(true);
-    setTimeout(() => {
-      setInputReading(String(officialCurrentReading));
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setPhotoFile(file);
       setPhotoCaptured(true);
       setSelectedObs("VERIFICADO POR IMAGEN");
-      setOcrSimulating(false);
-    }, 350);
+    }
   };
 
   const handleSaveAndNext = () => {
@@ -308,20 +309,23 @@ export function MobileFieldCaptureView() {
                 </div>
               </div>
 
-              {/* Input Numérico de Alta Densidad + Botón Cámara OCR */}
+              {/* Input Numérico de Alta Densidad + Botón Cámara Real */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <label className="text-xs font-semibold text-slate-200">
                     NUEVA LECTURA DEL MEDIDOR ({selectedService === "ENERGIA" ? "kWh" : "m³"})
                   </label>
-                  <button
-                    type="button"
-                    onClick={handleSimulateOcrCamera}
-                    className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-lg bg-sky-500/20 text-sky-300 border border-sky-400/30 hover:bg-sky-500/30 cursor-pointer"
-                  >
+                  <label className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-lg bg-sky-500/20 text-sky-300 border border-sky-400/30 hover:bg-sky-500/30 cursor-pointer">
                     <Camera className="w-3.5 h-3.5" />
-                    {ocrSimulating ? "Leyendo medidor..." : "Capturar Foto + OCR IA"}
-                  </button>
+                    {photoFile ? photoFile.name.slice(0, 18) : "Subir/Tomar Foto"}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      capture="environment"
+                      onChange={handleFileChange}
+                      className="hidden"
+                    />
+                  </label>
                 </div>
 
                 <input
