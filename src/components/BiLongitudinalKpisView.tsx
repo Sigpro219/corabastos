@@ -34,10 +34,10 @@ export function BiLongitudinalKpisView({ onSelectLocalCode }: BiLongitudinalKpis
   return (
     <div className="max-w-[1600px] mx-auto px-4 py-5 space-y-5">
       {/* CABECERA EJECUTIVA BI & SELECTOR DE ENFOQUE */}
-      <div className="bg-[#010F22] text-white rounded-xl p-5 border border-slate-800 shadow-lg">
+      <div className="bg-[#0B132B] text-white rounded-xl p-5 border border-white/10 shadow-lg">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div>
-            <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-md bg-emerald-500/15 border border-emerald-400/30 text-emerald-300 text-[11px] font-bold uppercase tracking-wider mb-2">
+            <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-md bg-[#f7931b]/15 border border-[#f7931b]/30 text-[#f7931b] text-[11px] font-bold uppercase tracking-wider mb-2">
               <BarChart3 className="w-3.5 h-3.5" strokeWidth={1.75} />
               Sub-Módulo 1.5 · Inteligencia de Negocios (BI) & Auditoría Longitudinal
             </div>
@@ -65,8 +65,8 @@ export function BiLongitudinalKpisView({ onSelectLocalCode }: BiLongitudinalKpis
                 onClick={() => setSectionFilter(btn.id)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                   sectionFilter === btn.id
-                    ? "bg-emerald-500 text-slate-950 shadow-sm"
-                    : "bg-slate-800/80 text-slate-300 hover:bg-slate-700"
+                    ? "bg-[#f7931b] text-slate-950 shadow-sm"
+                    : "bg-white/10 text-slate-300 hover:bg-white/20"
                 }`}
               >
                 {btn.label}

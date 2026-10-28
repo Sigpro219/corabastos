@@ -1,7 +1,7 @@
 # 🛡️ CORABASTOS OS (ERP Corporativo & Motor de Liquidación de Servicios Públicos y Expensas Comunes) — Contrato Canónico de Arquitectura (SPEC.md)
 
 > **Documento Canónico de Especificación (Spec-Anchored — SDD)**  
-> **Versión:** 1.4.0 (Shell ERP Corporativo de 2 Niveles + Módulo Dedicado de Servicios Públicos y Expensas + Sub-Módulo 1.5 Inteligencia BI & 6 KPIs Longitudinales Corte a Corte + Cola de Tareas por Corte en `/captura` + Motor de Vacancia 68 Bodegas + Cuenta Individual 360°)  
+> **Versión:** 1.5.0 (Shell ERP Portal de Operaciones MJM: Sidebar Colapsable `#0B132B` con Acento `#f7931b` + Topbar Ejecutivo con Breadcrumb, Modo Día/Noche & Popover Glassmorphism de Alertas + Módulo 01 Servicios Públicos & Sub-Módulo 1.5 BI KPIs Longitudinales)  
 > **Fecha de Actualización:** 28 de Octubre de 2026  
 > **Estado:** 🟢 VIGENTE & 100% BLINDADO PARA CONSTRUCCIÓN  
 > **Ubicación Oficial:** `C:\Users\German Higuera\OneDrive\Documentos\Projects\corabastos`  
@@ -316,30 +316,36 @@ Aislada por RBAC de las cifras financieras corporativas:
    - Exibe Código del Local/Macromedidor, Serie del Medidor, Lectura Anterior, Consumo Físico Anterior (`kWh` o `m³`), y en Bodega Popular alerta visible de **Factor Multiplicador `8x`**.
    - Al guardar una lectura válida (o reportar causal reglamentaria con foto), marca la tarea como `COMPLETADA` / `NOVEDAD_TECNICA`, la retira de la lista de pendientes y carga de inmediato la siguiente tarea pendiente de esa bodega.
 
-### 4.2 Ruta Independiente 2: Shell Global del ERP Corporativo (`/` — Desktop 1600px) & Módulo Dedicado de Servicios Públicos (`UtilitiesErpModuleView`)
-La consola principal se estructura en **2 niveles de navegación**:
-- **Nivel 1 — Barra Global del ERP (`src/app/page.tsx`):** Permite conmutar entre los **5 Macro-Módulos del ERP de Corabastos** (`1. Servicios Públicos & Expensas [ACTIVO]`, `2. Facturación DIAN & Cartera`, `3. Catastro & Contratos`, `4. Mantenimiento CMMS & Red de Fríos`, `5. Ambiental PGIRS & SAC`).
-- **Nivel 2 — Contenedor Dedicado del Módulo 1 (`src/components/UtilitiesErpModuleView.tsx`):** Agrupa de forma autocontenida las **5 sub-vistas operativas y analíticas** del proceso de Liquidación de Servicios Públicos y Expensas:
-  1. **Sub-Vista 1.1 — Sábana Maestra de Liquidación (`5.318 Locales`), Conciliación (`V/Finanzas` vs `V/Liquidado`) & Cuenta Individual 360°:**
-     - Implementa el estándar `galeria-sticky-industrial` de 3 niveles congelados (`top-0` barra corporativa, `top-14` Omnibox + Píldoras de telemetría, `top-[148px]` encabezados `<th>` sólidos `#010F22`) y botón ícono esmeralda para exportación Excel/CSV.
-  2. **Sub-Vista 1.2 — Mapa de Estado de las 68 Bodegas, Avance del Corte & Gestión de Vacancia (`src/components/BodegasStatusView.tsx`):**
-     - Matriz visual y auditable de las **68 bodegas** (`01` a `98`) mostrando por cada bodega:
-       - Tipo de Bodega (`COMERCIANTES`, `BP MIN`, `BP MAY`, `RED FRIOS`, etc.), Total Locales y Área Total ($m^2$).
-       - **Avance de Tareas del Corte:** Medidores totales vs. leídos vs. pendientes (`% Progreso`) y alertas técnicas en la bodega (`DETENIDO`, `TAPADO`).
-       - **Estado de Ocupación y Vacancia:** Locales `ACTIVOS`, Locales `VACÍOS CON CONTRATO` (`L, VACIO` / `L, CERRADO`) y Locales/Áreas `VACÍOS SIN CONTRATO (Asumidos por Corporación)`, permitiendo simular o cambiar el estado de ocupación de una bodega/local y ver en vivo el impacto en la bolsa `VALOR ASUMIDO CORPORACIÓN` sin afectar la tarifa $/m^2$ de los comerciantes activos.
-  3. **Sub-Vista 1.3 — Macromedidores Comunales (Desacoplo Padre-Hijo) & Centro de Recibos Maestros (`src/components/MasterReceiptsSimulatorView.tsx`):**
-     - Auditoría de los **38 macromedidores de energía**, **24 macromedidores de agua comunal** y **16 baños públicos**, junto con el simulador de los 10 recibos maestros.
-  4. **Sub-Vista 1.4 — Monitor de Corte y Cola de Tareas de Terreno:**
-     - Resumen gerencial del avance del corte por las 5 zonas operativas, bitácora de lecturas recibidas en vivo y enlace directo a `/captura`.
-  5. **Sub-Vista 1.5 — Inteligencia BI & 6 KPIs Longitudinales Corte a Corte (`src/components/BiLongitudinalKpisView.tsx`):**
-     - Centro ejecutivo de analítica longitudinal que visualiza los **6 KPIs estratégicos** (Radar de Fugas en Macromedidores Padre-Hijo, Puente de Absorción Financiera Corporativa, Salud del Parque Metrológico de 1.835 medidores, Intensidad por $m^2$ y Ranking Pareto Top 15 con apertura directa de Cuenta Individual 360°, Curva Multicorte Enero–Junio 2025 de Tarifas Unitarias y SLA Operativo por Zona).
+### 4.2 Ruta Independiente 2: Shell Global del ERP Corporativo Estilo Portal de Operaciones MJM (`/` — Desktop 1600px) & Módulo Dedicado (`UtilitiesErpModuleView`)
+La consola administrativa implementa íntegramente el **Sistema de Diseño y Arquitectura del Portal de Operaciones MJM (`Precision Clinical Slate` / `Obsidian Titanium`)**:
+
+1. **Paleta Cromática y Variables de Sistema (`src/app/globals.css`):**
+   - **Modo Día (`Precision Clinical Slate`):** `--sidebar-bg: #0B132B`, `--primary: #1E3A5F`, `--secondary: #0F172A`, `--tertiary: #D97706`, `--accent-mjm: #f7931b`, `--background: #F8FAFC`, `--surface: #FFFFFF`, `--surface-alt: #F1F5F9`, `--text-main: #0F172A`, `--text-muted: #64748B`, `--outline-color: #E2E8F0`.
+   - **Modo Noche (`.dark` — `Obsidian Titanium`):** `--sidebar-bg: #060910`, `--background: #080C14`, `--surface: #101726`, `--surface-alt: #151F33`, `--text-main: #F8FAFC`, `--text-muted: #94A3B8`, `--outline-color: rgba(255, 255, 255, 0.08)`.
+2. **Sidebar Izquierdo Colapsable MJM (`w-64` Desktop / Drawer Móvil en `src/app/page.tsx`):**
+   - **Geometría y Persistencia:** Ancho `256px` (`w-64`) en escritorio con transición suave (`300ms`) a `w-0` cuando se oculta desde el botón `<Menu />` del Topbar (persistiendo el estado en `localStorage` bajo `corabastos_desktop_sidebar`), y drawer deslizable con backdrop desenfocado en móvil.
+   - **Bloque Superior de Identidad Institucional (`p-4 border-b border-white/10`):** Escudo corporativo en contenedor `w-8 h-8 bg-white rounded-lg`, título en `text-[11px] font-bold uppercase tracking-tight` y subtítulo técnico en `text-[7.5px] text-[#f7931b] font-mono uppercase tracking-widest`.
+   - **Secciones Jerárquicas con Micro-Títulos Monoespaciados (`navSections`):**
+     - Encabezados en `text-[8.5px] font-mono font-bold tracking-widest text-slate-400/60 uppercase`.
+     - Ítems con `px-3 py-1.5 rounded-lg text-[11.5px]`, ícono `size={16}`, estado activo **`bg-white/10 text-white font-semibold border-l-2 border-[#f7931b]`** con ícono en `#f7931b` y `<ChevronRight size={11} />`, y badge destacado en `#f7931b` con `<Sparkles />` para el Sub-Módulo BI.
+     - Agrupa ordenadamente las **5 Sub-Vistas del Módulo 01 (`Servicios Públicos & Expensas`)** y los **Anillos 2 a 5 de la Suite ERP Corabastos (`Cables Pelados`)**.
+   - **Pie de Firma Corporativa (`Footer Branding`):** Acción rápida de restauración/salida, leyenda `Powered by Delta CoreTech` y píldora `bg-white/5 border-white/5` con punto esmeralda pulsante (`w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse`) mostrando el corte publicado.
+3. **Topbar Ejecutivo Compañero (`sticky top-0 z-40 h-14` en `src/app/page.tsx`):**
+   - **Izquierda:** Botón Hamburguesa (`<Menu size={16} />`) para alternar visibilidad del Sidebar (permitiendo modo pantalla completa `100%` para tablas anchas) + **Breadcrumb Dinámico** (`Módulo Activo > Sub-Vista Activa` con acento en `#1E3A5F` / `#f7931b`).
+   - **Derecha:** Telemetría del Corte Activo (`$3.621,55M`), botón de apertura de `/captura` (`Terminal Móvil Operador`), selector Modo Día/Noche (`<Sun />` / `<Moon />`), campana `<Bell />` con **Popover Glassmorphism en Azul Profundo (`from-[#14284b]/95 via-[#0d1d36]/95 to-[#091528]/95`)** para Alertas Críticas del Corte, y avatar corporativo (`CO`).
+4. **Nivel 2 — Contenedor Dedicado del Módulo 1 (`src/components/UtilitiesErpModuleView.tsx`):** Agrupa de forma autocontenida y sincronizada con el Sidebar las **5 sub-vistas operativas y analíticas** del proceso de Liquidación de Servicios Públicos y Expensas:
+   1. **Sub-Vista 1.1 — Sábana Maestra de Liquidación (`5.318 Locales`), Conciliación (`V/Finanzas` vs `V/Liquidado`) & Cuenta Individual 360°:**
+      - Implementa el estándar `galeria-sticky-industrial` de 3 niveles congelados (`top-0` Topbar corporativo, `top-14` Omnibox + Píldoras de telemetría, `top-[148px]` encabezados `<th>` sólidos `#0B132B`) y botón ícono esmeralda para exportación Excel/CSV.
+   2. **Sub-Vista 1.2 — Mapa de Estado de las 68 Bodegas, Avance del Corte & Gestión de Vacancia (`src/components/BodegasStatusView.tsx`):**
+      - Matriz visual y auditable de las **68 bodegas** (`01` a `98`) mostrando tipo de bodega, avance de tareas del corte y simulación en vivo del estado de ocupación (`ACTIVO`, `VACIO_CON_CONTRATO`, `VACIO_SIN_CONTRATO_CORPORACION`).
+   3. **Sub-Vista 1.3 — Macromedidores Comunales (Desacoplo Padre-Hijo) & Centro de Recibos Maestros (`src/components/MasterReceiptsSimulatorView.tsx`):**
+      - Auditoría de los **38 macromedidores de energía**, **24 macromedidores de agua comunal** y **16 baños públicos**, junto con el simulador de los 10 recibos maestros.
+   4. **Sub-Vista 1.4 — Monitor de Corte y Cola de Tareas de Terreno:**
+      - Resumen gerencial del avance del corte por las 5 zonas operativas, bitácora de lecturas recibidas en vivo y enlace directo a `/captura`.
+   5. **Sub-Vista 1.5 — Inteligencia BI & 6 KPIs Longitudinales Corte a Corte (`src/components/BiLongitudinalKpisView.tsx`):**
+      - Centro ejecutivo de analítica longitudinal que visualiza los **6 KPIs estratégicos** (Radar de Fugas en Macromedidores Padre-Hijo, Puente de Absorción Financiera Corporativa, Salud del Parque Metrológico de 1.835 medidores, Intensidad por $m^2$ y Ranking Pareto Top 15 con apertura directa de Cuenta Individual 360°, Curva Multicorte Enero–Junio 2025 de Tarifas Unitarias y SLA Operativo por Zona).
 - **Expediente Modal / Drawer: Cuenta Individual 360° y Rendición de Cuentas por Local (`src/components/LocalAccountModal.tsx`):**
   - Se abre al hacer clic en cualquier local desde la Sábana Maestra, el Mapa de Bodegas o el Ranking Pareto del Sub-Módulo BI.
-  - Presenta la **Auditoría Forense Completa del Local**:
-    - **Identidad y Catastro:** Código (`010001`), Bodega, Tipo, Área ($m^2$), Participación porcentual dentro de su bodega (`% m²`), Estado de Ocupación (`ACTIVO` / `VACÍO CON CONTRATO` / `ASUMIDO CORPORACIÓN`) y Categoría PGIRS (`NP` / `MP` / `P`).
-    - **Trazabilidad Padre → Hijo:** Macromedidor de Alero y Macromedidor de Bodega que lo alimentan, consumo bruto de la bodega, descuento de contadores hijos y cuota exacta asignada al local.
-    - **Liquidación Matemática Paso a Paso de los 6 Servicios (Art. 46 Reglamento Interno):** Fórmulas desglosadas con números reales de Lectura Anterior, Lectura Actual, Consumo Físico vs. Mes Anterior (`kWh` / `m³`), Sobretasa CREG, Factura Mínima, Agua Comunal y Expensas por $m^2$ / Partes Iguales.
-    - **Auditoría contra Banda Histórica y Planos Contables:** Comparación del Total Liquidado contra `PROMEDIO <` y `PROMEDIO >` (en COP), mes anterior (`JUNIO` vs `MAYO`), códigos de plano (`PL109`..`AMB408`) y botón de **Impresión de Certificado de Cuenta Individual y Rendición de Cuentas (`Golden Print PDF`)**.
 
 ---
 
@@ -348,6 +354,7 @@ La consola principal se estructura en **2 niveles de navegación**:
 ### 5.1 Refacciones del Arsenal Global Integradas
 | Necesidad en Corabastos | Refacción del Arsenal / Proyecto Hermano | Aplicación en `corabastos` |
 | :--- | :--- | :--- |
+| Shell Operativo, Sidebar Colapsable y Paleta | `mjm-frontend` (`src/layouts/DashboardLayout.jsx` + `src/index.css`) | Sidebar `#0B132B` con acento `#f7931b`, Topbar con Breadcrumb, Modo Oscuro/Claro y Popover Glassmorphism Azul |
 | Captura rápida en terreno con una mano | `REF-ERGONOMIA-TECLADO-TAB-ENTER.md` + `REF-INPUT-NUMERICO-SIN-CERO-Y-COMA-DECIMAL.md` | Avance inmediato entre medidores pendientes con `Enter` y validación numérica limpia |
 | Navegación móvil de 1 toque en bodega | `REF-SUBNAV-STICKY-1TAP-MOBILE.md` | Selector de Zona y Bodega con contador de pendientes en `/captura` |
 | Sábana de 5.318 locales sin lag de renderizado | `galeria-sticky-industrial` + `estandar-galerias-frufresco` | Contenedor `1600px`, 3 niveles sticky docked y diccionarios $O(1)$ |
@@ -391,3 +398,4 @@ La consola principal se estructura en **2 niveles de navegación**:
 - `[x]` **Tarea 9.0:** Construcción del **Shell ERP de 2 Niveles (`src/app/page.tsx`)**, el **Contenedor Dedicado del Módulo 01 (`src/components/UtilitiesErpModuleView.tsx`)**, el **Tablero de Estado de las 68 Bodegas y Vacancia (`src/components/BodegasStatusView.tsx`)** y el **Modal/Expediente de Cuenta Individual 360° y Rendición de Cuentas por Local (`src/components/LocalAccountModal.tsx`)**.
 - `[x]` **Tarea 10.0:** Certificación `npx tsc --noEmit` (`EXIT 0`), verificación funcional en `http://localhost:3013` y `http://localhost:3013/captura`, y dictamen independiente de `auditor-tirano-sdd`.
 - `[x]` **Tarea 11.0:** Actualización SDD `SPEC.md` v1.4.0 e implementación del **Sub-Módulo 1.5 Inteligencia BI & 6 KPIs Longitudinales Corte a Corte** (`src/lib/bi-kpis-engine.ts` + `src/components/BiLongitudinalKpisView.tsx`) integrado en `src/components/UtilitiesErpModuleView.tsx`.
+- `[x]` **Tarea 12.0:** Actualización SDD `SPEC.md` v1.5.0 e implementación del **Sidebar Colapsable, Topbar Ejecutivo, Sistema de Color (`#0B132B` / `#1E3A5F` / `#f7931b`) y Popover Glassmorphism del Portal de Operaciones MJM** en `src/app/globals.css`, `src/app/page.tsx` y `src/components/UtilitiesErpModuleView.tsx`.

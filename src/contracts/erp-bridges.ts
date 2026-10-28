@@ -8,6 +8,13 @@ export type ErpMacroModuleId =
   | "MOD_4_MANTENIMIENTO_CMMS"
   | "MOD_5_AMBIENTAL_PGIRS_SAC";
 
+export type UtilitiesSubTabId =
+  | "SABANA_360"
+  | "BODEGAS_68"
+  | "RECIBOS_MACROS"
+  | "MONITOR_CAMPO"
+  | "BI_KPIS";
+
 export interface ErpMacroModuleDefinition {
   id: ErpMacroModuleId;
   code: string;
