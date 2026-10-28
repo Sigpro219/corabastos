@@ -1,526 +1,492 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import Link from "next/link";
-import { useCorabastos } from "@/context/CorabastosContext";
 import {
-  Camera,
-  CheckCircle2,
-  AlertTriangle,
+  useCorabastos,
+  deriveTaskStateFromObservation,
+} from "@/context/CorabastosContext";
+import { ReadingZoneId } from "@/contracts/domain-contracts";
+import {
+  buildCutoffReadingTasks,
+  UnifiedReadingTask,
+  ZONE_META,
+} from "@/lib/reading-tasks-engine";
+import { OperatorTaskCaptureCard } from "@/components/OperatorTaskCaptureCard";
+import {
   Zap,
   Droplets,
-  ChevronRight,
-  ChevronLeft,
-  ShieldAlert,
+  CheckCircle2,
   Search,
-  Sparkles,
-  ArrowRight,
-  Building2,
-  RotateCcw,
   Smartphone,
+  MapPin,
+  Lock,
   Layers,
-  ShieldCheck,
-  Check,
-  Clock,
-  Wifi,
-  SlidersHorizontal,
+  ListChecks,
 } from "lucide-react";
 
-const NOVEDADES_REGLAMENTO = [
-  { id: "VERIFICADO POR IMAGEN", label: "Normal (Verificado con Foto)", tipo: "OK" },
-  { id: "C, DETENIDO", label: "Contador Detenido (Art. 46: Cobro Área m²)", tipo: "ALERTA" },
-  { id: "C, TAPADO", label: "Contador Tapado / Obstruido (Art. 47)", tipo: "ALERTA" },
-  { id: "DEFECTUOSO", label: "Medidor Roto / Ilegible (Art. 46: Área m²)", tipo: "CRITICO" },
-  { id: "C, RETIRADO", label: "Contador Retirado de Bodega", tipo: "CRITICO" },
-  { id: "REVISAR MEDIDOR", label: "Sospecha de Fuga o Alteración", tipo: "ALERTA" },
-];
-
-export default function MobileFieldCaptureApp() {
+export default function OperadorTerrenoCapturePage() {
   const {
     locales,
-    bodegasList,
     energyCommunal,
     waterCommunal,
+    bathroomMeters,
     saveFieldReading,
     recentFieldUpdates,
+    completedTaskIds,
   } = useCorabastos();
 
-  const [activeMode, setActiveMode] = useState<"LOCALES" | "MACROMEDIDORES">("LOCALES");
-  const [selectedService, setSelectedService] = useState<"ENERGIA" | "AGUA">("ENERGIA");
-  const [selectedBodega, setSelectedBodega] = useState<string>("01");
-  const [filterPendingOnly, setFilterPendingOnly] = useState<boolean>(true);
-  const [searchQuery, setSearchQuery] = useState<string>("");
-  const [selectedIndex, setSelectedIndex] = useState<number>(0);
+  const [selectedZone, setSelectedZone] = useState<ReadingZoneId>("ZONA_3_COMERCIANTES_PRINCIPAL");
+  const [selectedBodega, setSelectedBodega] = useState<string>("ALL");
+  const [serviceFilter, setServiceFilter] = useState<"ALL" | "ENERGIA" | "AGUA">("ALL");
+  const [queueFilter, setQueueFilter] = useState<"PENDIENTES" | "COMPLETADAS">("PENDIENTES");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedTaskKey, setSelectedTaskKey] = useState<string>("");
 
-  // Meter inputs
   const [inputReading, setInputReading] = useState<string>("");
   const [selectedObs, setSelectedObs] = useState<string>("VERIFICADO POR IMAGEN");
-  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
-  const [ocrLoading, setOcrLoading] = useState<boolean>(false);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [photoCaptured, setPhotoCaptured] = useState<boolean>(false);
+  const [ocrRunning, setOcrRunning] = useState<boolean>(false);
+  const [saveToast, setSaveToast] = useState<string | null>(null);
 
-  // Filter meters in the active bodega
-  const bodegaMeters = useMemo(() => {
-    return locales.filter((loc) => {
-      if (searchQuery.trim()) {
-        return loc.codigo.toLowerCase().includes(searchQuery.trim().toLowerCase());
-      }
-      const matchBodega = loc.bodegaId === selectedBodega;
-      const hasMeter =
-        selectedService === "ENERGIA"
-          ? loc.modalidadEnergia === "CONTADOR"
-          : loc.modalidadAcueducto === "CONTADOR";
-      return matchBodega && hasMeter;
-    });
-  }, [locales, selectedBodega, selectedService, searchQuery]);
+  const allTasks = useMemo<UnifiedReadingTask[]>(
+    () =>
+      buildCutoffReadingTasks(
+        locales,
+        energyCommunal,
+        waterCommunal,
+        bathroomMeters,
+        completedTaskIds
+      ),
+    [locales, energyCommunal, waterCommunal, bathroomMeters, completedTaskIds]
+  );
 
-  // Split into read vs pending
-  const { pendingList, completedList } = useMemo(() => {
-    const pending: typeof bodegaMeters = [];
-    const completed: typeof bodegaMeters = [];
-    for (const m of bodegaMeters) {
-      const isUpdated = recentFieldUpdates.some(
-        (u) => u.codigo === m.codigo && u.servicio === selectedService
-      );
-      if (isUpdated) {
-        completed.push(m);
+  // Estadísticas por Zona
+  const zoneCounts = useMemo(() => {
+    const map: Record<ReadingZoneId, { total: number; pending: number; done: number }> = {
+      ZONA_1_MACROMEDIDORES: { total: 0, pending: 0, done: 0 },
+      ZONA_2_BANOS_PUBLICOS: { total: 0, pending: 0, done: 0 },
+      ZONA_3_COMERCIANTES_PRINCIPAL: { total: 0, pending: 0, done: 0 },
+      ZONA_4_BODEGA_POPULAR: { total: 0, pending: 0, done: 0 },
+      ZONA_5_RED_FRIOS: { total: 0, pending: 0, done: 0 },
+    };
+    for (const t of allTasks) {
+      map[t.zonaId].total += 1;
+      if (t.taskState === "PENDIENTE") {
+        map[t.zonaId].pending += 1;
       } else {
-        pending.push(m);
+        map[t.zonaId].done += 1;
       }
     }
-    return { pendingList: pending, completedList: completed };
-  }, [bodegaMeters, recentFieldUpdates, selectedService]);
+    return map;
+  }, [allTasks]);
 
-  const displayedList = filterPendingOnly && !searchQuery.trim() ? pendingList : bodegaMeters;
-  const currentMeter = displayedList[selectedIndex] || displayedList[0] || null;
+  // Bodegas disponibles dentro de la zona activa con su conteo de pendientes
+  const zoneBodegas = useMemo(() => {
+    const map = new Map<string, { total: number; pending: number }>();
+    for (const t of allTasks) {
+      if (t.zonaId !== selectedZone) continue;
+      const prev = map.get(t.bodegaId) || { total: 0, pending: 0 };
+      prev.total += 1;
+      if (t.taskState === "PENDIENTE") prev.pending += 1;
+      map.set(t.bodegaId, prev);
+    }
+    return Array.from(map.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+  }, [allTasks, selectedZone]);
 
-  // Reading references
-  const prevReading = currentMeter
-    ? selectedService === "ENERGIA"
-      ? currentMeter.energiaLecturaAnt
-      : currentMeter.aguaLecturaAnt
-    : 0;
+  // Tareas filtradas según Zona, Bodega, Servicio y Bandeja (Solo Pendientes por defecto)
+  const filteredTasks = useMemo(() => {
+    return allTasks.filter((t) => {
+      if (t.zonaId !== selectedZone) return false;
+      if (selectedBodega !== "ALL" && t.bodegaId !== selectedBodega) return false;
+      if (serviceFilter === "ENERGIA" && t.servicio !== "ENERGIA" && t.servicio !== "MACRO_ENERGIA") {
+        return false;
+      }
+      if (
+        serviceFilter === "AGUA" &&
+        t.servicio !== "AGUA" &&
+        t.servicio !== "MACRO_AGUA" &&
+        t.servicio !== "BANO_PUBLICO"
+      ) {
+        return false;
+      }
+      if (queueFilter === "PENDIENTES" && t.taskState !== "PENDIENTE") return false;
+      if (queueFilter === "COMPLETADAS" && t.taskState === "PENDIENTE") return false;
+      if (searchQuery.trim().length > 0 && !t.codigo.toLowerCase().includes(searchQuery.trim().toLowerCase())) {
+        return false;
+      }
+      return true;
+    });
+  }, [allTasks, selectedZone, selectedBodega, serviceFilter, queueFilter, searchQuery]);
 
-  const currentReadingNum = inputReading !== "" ? parseFloat(inputReading) : NaN;
-  const deltaConsumo = !isNaN(currentReadingNum) ? Math.max(0, currentReadingNum - prevReading) : null;
+  const activeTask = useMemo(() => {
+    const found = filteredTasks.find((t) => t.taskKey === selectedTaskKey);
+    return found || filteredTasks[0] || null;
+  }, [filteredTasks, selectedTaskKey]);
 
-  // Historical bounds
-  const minHist = currentMeter
-    ? selectedService === "ENERGIA"
-      ? currentMeter.energiaPromMin
-      : currentMeter.aguaPromMin
-    : 0;
-  const maxHist = currentMeter
-    ? selectedService === "ENERGIA"
-      ? currentMeter.energiaPromMax
-      : currentMeter.aguaPromMax
-    : 0;
-
-  const isDeviation =
-    deltaConsumo !== null && (deltaConsumo < minHist * 0.7 || (maxHist > 0 && deltaConsumo > maxHist * 1.3));
-
-  const handleSimulatePhoto = () => {
-    setPhotoPreview("/placeholder-meter.jpg");
-    setOcrLoading(true);
-    setTimeout(() => {
-      // Generate a reasonable reading above previous
-      const simulatedDelta = Math.floor(minHist + Math.random() * Math.max(10, maxHist - minHist));
-      const simulatedReading = (prevReading + simulatedDelta).toString();
-      setInputReading(simulatedReading);
-      setOcrLoading(false);
-      setToastMessage("OCR IA: Lectura extraída de la foto con 99.4% confianza");
-      setTimeout(() => setToastMessage(null), 3000);
-    }, 700);
+  const selectTask = (t: UnifiedReadingTask) => {
+    setSelectedTaskKey(t.taskKey);
+    setInputReading(String(t.lecturaActual));
+    setSelectedObs(t.observacionActual || "VERIFICADO POR IMAGEN");
+    setPhotoCaptured(false);
   };
 
-  const handleSaveAndNext = () => {
-    if (!currentMeter || inputReading === "") {
-      alert("Por favor ingrese la lectura del medidor antes de guardar.");
-      return;
+  const prevTaskRef = React.useRef<string>("");
+  React.useEffect(() => {
+    if (activeTask && activeTask.taskKey !== prevTaskRef.current) {
+      prevTaskRef.current = activeTask.taskKey;
+      setInputReading(String(activeTask.lecturaActual));
+      setSelectedObs(activeTask.observacionActual || "VERIFICADO POR IMAGEN");
+      setPhotoCaptured(false);
     }
-    const val = parseFloat(inputReading);
-    if (isNaN(val)) {
-      alert("Lectura numérica inválida.");
-      return;
-    }
+  }, [activeTask]);
+
+  const numericInput = Number(inputReading);
+
+  const simulateOcrCapture = () => {
+    if (!activeTask) return;
+    setOcrRunning(true);
+    setTimeout(() => {
+      setOcrRunning(false);
+      setPhotoCaptured(true);
+      const increment =
+        activeTask.multiplicador > 1
+          ? Math.max(1, Math.round(activeTask.consumoAnteriorFisico / activeTask.multiplicador))
+          : Math.max(5, Math.round(activeTask.consumoAnteriorFisico));
+      const suggested = Math.round(activeTask.lecturaAnterior + increment);
+      setInputReading(String(suggested));
+      setSelectedObs("VERIFICADO POR IMAGEN");
+    }, 350);
+  };
+
+  const handleSaveTask = () => {
+    if (!activeTask || !Number.isFinite(numericInput)) return;
+
+    const currentIndex = filteredTasks.findIndex((t) => t.taskKey === activeTask.taskKey);
+    const nextCandidate =
+      currentIndex >= 0 && currentIndex + 1 < filteredTasks.length
+        ? filteredTasks[currentIndex + 1]
+        : filteredTasks.find((t) => t.taskKey !== activeTask.taskKey) || null;
+
+    const nextTaskState = deriveTaskStateFromObservation(selectedObs);
 
     saveFieldReading({
-      codigo: currentMeter.codigo,
-      servicio: selectedService,
-      lecturaActual: val,
+      codigo: activeTask.codigo,
+      servicio: activeTask.servicio,
+      lecturaActual: numericInput,
       observacion: selectedObs,
-      fotoCapturada: Boolean(photoPreview),
-      timestamp: new Date().toISOString(),
+      fotoCapturada: photoCaptured,
+      taskState: nextTaskState,
+      timestamp: new Date().toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
     });
 
-    setToastMessage(`✓ Local ${currentMeter.codigo} guardado exitosamente`);
-    setTimeout(() => setToastMessage(null), 2500);
+    setSaveToast(
+      `Tarea ${activeTask.codigo} (${activeTask.etiquetaServicio}) evacuada como ${nextTaskState}.`
+    );
 
-    // Reset for next
-    setInputReading("");
-    setPhotoPreview(null);
-    setSelectedObs("VERIFICADO POR IMAGEN");
-
-    if (selectedIndex < displayedList.length - 1) {
-      setSelectedIndex((prev) => prev + 1);
-    } else {
-      setSelectedIndex(0);
+    if (nextCandidate) {
+      setSelectedTaskKey(nextCandidate.taskKey);
     }
+
+    setTimeout(() => setSaveToast(null), 2600);
   };
 
+  const totalPendingGlobal = allTasks.filter((t) => t.taskState === "PENDIENTE").length;
+  const totalDoneGlobal = allTasks.length - totalPendingGlobal;
+
   return (
-    <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col items-center">
-      {/* PWA MOBILE SHELL (Max 480px) */}
-      <main className="w-full max-w-md bg-slate-950 min-h-screen flex flex-col shadow-2xl border-x border-slate-800">
-        {/* HEADER EXCLUSIVO OPERARIO (Sin datos financieros globales) */}
-        <header className="sticky top-0 z-20 bg-slate-900/95 backdrop-blur-md border-b border-slate-800 px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-emerald-600 flex items-center justify-center shadow-md">
-              <Smartphone className="w-4 h-4 text-white" />
-            </div>
-            <div>
-              <div className="flex items-center gap-1.5">
-                <span className="font-bold text-sm tracking-tight text-white">CORABASTOS</span>
-                <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                  RUTA CAMPO
-                </span>
-              </div>
-              <p className="text-[10px] text-slate-400 flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                Operario Activo · Modo Terreno
-              </p>
-            </div>
+    <div className="min-h-screen bg-[#010F22] text-white flex flex-col">
+      {/* BARRA SUPERIOR TERMINAL OPERATIVA DE CAMPO */}
+      <header className="sticky top-0 z-30 bg-[#010F22]/95 backdrop-blur-md border-b border-white/10 px-4 py-3 flex items-center justify-between">
+        <div className="flex items-center gap-2.5">
+          <div className="w-9 h-9 rounded-xl bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center">
+            <Smartphone className="w-5 h-5 text-emerald-400" />
           </div>
-
-          <Link
-            href="/"
-            className="flex items-center gap-1 text-[11px] font-semibold text-slate-400 hover:text-white bg-slate-800/80 px-2.5 py-1.5 rounded-lg border border-slate-700/80 transition-all"
-            title="Ir a Consola Gerencial"
-          >
-            <ShieldCheck className="w-3.5 h-3.5 text-sky-400" />
-            <span>Mesa Central</span>
-          </Link>
-        </header>
-
-        {/* SELECTOR DE SERVICIO 1-TAP (ENERGÍA vs AGUA) */}
-        <div className="p-3 bg-slate-900/60 border-b border-slate-800">
-          <div className="grid grid-cols-2 gap-2 bg-slate-950 p-1 rounded-xl border border-slate-800">
-            <button
-              type="button"
-              onClick={() => {
-                setSelectedService("ENERGIA");
-                setSelectedIndex(0);
-                setInputReading("");
-              }}
-              className={`flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                selectedService === "ENERGIA"
-                  ? "bg-amber-500 text-slate-950 shadow-md font-extrabold"
-                  : "text-slate-400 hover:text-white"
-              }`}
-            >
-              <Zap className="w-4 h-4" />
-              <span>Energía (kWh)</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setSelectedService("AGUA");
-                setSelectedIndex(0);
-                setInputReading("");
-              }}
-              className={`flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                selectedService === "AGUA"
-                  ? "bg-sky-500 text-slate-950 shadow-md font-extrabold"
-                  : "text-slate-400 hover:text-white"
-              }`}
-            >
-              <Droplets className="w-4 h-4" />
-              <span>Acueducto (m³)</span>
-            </button>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-sm tracking-tight text-white">
+                CORABASTOS · COLA DE TAREAS DEL CORTE
+              </span>
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-amber-500/20 text-amber-300 border border-amber-400/30 flex items-center gap-1">
+                <Lock className="w-2.5 h-2.5" />
+                MODO OPERADOR
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-400">
+              Corte Activo: JUNIO 2025 · Solo se listan los medidores pendientes por leer
+            </p>
           </div>
+        </div>
 
-          {/* RUTA DE BODEGA HORIZONTAL SCROLL */}
-          <div className="mt-3 flex items-center justify-between">
-            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
-              <Building2 className="w-3 h-3 text-slate-400" />
-              Bodega Asignada:
+        <div className="flex items-center gap-3">
+          <div className="text-right">
+            <span className="text-[10px] uppercase text-slate-400 block">Pendientes Corte</span>
+            <span className="font-mono font-black text-amber-400 text-sm">
+              {totalPendingGlobal.toLocaleString("es-CO")}
             </span>
-            <span className="text-[11px] font-mono font-bold text-emerald-400">
-              {completedList.length}/{bodegaMeters.length} Leídos ({bodegaMeters.length > 0 ? Math.round((completedList.length / bodegaMeters.length) * 100) : 0}%)
+          </div>
+          <div className="text-right pl-3 border-l border-white/10">
+            <span className="text-[10px] uppercase text-slate-400 block">Evacuadas Hoy</span>
+            <span className="font-mono font-black text-emerald-400 text-sm">
+              {totalDoneGlobal.toLocaleString("es-CO")}
+            </span>
+          </div>
+        </div>
+      </header>
+
+      <main className="flex-1 max-w-4xl w-full mx-auto p-3 sm:p-5 space-y-4">
+        {/* 1. SELECTOR DE LAS 5 ZONAS OPERATIVAS DEL CORTE */}
+        <div className="bg-slate-900/90 border border-white/10 rounded-2xl p-3.5 space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
+              <Layers className="w-3.5 h-3.5 text-emerald-400" />
+              1. Selecciona tu Zona de Trabajo (Estructura Oficial Excel)
+            </span>
+            <span className="text-[11px] font-mono text-slate-400">
+              Total Corte: {allTasks.length.toLocaleString("es-CO")} tareas
             </span>
           </div>
 
-          <div className="mt-1.5 flex gap-1.5 overflow-x-auto pb-1 scrollbar-none">
-            {bodegasList.map((b) => {
-              const countInB = locales.filter(
-                (l) =>
-                  l.bodegaId === b &&
-                  (selectedService === "ENERGIA"
-                    ? l.modalidadEnergia === "CONTADOR"
-                    : l.modalidadAcueducto === "CONTADOR")
-              ).length;
-              if (countInB === 0) return null;
-              const isSelected = selectedBodega === b;
+          <div className="grid grid-cols-1 sm:grid-cols-5 gap-2">
+            {ZONE_META.map((z) => {
+              const stats = zoneCounts[z.id];
+              const isSelected = selectedZone === z.id;
               return (
                 <button
-                  key={b}
+                  key={z.id}
                   type="button"
                   onClick={() => {
-                    setSelectedBodega(b);
-                    setSelectedIndex(0);
-                    setInputReading("");
+                    setSelectedZone(z.id);
+                    setSelectedBodega("ALL");
+                    setSelectedTaskKey("");
                   }}
-                  className={`shrink-0 px-3 py-1.5 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer ${
+                  className={`text-left p-2.5 rounded-xl border transition-all cursor-pointer ${
                     isSelected
-                      ? "bg-emerald-600 text-white shadow-md ring-2 ring-emerald-400/40"
-                      : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                      ? "bg-emerald-500/20 border-emerald-400 text-white shadow-md"
+                      : "bg-slate-950/70 border-white/10 text-slate-300 hover:bg-slate-800/70"
                   }`}
                 >
-                  Bod. {b} ({countInB})
+                  <div className="flex items-center justify-between gap-1">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-emerald-300">
+                      {z.priorityBadge}
+                    </span>
+                    <span className="px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 font-mono text-[10px] font-bold">
+                      {stats.pending} pend.
+                    </span>
+                  </div>
+                  <div className="font-bold text-xs mt-1 truncate">{z.shortLabel}</div>
                 </button>
               );
             })}
           </div>
 
-          {/* FILTRO PENDIENTES vs TODOS */}
-          <div className="mt-2.5 flex items-center justify-between text-xs">
-            <button
-              type="button"
-              onClick={() => {
-                setFilterPendingOnly(!filterPendingOnly);
-                setSelectedIndex(0);
-              }}
-              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md font-semibold cursor-pointer text-[11px] ${
-                filterPendingOnly
-                  ? "bg-amber-500/20 text-amber-300 border border-amber-500/40"
-                  : "bg-slate-800 text-slate-300 border border-slate-700"
-              }`}
-            >
-              <span>{filterPendingOnly ? "Mostrando Solo Pendientes" : "Mostrando Todos"}</span>
-              <span className="font-mono font-bold">({displayedList.length})</span>
-            </button>
-
-            {/* BÚSQUEDA RÁPIDA DE LOCAL */}
-            <div className="relative w-36">
-              <input
-                type="text"
-                value={searchQuery}
+          {/* 2. FILTRO DE BODEGA, SERVICIO Y BANDEJA (SOLO PENDIENTES vs COMPLETADAS) */}
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-2.5 pt-2 border-t border-white/10">
+            <div>
+              <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                Bodega ({zoneBodegas.length} en zona)
+              </label>
+              <select
+                value={selectedBodega}
                 onChange={(e) => {
-                  setSearchQuery(e.target.value);
-                  setSelectedIndex(0);
+                  setSelectedBodega(e.target.value);
+                  setSelectedTaskKey("");
                 }}
-                placeholder="Buscar local..."
-                className="w-full bg-slate-950 border border-slate-800 rounded-md px-2 py-1 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 font-mono"
-              />
+                className="w-full h-10 px-2.5 rounded-xl bg-slate-950 border border-white/15 font-mono text-xs text-white focus:outline-none focus:border-emerald-400"
+              >
+                <option value="ALL">Todas las Bodegas de la Zona</option>
+                {zoneBodegas.map(([bod, st]) => (
+                  <option key={bod} value={bod}>
+                    Bodega {bod} ({st.pending} pendientes de {st.total})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                Tipo de Servicio
+              </label>
+              <div className="grid grid-cols-3 gap-1 h-10">
+                <button
+                  type="button"
+                  onClick={() => setServiceFilter("ALL")}
+                  className={`rounded-xl font-bold text-xs cursor-pointer ${
+                    serviceFilter === "ALL"
+                      ? "bg-white text-slate-950"
+                      : "bg-slate-950 text-slate-300 border border-white/10"
+                  }`}
+                >
+                  Todos
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setServiceFilter("ENERGIA")}
+                  className={`rounded-xl font-bold text-xs flex items-center justify-center gap-1 cursor-pointer ${
+                    serviceFilter === "ENERGIA"
+                      ? "bg-amber-400 text-slate-950"
+                      : "bg-slate-950 text-slate-300 border border-white/10"
+                  }`}
+                >
+                  <Zap className="w-3.5 h-3.5" />
+                  Energía
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setServiceFilter("AGUA")}
+                  className={`rounded-xl font-bold text-xs flex items-center justify-center gap-1 cursor-pointer ${
+                    serviceFilter === "AGUA"
+                      ? "bg-sky-400 text-slate-950"
+                      : "bg-slate-950 text-slate-300 border border-white/10"
+                  }`}
+                >
+                  <Droplets className="w-3.5 h-3.5" />
+                  Agua
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                Bandeja del Operador
+              </label>
+              <div className="grid grid-cols-2 gap-1 h-10">
+                <button
+                  type="button"
+                  onClick={() => setQueueFilter("PENDIENTES")}
+                  className={`rounded-xl font-bold text-xs flex items-center justify-center gap-1 cursor-pointer ${
+                    queueFilter === "PENDIENTES"
+                      ? "bg-emerald-500 text-slate-950 shadow"
+                      : "bg-slate-950 text-slate-300 border border-white/10"
+                  }`}
+                >
+                  <ListChecks className="w-3.5 h-3.5" />
+                  Pendientes
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setQueueFilter("COMPLETADAS")}
+                  className={`rounded-xl font-bold text-xs flex items-center justify-center gap-1 cursor-pointer ${
+                    queueFilter === "COMPLETADAS"
+                      ? "bg-sky-500 text-slate-950 shadow"
+                      : "bg-slate-950 text-slate-300 border border-white/10"
+                  }`}
+                >
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  Evacuadas
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                Buscar Medidor / Local
+              </label>
+              <div className="relative">
+                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Ej. 010001 o ALERO..."
+                  className="w-full h-10 pl-8 pr-3 rounded-xl bg-slate-950 border border-white/15 font-mono text-xs text-white focus:outline-none focus:border-emerald-400"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* TIRA RÁPIDA DE TAREAS PENDIENTES EN LA RUTA */}
+          <div className="pt-2 border-t border-white/10">
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-[11px] text-slate-300 font-semibold">
+                {queueFilter === "PENDIENTES"
+                  ? `Cola de Tareas Pendientes en esta Ruta (${filteredTasks.length})`
+                  : `Tareas ya Evacuadas en esta Ruta (${filteredTasks.length})`}
+              </span>
+              <span className="text-[10px] font-mono text-emerald-300">
+                Al guardar, la tarea desaparece de pendientes y salta a la siguiente
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+              {filteredTasks.slice(0, 40).map((t) => {
+                const isCurrent = activeTask?.taskKey === t.taskKey;
+                const isEnergy = t.servicio === "ENERGIA" || t.servicio === "MACRO_ENERGIA";
+                return (
+                  <button
+                    key={t.taskKey}
+                    type="button"
+                    onClick={() => selectTask(t)}
+                    className={`px-2.5 py-1.5 rounded-lg font-mono text-xs font-bold shrink-0 flex items-center gap-1.5 transition-all cursor-pointer ${
+                      isCurrent
+                        ? "bg-emerald-400 text-slate-950 ring-2 ring-emerald-200 shadow"
+                        : "bg-slate-800 text-slate-200 hover:bg-slate-700"
+                    }`}
+                  >
+                    {isEnergy ? (
+                      <Zap className="w-3 h-3 text-amber-500" />
+                    ) : (
+                      <Droplets className="w-3 h-3 text-sky-500" />
+                    )}
+                    <span>{t.codigo}</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>
 
-        {/* TOAST ALERT */}
-        {toastMessage && (
-          <div className="m-3 p-2.5 rounded-xl bg-emerald-500/20 border border-emerald-500/50 text-emerald-200 text-xs font-semibold flex items-center gap-2 animate-bounce">
-            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-            <span>{toastMessage}</span>
-          </div>
-        )}
-
-        {/* CUERPO PRINCIPAL: TARJETA DEL MEDIDOR ACTIVO */}
-        {currentMeter ? (
-          <div className="flex-1 p-4 flex flex-col justify-between space-y-4">
-            {/* NAVEGADOR DE LOCALES (PREV / NEXT) */}
-            <div className="flex items-center justify-between bg-slate-900/80 p-2 rounded-xl border border-slate-800">
-              <button
-                type="button"
-                onClick={() => {
-                  if (selectedIndex > 0) {
-                    setSelectedIndex((p) => p - 1);
-                    setInputReading("");
-                  }
-                }}
-                disabled={selectedIndex === 0}
-                className="p-2 rounded-lg bg-slate-800 text-slate-300 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-slate-700"
-              >
-                <ChevronLeft className="w-5 h-5" />
-              </button>
-
-              <div className="text-center">
-                <span className="text-[10px] uppercase font-bold text-slate-400 block">
-                  Medidor {selectedIndex + 1} de {displayedList.length}
-                </span>
-                <span className="font-mono text-xl font-black text-white tracking-wide">
-                  LOCAL {currentMeter.codigo}
-                </span>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => {
-                  if (selectedIndex < displayedList.length - 1) {
-                    setSelectedIndex((p) => p + 1);
-                    setInputReading("");
-                  }
-                }}
-                disabled={selectedIndex >= displayedList.length - 1}
-                className="p-2 rounded-lg bg-slate-800 text-slate-300 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-slate-700"
-              >
-                <ChevronRight className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* DETALLES DEL LOCAL & HISTÓRICO */}
-            <div className="bg-slate-900 rounded-2xl p-4 border border-slate-800 space-y-3">
-              <div className="flex items-center justify-between text-xs border-b border-slate-800/80 pb-2">
-                <span className="text-slate-400">Tipo de Bodega:</span>
-                <span className="font-semibold text-slate-200">{currentMeter.tipoBodega}</span>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3 text-center">
-                <div className="bg-slate-950 p-2.5 rounded-xl border border-slate-800">
-                  <span className="text-[10px] text-slate-400 uppercase font-bold block">
-                    Lectura Anterior (Mayo)
-                  </span>
-                  <span className="text-lg font-mono font-black text-amber-400">
-                    {prevReading.toLocaleString("es-CO")}
-                  </span>
-                  <span className="text-[10px] text-slate-500 block">
-                    {selectedService === "ENERGIA" ? "kWh" : "m³"}
-                  </span>
-                </div>
-
-                <div className="bg-slate-950 p-2.5 rounded-xl border border-slate-800">
-                  <span className="text-[10px] text-slate-400 uppercase font-bold block">
-                    Rango Histórico Esperado
-                  </span>
-                  <span className="text-sm font-mono font-bold text-slate-300">
-                    {minHist.toFixed(0)} - {maxHist.toFixed(0)}
-                  </span>
-                  <span className="text-[10px] text-slate-500 block">Consumo Normal</span>
-                </div>
-              </div>
-
-              {/* INPUT DE NUEVA LECTURA (TAMAÑO GIGANTE ERGONÓMICO) */}
-              <div className="space-y-1.5 pt-1">
-                <label className="text-xs font-bold text-slate-300 flex items-center justify-between">
-                  <span>Nueva Lectura en Terreno:</span>
-                  {deltaConsumo !== null && (
-                    <span
-                      className={`font-mono text-xs font-bold ${
-                        isDeviation ? "text-amber-400" : "text-emerald-400"
-                      }`}
-                    >
-                      Consumo: +{deltaConsumo.toLocaleString("es-CO")} {selectedService === "ENERGIA" ? "kWh" : "m³"}
-                    </span>
-                  )}
-                </label>
-                <div className="relative">
-                  <input
-                    type="number"
-                    inputMode="decimal"
-                    value={inputReading}
-                    onChange={(e) => setInputReading(e.target.value)}
-                    placeholder={`Ej: ${prevReading + 25}`}
-                    className="w-full bg-slate-950 border-2 border-slate-700 focus:border-emerald-500 rounded-xl py-3 px-4 text-2xl font-mono font-black text-white text-center focus:outline-none shadow-inner"
-                  />
-                  {inputReading !== "" && (
-                    <button
-                      type="button"
-                      onClick={() => setInputReading("")}
-                      className="absolute right-3 top-3.5 text-xs text-slate-400 hover:text-white bg-slate-800 px-2 py-0.5 rounded-md"
-                    >
-                      Borrar
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {/* SEMÁFORO DE ALERTA INMEDIATA */}
-              {isDeviation && (
-                <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs flex items-center gap-2">
-                  <AlertTriangle className="w-4 h-4 shrink-0 text-amber-400" />
-                  <span>
-                    <strong>Alerta In-Situ:</strong> Desviación frente al histórico ({minHist}-{maxHist}). Verifique foto antes de guardar.
-                  </span>
-                </div>
-              )}
-
-              {/* CAPTURA FOTOGRÁFICA & OCR SIMULATOR */}
-              <div className="grid grid-cols-2 gap-2 pt-1">
-                <button
-                  type="button"
-                  onClick={handleSimulatePhoto}
-                  disabled={ocrLoading}
-                  className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-sky-300 border border-slate-700 cursor-pointer disabled:opacity-50"
-                >
-                  <Camera className="w-4 h-4 text-sky-400" />
-                  <span>{photoPreview ? "Foto Capturada ✓" : "Tomar Foto"}</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={handleSimulatePhoto}
-                  disabled={ocrLoading}
-                  className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-xs font-bold text-emerald-300 border border-emerald-500/30 cursor-pointer disabled:opacity-50"
-                >
-                  <Sparkles className="w-4 h-4 text-emerald-400" />
-                  <span>{ocrLoading ? "Leyendo..." : "Lectura con IA"}</span>
-                </button>
-              </div>
-
-              {/* SELECTOR DE NOVEDADES DEL REGLAMENTO (Directiva 033-06) */}
-              <div className="space-y-1.5 pt-1">
-                <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
-                  Novedad de Terreno (Directiva 033-06):
-                </label>
-                <select
-                  value={selectedObs}
-                  onChange={(e) => setSelectedObs(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-emerald-500"
-                >
-                  {NOVEDADES_REGLAMENTO.map((nov) => (
-                    <option key={nov.id} value={nov.id}>
-                      {nov.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            {/* BOTÓN MAESTRO DE ACCIÓN 1-TAP */}
-            <div className="pt-2">
-              <button
-                type="button"
-                onClick={handleSaveAndNext}
-                className="w-full py-4 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-base flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 cursor-pointer transition-transform active:scale-[0.98]"
-              >
-                <Check className="w-5 h-5 stroke-[3]" />
-                <span>GUARDAR & SIGUIENTE MEDIDOR</span>
-              </button>
-            </div>
-          </div>
+        {/* 3. TARJETA CENTRAL DE CAPTURA DE LA TAREA ACTIVA */}
+        {activeTask ? (
+          <OperatorTaskCaptureCard
+            activeTask={activeTask}
+            inputReading={inputReading}
+            setInputReading={setInputReading}
+            selectedObs={selectedObs}
+            setSelectedObs={setSelectedObs}
+            photoCaptured={photoCaptured}
+            ocrRunning={ocrRunning}
+            simulateOcrCapture={simulateOcrCapture}
+            handleSaveTask={handleSaveTask}
+            saveToast={saveToast}
+          />
         ) : (
-          <div className="flex-1 p-8 flex flex-col items-center justify-center text-center space-y-3">
-            <CheckCircle2 className="w-12 h-12 text-emerald-400" />
-            <h3 className="text-base font-bold text-white">¡Ruta Completada en Bodega {selectedBodega}!</h3>
+          <div className="bg-slate-900/90 border border-emerald-500/30 rounded-2xl p-8 text-center space-y-2">
+            <CheckCircle2 className="w-10 h-10 text-emerald-400 mx-auto" />
+            <h3 className="text-base font-bold text-white">
+              ¡Cero tareas pendientes en este filtro!
+            </h3>
             <p className="text-xs text-slate-400">
-              No hay más medidores pendientes por leer en esta bodega para {selectedService}.
+              Todos los medidores de esta selección ya fueron evacuados en el corte actual. Cambia de Bodega o Zona para continuar.
             </p>
-            <button
-              type="button"
-              onClick={() => setFilterPendingOnly(false)}
-              className="mt-2 px-4 py-2 rounded-xl bg-slate-800 text-xs font-bold text-slate-300 hover:bg-slate-700"
-            >
-              Revisar Todos los Locales de Bodega {selectedBodega}
-            </button>
           </div>
         )}
 
-        {/* FOOTER PWA DISCRETO */}
-        <footer className="p-3 bg-slate-950 border-t border-slate-900 text-center text-[10px] text-slate-500 flex items-center justify-between">
-          <span className="flex items-center gap-1">
-            <Wifi className="w-3 h-3 text-emerald-400" /> Modo Offline-First Activo
-          </span>
-          <span className="font-mono">Puerto 3013 · SDD v1.0</span>
-        </footer>
+        {/* HISTORIAL CORTO DE LECTURAS ENVIADAS POR EL OPERADOR EN ESTE TURNO */}
+        {recentFieldUpdates.length > 0 && (
+          <div className="bg-slate-900/80 border border-white/10 rounded-2xl p-4">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-300 mb-2 flex items-center gap-1.5">
+              <MapPin className="w-3.5 h-3.5 text-emerald-400" />
+              Últimas Tareas Evacuadas en este Dispositivo ({recentFieldUpdates.length})
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {recentFieldUpdates.slice(0, 6).map((u, idx) => (
+                <div
+                  key={`${u.codigo}-${u.servicio}-${idx}`}
+                  className="p-2.5 rounded-xl bg-slate-950/90 border border-white/10 flex items-center justify-between text-xs font-mono"
+                >
+                  <div>
+                    <span className="font-bold text-emerald-400">{u.codigo}</span>{" "}
+                    <span className="text-slate-400">({u.servicio})</span>
+                    <span className="block text-[10px] text-slate-400">{u.observacion}</span>
+                  </div>
+                  <div className="text-right">
+                    <span className="font-bold text-white">{u.lecturaActual.toLocaleString("es-CO")}</span>
+                    <span className="block text-[10px] text-emerald-400">{u.taskState || "COMPLETADA"}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );

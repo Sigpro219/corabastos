@@ -7,7 +7,9 @@ import {
   CommunalWaterMeter,
   LocalUnitRecord,
   MasterReceiptsConfig,
+  OccupancyStatus,
   PublicBathroomMeter,
+  ReadingTaskState,
 } from "@/contracts/domain-contracts";
 import {
   CommunalHierarchyBreakdown,
@@ -17,14 +19,32 @@ import {
   recalculateAllLocales,
 } from "@/lib/liquidation-engine";
 
-interface FieldReadingUpdate {
+export type FieldServiceType =
+  | "ENERGIA"
+  | "AGUA"
+  | "MACRO_ENERGIA"
+  | "MACRO_AGUA"
+  | "BANO_PUBLICO";
+
+export interface FieldReadingUpdate {
   codigo: string;
-  servicio: "ENERGIA" | "AGUA" | "MACRO_ENERGIA" | "MACRO_AGUA";
+  servicio: FieldServiceType;
   lecturaActual: number;
   observacion: string;
   fotoCapturada?: boolean;
+  taskState?: ReadingTaskState;
   timestamp: string;
 }
+
+interface SeedDatasetShape {
+  masterReceiptsJunio2025: MasterReceiptsConfig;
+  energyCommunalMeters: CommunalEnergyMeter[];
+  waterCommunalMeters: CommunalWaterMeter[];
+  publicBathroomMeters: PublicBathroomMeter[];
+  locales: LocalUnitRecord[];
+}
+
+const typedSeedData: SeedDatasetShape = rawSeedData;
 
 interface CorabastosContextValue {
   receipts: MasterReceiptsConfig;
@@ -38,27 +58,60 @@ interface CorabastosContextValue {
   bathroomMeters: PublicBathroomMeter[];
   saveFieldReading: (update: FieldReadingUpdate) => void;
   recentFieldUpdates: FieldReadingUpdate[];
+  completedTaskIds: Record<string, ReadingTaskState>;
+  updateLocalOccupancy: (codigo: string, nextStatus: OccupancyStatus) => void;
+  updateBodegaOccupancy: (bodegaId: string, nextStatus: OccupancyStatus) => void;
 }
 
 const STORAGE_KEY_OVERRIDES = "corabastos_os_v1_overrides";
 const STORAGE_KEY_RECEIPTS = "corabastos_os_v1_receipts";
+const STORAGE_KEY_TASKS = "corabastos_os_v1_cutoff_tasks";
+const STORAGE_KEY_OCCUPANCY = "corabastos_os_v1_occupancy_map";
 
 const CorabastosContext = createContext<CorabastosContextValue | null>(null);
 
-export function CorabastosProvider({ children }: { children: React.ReactNode }) {
-  const initialData = rawSeedData as unknown as {
-    masterReceiptsJunio2025: MasterReceiptsConfig;
-    energyCommunalMeters: CommunalEnergyMeter[];
-    waterCommunalMeters: CommunalWaterMeter[];
-    publicBathroomMeters: PublicBathroomMeter[];
-    locales: LocalUnitRecord[];
-  };
+export function buildTaskKey(servicio: FieldServiceType, codigo: string): string {
+  return `${servicio}::${codigo}`;
+}
 
-  const [receipts, setReceipts] = useState<MasterReceiptsConfig>(initialData.masterReceiptsJunio2025);
-  const [baseLocales, setBaseLocales] = useState<LocalUnitRecord[]>(initialData.locales);
-  const [energyMacroMeters, setEnergyMacroMeters] = useState<CommunalEnergyMeter[]>(initialData.energyCommunalMeters);
-  const [waterMacroMeters, setWaterMacroMeters] = useState<CommunalWaterMeter[]>(initialData.waterCommunalMeters);
+export function normalizeOccupancy(val?: string): OccupancyStatus {
+  if (val === "VACIO_CON_CONTRATO" || val === "VACIO_SIN_CONTRATO_CORPORACION") {
+    return val;
+  }
+  return "ACTIVO";
+}
+
+export function deriveTaskStateFromObservation(obs: string): ReadingTaskState {
+  const upper = obs.toUpperCase();
+  if (upper.includes("VACIO") || upper.includes("CERRADO") || upper.includes("NO PERMITIO")) {
+    return "CERRADO_SIN_ACCESO";
+  }
+  if (
+    upper.includes("DETENIDO") ||
+    upper.includes("TAPADO") ||
+    upper.includes("RETIRADO") ||
+    upper.includes("SUSPENDIDO") ||
+    upper.includes("REVISAR")
+  ) {
+    return "NOVEDAD_TECNICA";
+  }
+  return "COMPLETADA";
+}
+
+export function CorabastosProvider({ children }: { children: React.ReactNode }) {
+  const [receipts, setReceipts] = useState<MasterReceiptsConfig>(typedSeedData.masterReceiptsJunio2025);
+  const [baseLocales, setBaseLocales] = useState<LocalUnitRecord[]>(typedSeedData.locales);
+  const [energyMacroMeters, setEnergyMacroMeters] = useState<CommunalEnergyMeter[]>(
+    typedSeedData.energyCommunalMeters
+  );
+  const [waterMacroMeters, setWaterMacroMeters] = useState<CommunalWaterMeter[]>(
+    typedSeedData.waterCommunalMeters
+  );
+  const [bathroomMeters, setBathroomMeters] = useState<PublicBathroomMeter[]>(
+    typedSeedData.publicBathroomMeters
+  );
   const [recentFieldUpdates, setRecentFieldUpdates] = useState<FieldReadingUpdate[]>([]);
+  const [completedTaskIds, setCompletedTaskIds] = useState<Record<string, ReadingTaskState>>({});
 
   useEffect(() => {
     try {
@@ -68,11 +121,21 @@ export function CorabastosProvider({ children }: { children: React.ReactNode }) 
       }
       const savedUpdates = localStorage.getItem(STORAGE_KEY_OVERRIDES);
       if (savedUpdates) {
-        const parsed = JSON.parse(savedUpdates) as FieldReadingUpdate[];
-        setRecentFieldUpdates(parsed);
+        setRecentFieldUpdates(JSON.parse(savedUpdates) as FieldReadingUpdate[]);
       }
-    } catch {
-      // fallback to clean seed
+      const savedTasks = localStorage.getItem(STORAGE_KEY_TASKS);
+      if (savedTasks) {
+        setCompletedTaskIds(JSON.parse(savedTasks) as Record<string, ReadingTaskState>);
+      }
+      const savedOccupancy = localStorage.getItem(STORAGE_KEY_OCCUPANCY);
+      if (savedOccupancy) {
+        const occMap = JSON.parse(savedOccupancy) as Record<string, OccupancyStatus>;
+        setBaseLocales((prev) =>
+          prev.map((l) => (occMap[l.codigo] ? { ...l, estadoOcupacion: occMap[l.codigo] } : l))
+        );
+      }
+    } catch (err) {
+      console.warn("CorabastosContext: fallback to deterministic seed state", err);
     }
   }, []);
 
@@ -80,27 +143,105 @@ export function CorabastosProvider({ children }: { children: React.ReactNode }) 
     setReceipts(next);
     try {
       localStorage.setItem(STORAGE_KEY_RECEIPTS, JSON.stringify(next));
-    } catch {
-      // ignore storage quota errors
+    } catch (err) {
+      console.warn("CorabastosContext: failed to persist receipts", err);
     }
   }, []);
 
+  const updateLocalOccupancy = useCallback((codigo: string, nextStatus: OccupancyStatus) => {
+    setBaseLocales((prev) => {
+      const updated = prev.map((loc) => {
+        if (loc.codigo !== codigo) return loc;
+        if (nextStatus === "VACIO_CON_CONTRATO") {
+          return {
+            ...loc,
+            estadoOcupacion: nextStatus,
+            energiaLecturaAct: loc.energiaLecturaAnt,
+            energiaObs: "L, VACIO",
+            aguaLecturaAct: loc.aguaLecturaAnt,
+            aguaObs: "L, VACIO",
+          };
+        }
+        return { ...loc, estadoOcupacion: nextStatus };
+      });
+      try {
+        const occMap: Record<string, OccupancyStatus> = {};
+        for (const item of updated) {
+          const norm = normalizeOccupancy(item.estadoOcupacion);
+          if (norm !== "ACTIVO") {
+            occMap[item.codigo] = norm;
+          }
+        }
+        localStorage.setItem(STORAGE_KEY_OCCUPANCY, JSON.stringify(occMap));
+      } catch (err) {
+        console.warn("CorabastosContext: failed to persist local occupancy", err);
+      }
+      return updated;
+    });
+  }, []);
+
+  const updateBodegaOccupancy = useCallback((bodegaId: string, nextStatus: OccupancyStatus) => {
+    setBaseLocales((prev) => {
+      const updated = prev.map((loc) => {
+        if (loc.bodegaId !== bodegaId) return loc;
+        if (nextStatus === "VACIO_CON_CONTRATO") {
+          return {
+            ...loc,
+            estadoOcupacion: nextStatus,
+            energiaLecturaAct: loc.energiaLecturaAnt,
+            energiaObs: "L, VACIO",
+            aguaLecturaAct: loc.aguaLecturaAnt,
+            aguaObs: "L, VACIO",
+          };
+        }
+        return { ...loc, estadoOcupacion: nextStatus };
+      });
+      try {
+        const occMap: Record<string, OccupancyStatus> = {};
+        for (const item of updated) {
+          const norm = normalizeOccupancy(item.estadoOcupacion);
+          if (norm !== "ACTIVO") {
+            occMap[item.codigo] = norm;
+          }
+        }
+        localStorage.setItem(STORAGE_KEY_OCCUPANCY, JSON.stringify(occMap));
+      } catch (err) {
+        console.warn("CorabastosContext: failed to persist bodega occupancy", err);
+      }
+      return updated;
+    });
+  }, []);
+
   const saveFieldReading = useCallback((update: FieldReadingUpdate) => {
+    const taskState = update.taskState || deriveTaskStateFromObservation(update.observacion);
+    const taskKey = buildTaskKey(update.servicio, update.codigo);
+
+    setCompletedTaskIds((prev) => {
+      const next = { ...prev, [taskKey]: taskState };
+      try {
+        localStorage.setItem(STORAGE_KEY_TASKS, JSON.stringify(next));
+      } catch (err) {
+        console.warn("CorabastosContext: failed to persist completedTaskIds", err);
+      }
+      return next;
+    });
+
     if (update.servicio === "ENERGIA") {
       setBaseLocales((prev) =>
         prev.map((loc) => {
           if (loc.codigo !== update.codigo) return loc;
-          const consumoIndiv = Math.max(0, update.lecturaActual - loc.energiaLecturaAnt);
-          const deltaKw = consumoIndiv - loc.energiaConsumoIndivKw;
-          const deltaCop = Math.round(deltaKw * 720.48 * 1.2);
+          const nextOcupacion: OccupancyStatus =
+            taskState === "CERRADO_SIN_ACCESO"
+              ? "VACIO_CON_CONTRATO"
+              : normalizeOccupancy(loc.estadoOcupacion);
           return {
             ...loc,
             energiaLecturaAct: update.lecturaActual,
-            energiaConsumoIndivKw: consumoIndiv,
             energiaObs: update.observacion,
-            energiaEstado: update.observacion.includes("DETENIDO") || update.observacion.includes("REVISAR") ? "REVISAR" : "OK",
-            energiaPrincipalCop: loc.bloqueEnergia === "PRINCIPAL" ? Math.max(0, loc.energiaPrincipalCop + deltaCop) : loc.energiaPrincipalCop,
-            energiaBpCop: loc.bloqueEnergia === "BODEGA_POPULAR" ? Math.max(0, loc.energiaBpCop + deltaCop) : loc.energiaBpCop,
+            energiaTareaEstado: taskState,
+            estadoOcupacion: nextOcupacion,
+            energiaEstado:
+              taskState === "NOVEDAD_TECNICA" || update.observacion.includes("REVISAR") ? "REVISAR" : "OK",
           };
         })
       );
@@ -108,53 +249,83 @@ export function CorabastosProvider({ children }: { children: React.ReactNode }) 
       setBaseLocales((prev) =>
         prev.map((loc) => {
           if (loc.codigo !== update.codigo) return loc;
-          const consumoIndiv = Math.max(0, update.lecturaActual - loc.aguaLecturaAnt);
-          const deltaM3 = consumoIndiv - loc.aguaConsumoIndivM3;
-          const deltaCop = Math.round(deltaM3 * 10921.45);
+          const nextOcupacion: OccupancyStatus =
+            taskState === "CERRADO_SIN_ACCESO"
+              ? "VACIO_CON_CONTRATO"
+              : normalizeOccupancy(loc.estadoOcupacion);
           return {
             ...loc,
             aguaLecturaAct: update.lecturaActual,
-            aguaConsumoIndivM3: consumoIndiv,
             aguaObs: update.observacion,
-            aguaEstado: update.observacion.includes("TAPADO") || update.observacion.includes("REVISAR") ? "REVISAR" : "OK",
-            acueductoCop: Math.max(0, loc.acueductoCop + deltaCop),
+            aguaTareaEstado: taskState,
+            estadoOcupacion: nextOcupacion,
+            aguaEstado:
+              taskState === "NOVEDAD_TECNICA" || update.observacion.includes("REVISAR") ? "REVISAR" : "OK",
           };
         })
       );
     } else if (update.servicio === "MACRO_ENERGIA") {
       setEnergyMacroMeters((prev) =>
-        prev.map((m) => (m.codigo === update.codigo ? { ...m, lecturaActual: update.lecturaActual, observacion: update.observacion } : m))
+        prev.map((m) =>
+          m.codigo === update.codigo
+            ? { ...m, lecturaActual: update.lecturaActual, observacion: update.observacion }
+            : m
+        )
       );
     } else if (update.servicio === "MACRO_AGUA") {
       setWaterMacroMeters((prev) =>
-        prev.map((m) => (m.codigo === update.codigo ? { ...m, lecturaActual: update.lecturaActual, observacion: update.observacion } : m))
+        prev.map((m) =>
+          m.codigo === update.codigo
+            ? { ...m, lecturaActual: update.lecturaActual, observacion: update.observacion }
+            : m
+        )
+      );
+    } else if (update.servicio === "BANO_PUBLICO") {
+      setBathroomMeters((prev) =>
+        prev.map((b) =>
+          b.codigo === update.codigo
+            ? {
+                ...b,
+                lecturaActual: update.lecturaActual,
+                consumoM3: Math.max(0, update.lecturaActual - b.lecturaAnterior),
+              }
+            : b
+        )
       );
     }
 
     setRecentFieldUpdates((prev) => {
-      const next = [update, ...prev.filter((u) => !(u.codigo === update.codigo && u.servicio === update.servicio))].slice(0, 50);
+      const enrichedUpdate: FieldReadingUpdate = { ...update, taskState };
+      const next = [
+        enrichedUpdate,
+        ...prev.filter((u) => !(u.codigo === update.codigo && u.servicio === update.servicio)),
+      ].slice(0, 100);
       try {
         localStorage.setItem(STORAGE_KEY_OVERRIDES, JSON.stringify(next));
-      } catch {
-        // ignore
+      } catch (err) {
+        console.warn("CorabastosContext: failed to persist recentFieldUpdates", err);
       }
       return next;
     });
   }, []);
 
   const resetToOfficialJune2025 = useCallback(() => {
-    setReceipts(initialData.masterReceiptsJunio2025);
-    setBaseLocales(initialData.locales);
-    setEnergyMacroMeters(initialData.energyCommunalMeters);
-    setWaterMacroMeters(initialData.waterCommunalMeters);
+    setReceipts(typedSeedData.masterReceiptsJunio2025);
+    setBaseLocales(typedSeedData.locales);
+    setEnergyMacroMeters(typedSeedData.energyCommunalMeters);
+    setWaterMacroMeters(typedSeedData.waterCommunalMeters);
+    setBathroomMeters(typedSeedData.publicBathroomMeters);
     setRecentFieldUpdates([]);
+    setCompletedTaskIds({});
     try {
       localStorage.removeItem(STORAGE_KEY_OVERRIDES);
       localStorage.removeItem(STORAGE_KEY_RECEIPTS);
-    } catch {
-      // ignore
+      localStorage.removeItem(STORAGE_KEY_TASKS);
+      localStorage.removeItem(STORAGE_KEY_OCCUPANCY);
+    } catch (err) {
+      console.warn("CorabastosContext: failed to clear storage keys", err);
     }
-  }, [initialData]);
+  }, []);
 
   const locales = useMemo(() => recalculateAllLocales(baseLocales, receipts), [baseLocales, receipts]);
 
@@ -193,9 +364,12 @@ export function CorabastosProvider({ children }: { children: React.ReactNode }) 
     bodegasList,
     energyCommunal,
     waterCommunal,
-    bathroomMeters: initialData.publicBathroomMeters,
+    bathroomMeters,
     saveFieldReading,
     recentFieldUpdates,
+    completedTaskIds,
+    updateLocalOccupancy,
+    updateBodegaOccupancy,
   };
 
   return <CorabastosContext.Provider value={value}>{children}</CorabastosContext.Provider>;

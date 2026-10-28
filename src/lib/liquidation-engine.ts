@@ -35,6 +35,7 @@ export interface ComputedLocalLiquidation extends LocalUnitRecord {
   calcVigilanciaCop: number;
   calcPoliciaCop: number;
   calcTotalCop: number;
+  calcAssumedCorporationCop: number;
   variacionTotalPct: number;
 }
 
@@ -197,6 +198,13 @@ export function recalculateAllLocales(
     // Excepción reglamentaria: Si el contador está defectuoso o detenido, liquidación a prorrata de área.
     // -------------------------------------------------------------
     let calcEnergiaCop = loc.energiaBpCop + loc.energiaPrincipalCop;
+    const factorEnergia = loc.bloqueEnergia === "BODEGA_POPULAR" ? 8 : 1;
+    const computedIndivKw =
+      loc.estadoOcupacion === "VACIO_CON_CONTRATO"
+        ? 0
+        : loc.modalidadEnergia === "CONTADOR"
+        ? Math.max(0, loc.energiaLecturaAct - loc.energiaLecturaAnt) * factorEnergia
+        : loc.energiaConsumoIndivKw;
 
     const isMeterDefective =
       loc.energiaObs.includes("DETENIDO") ||
@@ -204,49 +212,59 @@ export function recalculateAllLocales(
       loc.energiaObs.includes("RETIRADO");
 
     const readingChanged =
-      loc.modalidadEnergia === "CONTADOR" &&
-      Math.abs(loc.energiaLecturaAct - loc.energiaLecturaAnt - loc.energiaConsumoIndivKw) > 0.01;
+      Boolean(loc.energiaTareaEstado) ||
+      (loc.modalidadEnergia === "CONTADOR" &&
+        Math.abs(computedIndivKw - loc.energiaConsumoIndivKw) > 0.01);
 
-    if (isMeterDefective && loc.modalidadEnergia === "CONTADOR") {
+    if (loc.estadoOcupacion === "VACIO_CON_CONTRATO") {
+      // Mandato SDD §3.7 Caso 2: Local vacío/cerrado CON contrato vigente (consumo individual 0, paga mínima + comunales m² + CREG)
+      const topeMin =
+        loc.bloqueEnergia === "BODEGA_POPULAR"
+          ? receipts.energia.bodegaPopular.topeMinimaCop
+          : topeMinimaEnergia;
+      const comunalKw = loc.energiaConsumoAleroKw + loc.energiaConsumoComunalKw;
+      const baseConsumo = Math.max(topeMin, comunalKw * currentKwhTariff);
+      const alumbrado = loc.areaM2 * tarifaAlumbradoM2;
+      const cregRate =
+        loc.bloqueEnergia === "BODEGA_POPULAR"
+          ? receipts.energia.bodegaPopular.tasaCregPct || 0.157
+          : 0.2;
+      calcEnergiaCop = Math.round((baseConsumo + alumbrado) * (1 + cregRate));
+    } else if (isMeterDefective && loc.modalidadEnergia === "CONTADOR") {
       // Mandato legal Art. 46: Liquidación por área arrendada a prorrata
       calcEnergiaCop = Math.round(loc.areaM2 * tarifaProrrateoEnergiaM2);
     } else if (readingChanged || isKwhModified) {
       if (loc.modalidadEnergia === "CONTADOR" && loc.bloqueEnergia === "PRINCIPAL") {
-        const indivKw = Math.max(0, loc.energiaLecturaAct - loc.energiaLecturaAnt);
-        const totalKw = indivKw + loc.energiaConsumoAleroKw + loc.energiaConsumoComunalKw;
-        const costoConsumo = totalKw * currentKwhTariff;
+        const totalKw = computedIndivKw + loc.energiaConsumoAleroKw + loc.energiaConsumoComunalKw;
+        const costoConsumo = Math.max(topeMinimaEnergia, totalKw * currentKwhTariff);
         const alumbrado = loc.areaM2 * tarifaAlumbradoM2;
-        const creg = (costoConsumo + alumbrado) * 0.20;
-        let subtotal = costoConsumo + alumbrado + creg;
-        if (subtotal > 0 && subtotal < topeMinimaEnergia) {
-          subtotal = topeMinimaEnergia;
-        }
-        calcEnergiaCop = Math.round(subtotal);
+        const creg = (costoConsumo + alumbrado) * 0.2;
+        calcEnergiaCop = Math.round(costoConsumo + alumbrado + creg);
       } else if (loc.modalidadEnergia === "CONTADOR" && loc.bloqueEnergia === "BODEGA_POPULAR") {
-        // En Bodega Popular contadores miden con reducción 1/8 y CREG al 15.7%
-        const indivKw = Math.max(0, loc.energiaLecturaAct - loc.energiaLecturaAnt) / 8;
-        const totalKw = indivKw + loc.energiaConsumoComunalKw;
-        const costoConsumo = totalKw * currentKwhTariff;
+        const totalKw = computedIndivKw + loc.energiaConsumoComunalKw;
+        const costoConsumo = Math.max(
+          receipts.energia.bodegaPopular.topeMinimaCop,
+          totalKw * currentKwhTariff
+        );
         const alumbrado = loc.areaM2 * tarifaAlumbradoM2;
-        const creg = (costoConsumo + alumbrado) * (receipts.energia.bodegaPopular.tasaCregPct || 0.157);
-        let subtotal = costoConsumo + alumbrado + creg;
-        if (subtotal > 0 && subtotal < receipts.energia.bodegaPopular.topeMinimaCop) {
-          subtotal = receipts.energia.bodegaPopular.topeMinimaCop;
-        }
-        calcEnergiaCop = Math.round(subtotal);
+        const creg =
+          (costoConsumo + alumbrado) * (receipts.energia.bodegaPopular.tasaCregPct || 0.157);
+        calcEnergiaCop = Math.round(costoConsumo + alumbrado + creg);
       } else {
-        // Modalidad Comunal o Prorrateo escalada proporcionalmente por tarifa
         calcEnergiaCop = Math.round(calcEnergiaCop * (currentKwhTariff / baseKwhTariff));
       }
     }
 
     // -------------------------------------------------------------
     // 2. ACUEDUCTO Y ALCANTARILLADO (Reglamento Interno Art. 46)
-    // Fórmula: (Consumo m³ * Valor m³) + (Cuota Comunal Proporcional por m²)
-    // Mandato legal expreso: "Cuando los contadores de acueducto se encuentran defectuosos,
-    // y no sea posible realizar la distribución por consumo de contador, se realizará la distribución por área."
     // -------------------------------------------------------------
     let calcAcueductoCop = loc.acueductoCop;
+    const computedIndivM3 =
+      loc.estadoOcupacion === "VACIO_CON_CONTRATO"
+        ? 0
+        : loc.modalidadAcueducto === "CONTADOR"
+        ? Math.max(0, loc.aguaLecturaAct - loc.aguaLecturaAnt)
+        : loc.aguaConsumoIndivM3;
 
     const isWaterDefective =
       loc.aguaObs.includes("DEFECTUOSO") ||
@@ -255,19 +273,28 @@ export function recalculateAllLocales(
       loc.aguaObs.includes("REVISAR");
 
     const waterReadingChanged =
-      loc.modalidadAcueducto === "CONTADOR" &&
-      Math.abs(loc.aguaLecturaAct - loc.aguaLecturaAnt - loc.aguaConsumoIndivM3) > 0.01;
+      Boolean(loc.aguaTareaEstado) ||
+      (loc.modalidadAcueducto === "CONTADOR" &&
+        Math.abs(computedIndivM3 - loc.aguaConsumoIndivM3) > 0.01);
 
-    if (isWaterDefective && loc.modalidadAcueducto === "CONTADOR") {
-      // Mandato legal Art. 46: Sustitución por área a prorrata
+    if (loc.estadoOcupacion === "VACIO_CON_CONTRATO") {
+      // Mandato SDD §3.7 Caso 2: Tope mínimo 1 m³ ($10.921,45) + Cuota Agua Comunal m²
+      const baseAgua = Math.max(
+        receipts.acueducto.topeMinimaCop,
+        loc.aguaConsumoComunalM3 * currentM3Tariff
+      );
+      const cuotaComunalArea = loc.areaM2 * tarifaAguaComunalM2;
+      calcAcueductoCop = Math.round(baseAgua + cuotaComunalArea);
+    } else if (isWaterDefective && loc.modalidadAcueducto === "CONTADOR") {
       calcAcueductoCop = Math.round(loc.areaM2 * tarifaAguaProrrateoM2);
     } else if (waterReadingChanged || isM3Modified) {
       if (loc.modalidadAcueducto === "CONTADOR") {
-        const indivM3 = Math.max(0, loc.aguaLecturaAct - loc.aguaLecturaAnt);
-        const costoIndiv = indivM3 * currentM3Tariff;
-        const costoComunalBodega = loc.aguaConsumoComunalM3 * currentM3Tariff;
+        const costoIndiv = Math.max(
+          receipts.acueducto.topeMinimaCop,
+          (computedIndivM3 + loc.aguaConsumoComunalM3) * currentM3Tariff
+        );
         const cuotaComunalArea = loc.areaM2 * tarifaAguaComunalM2;
-        calcAcueductoCop = Math.round(costoIndiv + costoComunalBodega + cuotaComunalArea);
+        calcAcueductoCop = Math.round(costoIndiv + cuotaComunalArea);
       } else {
         calcAcueductoCop = Math.round(loc.acueductoCop * (currentM3Tariff / baseM3Tariff));
       }
@@ -312,7 +339,7 @@ export function recalculateAllLocales(
     // -------------------------------------------------------------
     const calcPoliciaCop = loc.policiaCop > 0 ? Math.round(cuotaPolicia) : 0;
 
-    const calcTotalCop =
+    const rawTotalCop =
       calcEnergiaCop +
       calcAcueductoCop +
       calcAseoCop +
@@ -320,11 +347,19 @@ export function recalculateAllLocales(
       calcVigilanciaCop +
       calcPoliciaCop;
 
+    // Regla SDD §3.7: Si el local/bodega está VACIO_SIN_CONTRATO_CORPORACION (restituido a Corabastos),
+    // no infla la tarifa m² de los vecinos y su cuota se imputa a VALOR ASUMIDO CORPORACIÓN.
+    const isAssumedByCorp = loc.estadoOcupacion === "VACIO_SIN_CONTRATO_CORPORACION";
+    const calcAssumedCorporationCop = isAssumedByCorp ? rawTotalCop : 0;
+    const calcTotalCop = rawTotalCop;
+
     const variacionTotalPct =
       loc.totalAnteriorCop > 0 ? (calcTotalCop - loc.totalAnteriorCop) / loc.totalAnteriorCop : 0;
 
     return {
       ...loc,
+      energiaConsumoIndivKw: computedIndivKw,
+      aguaConsumoIndivM3: computedIndivM3,
       calcEnergiaCop,
       calcAcueductoCop,
       calcAseoCop,
@@ -332,6 +367,7 @@ export function recalculateAllLocales(
       calcVigilanciaCop,
       calcPoliciaCop,
       calcTotalCop,
+      calcAssumedCorporationCop,
       variacionTotalPct,
     };
   });

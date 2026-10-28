@@ -3,23 +3,19 @@
 import React, { useState, useMemo } from "react";
 import { useCorabastos } from "@/context/CorabastosContext";
 import { ComputedLocalLiquidation } from "@/lib/liquidation-engine";
+import { buildSabanaCsvContent } from "@/lib/accounting-export";
+import { LocalAccountModal } from "@/components/LocalAccountModal";
 import {
   Search,
-  Download,
-  Printer,
   ChevronLeft,
   ChevronRight,
   FileSpreadsheet,
   CheckCircle2,
   AlertTriangle,
   X,
-  Building,
   Receipt,
-  ShieldCheck,
   Zap,
   Droplets,
-  Layers,
-  Filter,
 } from "lucide-react";
 
 export function LiquidationMatrixView() {
@@ -130,47 +126,7 @@ export function LiquidationMatrixView() {
   const pageItems = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   const handleExportCsv = () => {
-    const headers = [
-      "BODEGA",
-      "CODIGO_LOCAL",
-      "TIPO_BODEGA",
-      "MODALIDAD",
-      "RESIDUOS_CAT",
-      "AREA_M2",
-      "ENERGIA_COP",
-      "ACUEDUCTO_COP",
-      "ASEO_COP",
-      "RESIDUOS_ECSA_COP",
-      "VIGILANCIA_COP",
-      "POLICIA_COP",
-      "TOTAL_LIQUIDADO_COP",
-      "PLANO_ECSA",
-      "PLANO_AGUA",
-      "PLANO_ENERGIA",
-      "PLANO_VIGILANCIA",
-    ];
-    const rows = filtered.map((l) =>
-      [
-        l.bodegaId,
-        l.codigo,
-        `"${l.tipoBodega}"`,
-        l.modalidadGeneral,
-        l.categoriaResiduos,
-        l.areaM2.toFixed(2),
-        l.calcEnergiaCop,
-        l.calcAcueductoCop,
-        l.calcAseoCop,
-        l.calcResiduosCop,
-        l.calcVigilanciaCop,
-        l.calcPoliciaCop,
-        l.calcTotalCop,
-        l.planos.ecsa,
-        l.planos.agua,
-        l.planos.energia,
-        l.planos.vigilancia,
-      ].join(",")
-    );
-    const csvContent = "\uFEFF" + [headers.join(","), ...rows].join("\n");
+    const csvContent = buildSabanaCsvContent(filtered);
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -246,13 +202,13 @@ export function LiquidationMatrixView() {
 
         <div className="bg-[#1D3557] text-white rounded-xl p-3 shadow-2xs">
           <span className="text-[10px] font-bold uppercase text-sky-200 block">
-            Gran Total ({filtered.length})
+            Gran Total 6 Servicios ({filtered.length})
           </span>
           <span className="text-sm sm:text-base font-mono font-bold text-emerald-400 mt-0.5 block">
             ${totals.granTotal.toLocaleString("es-CO")}
           </span>
-          <span className="text-[10px] text-slate-300 font-mono">
-            {totals.area.toLocaleString("es-CO", { maximumFractionDigits: 1 })} m²
+          <span className="text-[10px] text-amber-300 font-mono" title="En el Excel original col R se suma dos veces Acueducto (+$239,47M)">
+            Auditado (Sin dup. Acue +$239,4M)
           </span>
         </div>
       </div>
@@ -630,194 +586,11 @@ export function LiquidationMatrixView() {
         </div>
       </div>
 
-      {/* MODAL GOLDEN PRINT: ESTADO DE CUENTA DETALLADO POR LOCAL */}
-      {inspectedLocal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-3xl w-full border border-slate-200 shadow-2xl overflow-hidden">
-            {/* Encabezado Membreteado */}
-            <div className="bg-[#010F22] text-white px-6 py-5 flex items-center justify-between border-b-4 border-[#E73A46]">
-              <div className="flex items-center gap-3">
-                <div className="p-2.5 rounded-xl bg-white/10">
-                  <Building className="w-6 h-6 text-white" />
-                </div>
-                <div>
-                  <span className="text-[10px] font-mono uppercase tracking-widest text-sky-300 block">
-                    CORPORACIÓN DE ABASTOS DE BOGOTÁ S.A. · CORABASTOS
-                  </span>
-                  <h3 className="text-lg font-bold">
-                    Estado de Cuenta Oficial de Servicios Públicos y Expensas · Local {inspectedLocal.codigo}
-                  </h3>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => window.print()}
-                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#E73A46] hover:bg-[#d42f3b] text-white text-xs font-bold cursor-pointer"
-                >
-                  <Printer className="w-4 h-4" />
-                  Imprimir PDF
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setInspectedLocal(null)}
-                  className="p-2 text-slate-400 hover:text-white rounded-xl bg-white/5 hover:bg-white/10 cursor-pointer"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
-
-            {/* Cuerpo del Estado de Cuenta */}
-            <div className="p-6 space-y-5 text-xs text-[#1D3557]">
-              {/* Tarjeta de Metadatos del Local */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-200">
-                <div>
-                  <span className="text-[10px] uppercase font-bold text-slate-500 block">Identificador</span>
-                  <span className="font-mono text-base font-bold text-[#1D3557]">
-                    {inspectedLocal.codigo} (Bod. {inspectedLocal.bodegaId})
-                  </span>
-                </div>
-                <div>
-                  <span className="text-[10px] uppercase font-bold text-slate-500 block">Área Comercial</span>
-                  <span className="font-mono text-base font-bold text-[#1D3557]">
-                    {inspectedLocal.areaM2.toFixed(2)} m²
-                  </span>
-                </div>
-                <div>
-                  <span className="text-[10px] uppercase font-bold text-slate-500 block">Modalidad</span>
-                  <span className="font-mono text-sm font-semibold text-slate-700">
-                    {inspectedLocal.modalidadGeneral}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-[10px] uppercase font-bold text-slate-500 block">Residuos PGIRS</span>
-                  <span className="font-mono text-sm font-bold text-rose-700">
-                    Categoría {inspectedLocal.categoriaResiduos}
-                  </span>
-                </div>
-              </div>
-
-              {/* Desglose Detallado por Servicio */}
-              <div className="border border-slate-200 rounded-2xl overflow-hidden">
-                <table className="w-full text-left text-xs">
-                  <thead className="bg-[#1D3557] text-white font-mono uppercase text-[10px]">
-                    <tr>
-                      <th className="py-2 px-3">Servicio / Concepto</th>
-                      <th className="py-2 px-3">Plano ERP</th>
-                      <th className="py-2 px-3">Base / Lecturas / Consumo</th>
-                      <th className="py-2 px-3 text-right">Valor Liquidado COP</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    <tr>
-                      <td className="py-2.5 px-3 font-semibold">
-                        1. Energía Eléctrica ({inspectedLocal.bloqueEnergia})
-                      </td>
-                      <td className="py-2.5 px-3 font-mono text-slate-500">{inspectedLocal.planos.energia}</td>
-                      <td className="py-2.5 px-3 text-slate-600">
-                        {inspectedLocal.modalidadEnergia === "CONTADOR"
-                          ? `Lectura: ${inspectedLocal.energiaLecturaAnt} → ${inspectedLocal.energiaLecturaAct} (${inspectedLocal.energiaConsumoIndivKw} kWh) + Alero (${inspectedLocal.energiaConsumoAleroKw.toFixed(1)} kWh) + Alumbrado + 20% CREG`
-                          : `Modalidad ${inspectedLocal.modalidadEnergia} sobre ${inspectedLocal.areaM2} m² + Alero (${inspectedLocal.energiaConsumoAleroKw.toFixed(1)} kWh) + Alumbrado + CREG`}
-                      </td>
-                      <td className="py-2.5 px-3 font-mono text-right font-bold text-[#1D3557]">
-                        ${inspectedLocal.calcEnergiaCop.toLocaleString("es-CO")}
-                      </td>
-                    </tr>
-
-                    <tr>
-                      <td className="py-2.5 px-3 font-semibold">
-                        2. Acueducto y Alcantarillado
-                      </td>
-                      <td className="py-2.5 px-3 font-mono text-slate-500">
-                        {inspectedLocal.planos.agua} / {inspectedLocal.planos.alcan}
-                      </td>
-                      <td className="py-2.5 px-3 text-slate-600">
-                        {inspectedLocal.modalidadAcueducto === "CONTADOR"
-                          ? `Lectura: ${inspectedLocal.aguaLecturaAnt} → ${inspectedLocal.aguaLecturaAct} (${inspectedLocal.aguaConsumoIndivM3} m³ × $10.921,45) + Agua Comunal ($198,20/m²)`
-                          : `Modalidad ${inspectedLocal.modalidadAcueducto}: Comunal (${inspectedLocal.aguaConsumoComunalM3.toFixed(2)} m³) + Agua Comunal General (${inspectedLocal.areaM2} m²)`}
-                      </td>
-                      <td className="py-2.5 px-3 font-mono text-right font-bold text-[#1D3557]">
-                        ${inspectedLocal.calcAcueductoCop.toLocaleString("es-CO")}
-                      </td>
-                    </tr>
-
-                    <tr>
-                      <td className="py-2.5 px-3 font-semibold">3. Aseo y Barrido Comunal</td>
-                      <td className="py-2.5 px-3 font-mono text-slate-500">{inspectedLocal.planos.aseo}</td>
-                      <td className="py-2.5 px-3 text-slate-600">
-                        Factor por Área: {inspectedLocal.areaM2} m² × $1.631,14 / m²
-                      </td>
-                      <td className="py-2.5 px-3 font-mono text-right font-bold text-[#1D3557]">
-                        ${inspectedLocal.calcAseoCop.toLocaleString("es-CO")}
-                      </td>
-                    </tr>
-
-                    <tr>
-                      <td className="py-2.5 px-3 font-semibold">4. Residuos Sólidos ECSA</td>
-                      <td className="py-2.5 px-3 font-mono text-slate-500">{inspectedLocal.planos.ecsa}</td>
-                      <td className="py-2.5 px-3 text-slate-600">
-                        Categoría {inspectedLocal.categoriaResiduos} sobre {inspectedLocal.areaM2} m² (
-                        {inspectedLocal.categoriaResiduos === "NP"
-                          ? "Factor Menor Productor: 0.4"
-                          : inspectedLocal.categoriaResiduos === "MP"
-                          ? "Factor Mediano: 1.2"
-                          : "Gran Productor Perecederos: Tarifa Efectiva P"}
-                        )
-                      </td>
-                      <td className="py-2.5 px-3 font-mono text-right font-bold text-[#1D3557]">
-                        ${inspectedLocal.calcResiduosCop.toLocaleString("es-CO")}
-                      </td>
-                    </tr>
-
-                    <tr>
-                      <td className="py-2.5 px-3 font-semibold">5. Vigilancia Privada</td>
-                      <td className="py-2.5 px-3 font-mono text-slate-500">{inspectedLocal.planos.vigilancia}</td>
-                      <td className="py-2.5 px-3 text-slate-600">
-                        Factor por Área: {inspectedLocal.areaM2} m² × $13.785,91 / m²
-                      </td>
-                      <td className="py-2.5 px-3 font-mono text-right font-bold text-[#1D3557]">
-                        ${inspectedLocal.calcVigilanciaCop.toLocaleString("es-CO")}
-                      </td>
-                    </tr>
-
-                    <tr>
-                      <td className="py-2.5 px-3 font-semibold">6. Policía Nacional</td>
-                      <td className="py-2.5 px-3 font-mono text-slate-500">{inspectedLocal.planos.policia}</td>
-                      <td className="py-2.5 px-3 text-slate-600">
-                        Cuota Fija Solidaria (Partes Iguales / 5.300 locales)
-                      </td>
-                      <td className="py-2.5 px-3 font-mono text-right font-bold text-[#1D3557]">
-                        ${inspectedLocal.calcPoliciaCop.toLocaleString("es-CO")}
-                      </td>
-                    </tr>
-                  </tbody>
-                  <tfoot className="bg-slate-100 font-bold border-t-2 border-slate-300">
-                    <tr>
-                      <td colSpan={3} className="py-3 px-3 text-right uppercase text-slate-700">
-                        Total Liquidación Mes ({receipts.periodo}):
-                      </td>
-                      <td className="py-3 px-3 font-mono text-right text-base text-[#1D3557]">
-                        ${inspectedLocal.calcTotalCop.toLocaleString("es-CO")}
-                      </td>
-                    </tr>
-                  </tfoot>
-                </table>
-              </div>
-
-              {/* Notas de Pago & Reglamentarias */}
-              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 text-[11px] text-slate-600 space-y-1">
-                <p>
-                  <strong>Régimen Jurídico:</strong> Liquidación expedida bajo el marco de Transferencia de Servicios Públicos y Expensas Comunes (Reglamento Interno de Funcionamiento, Directiva 033-06, Artículos 42 al 47).
-                </p>
-                <p>
-                  <strong>Inspección de Contadores:</strong> Ante cualquier inconformidad, radicar solicitud formal ante el Grupo de Facturación para la visita técnica ocular en terreno requerida por el Artículo 47.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* EXPEDIENTE MODAL: CUENTA INDIVIDUAL 360° Y RENDICIÓN DE CUENTAS POR LOCAL */}
+      <LocalAccountModal
+        local={inspectedLocal}
+        onClose={() => setInspectedLocal(null)}
+      />
     </div>
   );
 }

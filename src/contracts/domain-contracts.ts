@@ -1,29 +1,23 @@
 import { z } from "zod";
 
-export const BillingModalitySchema = z.enum([
-  "CONTADOR",
-  "COMUNAL",
-  "PRORRATEO",
-  "RED DE FRIOS",
-  "RED FRIOS",
-  "BASICOS",
-]);
+export const BillingModalitySchema = z.enum(["CONTADOR", "COMUNAL", "PRORRATEO", "RED DE FRIOS", "RED FRIOS", "BASICOS"]);
 export type BillingModality = z.infer<typeof BillingModalitySchema>;
 
 export const WasteVolumeCategorySchema = z.enum(["NP", "MP", "P", "BASICOS"]);
 export type WasteVolumeCategory = z.infer<typeof WasteVolumeCategorySchema>;
 
 export const MeterObservationCodeSchema = z.enum([
-  "VERIFICADO POR IMAGEN",
-  "C, DETENIDO",
-  "C, TAPADO",
-  "M, TAPADO",
-  "C, RETIRADO",
-  "REVISAR MEDIDOR",
-  "NUEVO",
-  "SIN NOVEDAD",
+  "VERIFICADO POR IMAGEN", "C, DETENIDO", "M, DETENIDO", "C, TAPADO", "M, TAPADO",
+  "C, RETIRADO", "M, RETIRADO", "C, SUSPENDIDO", "M, SUSPENDIDO", "L, VACIO",
+  "L, CERRADO", "NO PERMITIO INGRESO", "ALMACENAMIENTO DE PRODUCTOS", "REVISAR MEDIDOR", "NUEVO", "SIN NOVEDAD",
 ]);
 export type MeterObservationCode = z.infer<typeof MeterObservationCodeSchema>;
+
+export const OccupancyStatusSchema = z.enum(["ACTIVO", "VACIO_CON_CONTRATO", "VACIO_SIN_CONTRATO_CORPORACION"]);
+export type OccupancyStatus = z.infer<typeof OccupancyStatusSchema>;
+
+export type ReadingZoneId = "ZONA_1_MACROMEDIDORES" | "ZONA_2_BANOS_PUBLICOS" | "ZONA_3_COMERCIANTES_PRINCIPAL" | "ZONA_4_BODEGA_POPULAR" | "ZONA_5_RED_FRIOS";
+export type ReadingTaskState = "PENDIENTE" | "COMPLETADA" | "NOVEDAD_TECNICA" | "CERRADO_SIN_ACCESO";
 
 export interface CommunalEnergyMeter {
   id: string;
@@ -79,20 +73,25 @@ export interface LocalUnitRecord {
   energiaLecturaAnt: number;
   energiaLecturaAct: number;
   energiaConsumoIndivKw: number;
+  energiaConsumoAntKw?: number;
   energiaConsumoComunalKw: number;
   energiaConsumoAleroKw: number;
   energiaEstado: string;
   energiaObs: string;
   energiaPromMin: number;
   energiaPromMax: number;
+  energiaTareaEstado?: ReadingTaskState;
   aguaLecturaAnt: number;
   aguaLecturaAct: number;
   aguaConsumoIndivM3: number;
+  aguaConsumoAntM3?: number;
   aguaConsumoComunalM3: number;
   aguaEstado: string;
   aguaObs: string;
   aguaPromMin: number;
   aguaPromMax: number;
+  aguaTareaEstado?: ReadingTaskState;
+  estadoOcupacion?: OccupancyStatus | string;
   energiaBpCop: number;
   energiaPrincipalCop: number;
   acueductoCop: number;

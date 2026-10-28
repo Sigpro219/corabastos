@@ -1,11 +1,12 @@
 # 🛡️ CORABASTOS OS (ERP Corporativo & Motor de Liquidación de Servicios Públicos y Expensas Comunes) — Contrato Canónico de Arquitectura (SPEC.md)
 
 > **Documento Canónico de Especificación (Spec-Anchored — SDD)**  
-> **Versión:** 1.0.0 (Ingeniería Inversa Integral de `06. LIQUIDACION JUNIO 2025.xlsm` + Estrategia Land & Expand ERP inspirada en `frufresco` + Stack Técnico `Seguridad / Help! On Risks`)  
-> **Fecha de Actualización:** 23 de Octubre de 2026  
+> **Versión:** 1.3.0 (Shell ERP Corporativo de 2 Niveles + Módulo Dedicado de Servicios Públicos y Expensas + Cola de Tareas por Corte en `/captura` + Motor de Vacancia 68 Bodegas + Cuenta Individual 360°)  
+> **Fecha de Actualización:** 28 de Octubre de 2026  
 > **Estado:** 🟢 VIGENTE & 100% BLINDADO PARA CONSTRUCCIÓN  
 > **Ubicación Oficial:** `C:\Users\German Higuera\OneDrive\Documentos\Projects\corabastos`  
 > **Puerto Dev Oficial Asignado:** `3013` (Registrado e Innegociable en `PROJECTS_PORTS_REGISTRY.md`)  
+> **Backend Cloud Oficial:** Firebase Project `mjm-sistema-2026-aee19` (App `Corabastos OS` — Auth Email/Password + Firestore Offline-First)  
 > **Principio Rector:** *«El código ya no es la fuente de la verdad; la especificación y los contratos de frontera lo son. El código es solo un subproducto derivado del contrato.»*
 
 ---
@@ -27,8 +28,16 @@
    - Prohibición total de emojis de texto Unicode (`⚡`, `💧`, `⚠️`, `✅`, etc.) en cualquier componente visual, botón, badge o reporte PDF. Uso exclusivo de íconos vectoriales `lucide-react` (`strokeWidth={1.75}`).
 6. **Aislamiento Estricto de Interfaces & Frontera RBAC (`/captura` vs `/`):**
    - **Prohibición de Filtración Financiera:** El operario/lecturista en terreno NO debe tener visibilidad ni acceso a cifras globales de facturación corporativa, estados de cuenta de terceros, simulador de tarifas ni planos contables.
-   - **Ruta `/captura` (PWA Móvil del Lecturista):** Dedicada exclusivamente a la captura ágil in-situ, navegación ergonómica por bodegas, selector de medidores pendientes vs leídos, captura fotográfica probatoria y registro de novedades reglamentarias (`C, DETENIDO`, `C, TAPADO`, etc.).
-   - **Ruta `/` (Consola Gerencial & Facturación):** Consola administrativa para la Dirección Financiera y Operativa con la sábana de 5.318 locales, telemetría en tiempo real de avance de campo, simulación tarifaria y exportación contable.
+   - **Ruta `/captura` (PWA Móvil del Lecturista):** Dedicada exclusivamente a la captura ágil in-situ por cola de tareas pendientes, navegación ergonómica por zonas y bodegas, captura fotográfica probatoria y registro de novedades reglamentarias (`C, DETENIDO`, `C, TAPADO`, etc.).
+   - **Ruta `/` (Shell Global del ERP Corporativo Corabastos OS):** Consola administrativa estructurada en **2 niveles jerárquicos estrictos**.
+7. **Arquitectura de 2 Niveles del ERP Corporativo (`Shell ERP Global` $\rightarrow$ `Módulos de Dominio Autocontenidos`):**
+   - **Nivel 1 (Navegación Principal del ERP en `src/app/page.tsx`):** Expone los **5 Macro-Módulos Corporativos de Corabastos OS**:
+     1. **`MOD_1_SERVICIOS_EXPENSAS` (`Servicios Públicos & Expensas` — 100% Operativo):** Encapsula todo el proceso de lectura, desacoplo de macromedidores, vacancia de bodegas, liquidación de los 5.318 locales y rendición de cuentas individual.
+     2. **`MOD_2_FACTURACION_CARTERA` (`Facturación DIAN, Cartera & Recaudo` — Cable Pelado Anillo 2)**
+     3. **`MOD_3_CATASTRO_CONTRATOS` (`Catastro Inmobiliario, Bodegas & Arrendamientos` — Cable Pelado Anillo 3)**
+     4. **`MOD_4_MANTENIMIENTO_CMMS` (`Mantenimiento Industrial & Red de Fríos` — Cable Pelado Anillo 4)**
+     5. **`MOD_5_AMBIENTAL_PGIRS_SAC` (`Gestión Ambiental PGIRS, Básculas & SAC` — Cable Pelado Anillo 5)**
+   - **Nivel 2 (Sub-Navegación Interna de cada Macro-Módulo):** Prohibido mezclar las sub-pestañas internas de `Servicios Públicos & Expensas` en la barra global del ERP; dichas sub-vistas (`1.1 Sábana & Cuenta Individual 360°`, `1.2 Estado de 68 Bodegas & Vacancia`, `1.3 Recibos Maestros & Macromedidores`, `1.4 Monitor de Corte & Tareas de Campo`) viven encapsuladas dentro del contenedor dedicado `src/components/UtilitiesErpModuleView.tsx`.
 
 ---
 
@@ -111,15 +120,19 @@ La auditoría forense del documento oficial `ReglamentoInterno.pdf` (Título VII
 
 Todo cálculo del motor `src/lib/liquidation-engine.ts` debe reproducir con precisión matemática las fórmulas extraídas de las 11 hojas del libro oficial de Junio 2025:
 
-### 3.1 Censo Maestro y Tipología de Locales (`RESUMEN TOTAL` — 5.318 Unidades)
+### 3.1 Censo Maestro y Tipología de Locales (`RESUMEN TOTAL` — 5.318 Unidades en 68 Bodegas)
 Cada unidad o local comercial posee:
-- `codigo` (`string`): Identificador único de 6 caracteres (ej. `"010001"`, `"02004B"`, `"840003"`). Los primeros 2 caracteres (`MID(codigo, 1, 2)`) determinan el `bodegaId` (`"01"` a `"98"`).
-- `tipoBodega` (`string`): `"COMERCIANTES"`, `"BODEGA POPULAR"`, `"RED FRIOS"`, `"PESCADOS"`, `"BANCOS"`, `" ADMINISTRACION"`, `"BAÑOS"`, etc.
+- `codigo` (`string`): Identificador único de 6 caracteres (ej. `"010001"`, `"02004B"`, `"840003"`). Los primeros 2 caracteres (`MID(codigo, 1, 2)`) determinan el `bodegaId` (`"01"` a `"98"`, abarcando **68 bodegas físicas**).
+- `tipoBodega` (`string`): `"COMERCIANTES"`, `"BP MIN"`, `"BP MAY"`, `"RED FRIOS"`, `"PESCADOS"`, `"BANCOS"`, `"ADMINISTRACION"`, `"BAÑOS"`, etc.
 - `areaM2` (`number`): Área en metros cuadrados. Suma total del catastro: **`126.125,15 m²`**.
 - `modalidadEnergia` (`'CONTADOR' | 'COMUNAL' | 'PRORRATEO' | 'RED_FRIOS' | 'EXCLUIDO'`).
 - `modalidadAcueducto` (`'CONTADOR' | 'COMUNAL' | 'PRORRATEO' | 'RED_FRIOS' | 'EXCLUIDO'`).
-- `bloqueEnergia` (`'PRINCIPAL' | 'BODEGA_POPULAR'`): Define si el local se liquida en la sábana `ENERGIA_` (3.463 registros) o en `ENERGIA BP` (1.851 registros).
-- `categoriaResiduos` (`'NP' | 'MP' | 'P' | 'BASICOS' | 'EXCLUIDO'`): Clasificación generadora de residuos sólidos ECSA.
+- `bloqueEnergia` (`'PRINCIPAL' | 'BODEGA_POPULAR'`): Define si el local se liquida en la sábana `ENERGIA_` (3.463 registros) o en `ENERGIA BP` (1.851 registros, donde los medidores físicos tienen relación de reducción **`1/8` → multiplicador `8x`** sobre `Lectura Actual - Lectura Anterior` y sobretasa CREG del **`15,7%`**).
+- `categoriaResiduos` (`'NP' | 'MP' | 'P' | 'BASICOS' | 'EXCLUIDO'`): Clasificación generadora de residuos sólidos ECSA según PGIRS.
+- `estadoOcupacion` (`'ACTIVO' | 'VACIO_CON_CONTRATO' | 'VACIO_SIN_CONTRATO_CORPORACION'`): Estado operativo y contractual del local (ver Sección 3.7).
+- **Separación Estricta de Unidades Históricas (Físicas vs. Financieras):**
+  - `energiaConsumoAntKw` (`number`, en `kWh`, col 22 de `ENERGIA_` y col 25 de `ENERGIA BP`) y `aguaConsumoAntM3` (`number`, en `m³`, col 17 de `ACUEDUCTO`): Consumo físico del mes inmediatamente anterior, usado en `/captura` para validar desviaciones físicas (`kWh` contra `kWh` y `m³` contra `m³`).
+  - `energiaPromMin` / `energiaPromMax` (cols Y, Z de `ENERGIA_`) y `aguaPromMin` / `aguaPromMax` (cols U, V de `ACUEDUCTO`): Banda histórica financiera en **Pesos COP (`Total Liquidado`)**, usada en la consola administrativa y en la Cuenta Individual 360° para auditar desviaciones monetarias del cobro total.
 
 ---
 
@@ -225,48 +238,87 @@ En lugar de las fórmulas manuales del Excel que restan celdas individuales (`-E
 
 ---
 
-## 4. Especificación Funcional de Pantallas (Anillo 1 + Vistas de Expansión ERP)
+### 3.6 Cola de Tareas de Cargue de Medidores por Corte y Zonas (`ReadingTaskQueue`)
+Para cada corte mensual (ej. `CORTE-2025-06`), el motor instancia una **Cola de Tareas de Lectura (`ReadingTask`)** compuesta exclusivamente por los **1.835 medidores físicos** del censo real que requieren inspección en terreno, agrupados en **5 Zonas Operativas** idénticas a la estructura del libro oficial:
 
-### 4.1 Módulo 1: Terminal Móvil de Terreno para Lecturistas (`/ops/lecturas` — 100% Mobile-First)
-Diseñado específicamente para los operarios que caminan bodega por bodega (desde `Bodega 01` hasta `Bodega 98` y macromedidores comunales):
-1. **Selector de Ruta Secuencial por Bodega y Tipo de Medidor:**
-   - Permite elegir: `Macromedidores Energía (Aleros y Bodegas)`, `Macromedidores Agua Comunal`, `Baños Públicos (16 medidores)` o `Locales por Bodega (01 a 98)` filtrando solo los que tienen `CONTADOR`.
-2. **Tarjeta de Captura Ultra-Rápida con Teclado Numérico y Cámara/OCR:**
-   - Muestra el código del local (`010001`), número de serie del contador, **Lectura Anterior** (`12900`), **Consumo Anterior** (`4587 kWh`) y banda histórica esperada.
-   - Botón táctil grande (`>= 56px`) para **Tomar Fotografía del Medidor** + extracción/asistencia OCR o digitación numérica directa (`REF-INPUT-NUMERICO-SIN-CERO-Y-COMA-DECIMAL.md` + `REF-ERGONOMIA-TECLADO-TAB-ENTER.md`).
-3. **Semáforo Auditor en Vivo (Validación en el Sitio antes de caminar al siguiente local):**
-   - Calcula al instante $\text{Consumo Actual} = \text{Lectura Actual} - \text{Lectura Anterior}$ y el porcentaje de variación $\Delta\% = \frac{\text{Consumo Actual}}{\text{Consumo Anterior}} - 1$.
-   - Si $\text{Lectura Actual} < \text{Lectura Anterior}$ o el consumo viola los umbrales `PROMEDIO <` / `PROMEDIO >`, dispara una alerta visual inmediata en pantalla pidiendo confirmar con foto o marcar causal estándar:
-     - `VERIFICADO POR IMAGEN`
-     - `C, DETENIDO` (Contador detenido)
-     - `C, TAPADO` / `M, TAPADO` (Medidor obstruido)
-     - `C, RETIRADO` / `REVISAR MEDIDOR`
+| Zona Operativa | Hojas Origen Excel | Universo Físico a Leer por Corte | Prioridad Operativa |
+| :--- | :--- | :--- | :--- |
+| **`ZONA_1_MACROMEDIDORES`** | `LECTURAS COMUNALES_` + `AGUA COMUNAL` | **62 tareas:** 26 Aleros Energía + 12 Bodegas Energía + 24 Macromedidores Agua Comunal | **CRÍTICA (Bloqueante de Prorrateo Comunal)** |
+| **`ZONA_2_BANOS_PUBLICOS`** | `ACUEDUCTO` (Sección Baños) | **16 tareas:** 16 medidores de baterías sanitarias públicas | **ALTA** |
+| **`ZONA_3_COMERCIANTES_PRINCIPAL`** | `ENERGIA_` + `ACUEDUCTO` | **1.375 tareas:** 989 contadores de Energía + 386 contadores de Acueducto en Bodegas Principal | **NORMAL (Barrido por Bodega)** |
+| **`ZONA_4_BODEGA_POPULAR`** | `ENERGIA BP` + `ACUEDUCTO` | **351 tareas:** 199 contadores de Energía (`8x`) + 152 contadores de Acueducto en Bodega Popular (`BP MIN` / `BP MAY`) | **NORMAL (Barrido por Bodega)** |
+| **`ZONA_5_RED_FRIOS`** | `ENERGIA_` + `ACUEDUCTO` (`98`) | **Inspección de 31 puestos de refrigeración** (`980001`..`980031`) | **NORMAL** |
 
-### 4.2 Módulo 2: Centro de Recibos Maestros y Factores de Distribución (`/admin/recibos`)
-Panel gerencial donde el área administrativa carga o ajusta los valores de las facturas globales del mes:
-- **3 Recibos de Energía:** Corabastos Principal, Bodega Popular y Red de Fríos (`$/kWh`, valores asumidos por Corporación y Covial, % CREG `20%` y `15,7%`, topes de mínima).
-- **3 Bloques de Acueducto:** Factura General Acueducto (`$/m³` automático), Factura Red de Fríos, % Agua Comunal (`10%`), Notas Crédito/Débito y lecturas de los 16 Baños Públicos.
-- **4 Facturas de Expensas y sus Factores:**
-  - **Policía:** Monto total y divisor equitativo (`5.300 locales`).
-  - **Vigilancia:** Monto factura, notas débito/crédito y tarifa resultante por $m^2$.
-  - **Aseo:** Monto factura y tarifa resultante por $m^2$.
-  - **Residuos Sólidos (ECSA):** Monto factura, descuento de Básicos, notas débito/crédito y factores editables (`NP = 0.4`, `MP = 1.2`, `P = Saldo`).
+#### Máquina de Estados Finita (FSM) de cada Tarea de Lectura (`ReadingTaskState`):
+- **`PENDIENTE`**: El medidor aún no ha sido leído en el corte activo. **En el celular del operador (`/captura`) solo se listan por defecto las tareas en estado `PENDIENTE`** de la zona/bodega seleccionada, mostrando un contador regresivo (`Quedan N pendientes`).
+- **`COMPLETADA`**: Lectura física capturada + evidencia fotográfica validada dentro del rango histórico (`kWh` vs `energiaConsumoAntKw` o `m³` vs `aguaConsumoAntM3`). Al guardar, la tarea desaparece de la bandeja de pendientes del operador y el foco salta automáticamente al siguiente medidor contiguo.
+- **`NOVEDAD_TECNICA`**: Medidor reportado con causal técnica oficial (`C, DETENIDO`, `M, DETENIDO`, `C, TAPADO`, `M, TAPADO`, `C, RETIRADO`, `C, SUSPENDIDO`) + fotografía obligatoria. Da por evacuada la tarea de terreno y activa la regla del **Art. 46 del Reglamento Interno** (paso automático a cobro por área $m^2$ o promedio histórico).
+- **`CERRADO_SIN_ACCESO`**: Local reportado como `L, CERRADO`, `L, VACIO` o `NO PERMITIO INGRESO` + foto de la fachada/candado. Evacúa la tarea del operador y aplica el régimen de vacancia con contrato (factura mínima + expensas de ley).
 
-### 4.3 Módulo 3: Sábana Maestra Interactiva de Liquidación y Conciliación (`/admin/liquidacion`)
-Implementa el estándar `galeria-sticky-industrial` y `estandar-galerias-frufresco` (`max-w-[1600px]`):
-- **Omnibox Universal + Píldoras de Filtro Reactivas:** Búsqueda instantánea entre los **5.318 locales** por código (`010001`), bodega (`01`..`98`), modalidad (`CONTADOR`, `COMUNAL`, `PRORRATEO`, `RED DE FRIOS`), categoría de residuos (`NP`, `MP`, `P`) o estado de auditoría (`OK` vs `REVISAR`).
-- **Vistas por Pestaña (Homologadas 1:1 con el Excel oficial):**
-  1. `RESUMEN TOTAL` (Consolidado de los 5.318 locales: Energía BP, Energía Corabastos, Acueducto/Alcantarillado, Aseo, Residuos, Vigilancia, Policía, Subtotal, Comparativo mes anterior y Códigos de Plano Contable `PL109`..`PL141`).
-  2. `MACROMEDIDORES COMUNALES` (`LECTURAS COMUNALES_` 38 medidores + `AGUA COMUNAL` 24 medidores, mostrando el **Desacoplo Padre-Hijo transparente**: Consumo Bruto - Suma Hijos con Contador = Consumo Neto a repartir en la bodega).
-  3. `ENERGÍA PRINCIPAL & BP` (`ENERGIA_` + `ENERGIA BP`).
-  4. `ACUEDUCTO & BAÑOS` (`ACUEDUCTO`).
-  5. `EXPENSAS (RESIDUOS, ASEO, VIGILANCIA, POLICÍA)`.
-- **Tablero de Conciliación Financiera (`V/FINANZAS` vs. `V/LIQUIDADO`):**
-  - Reproduce y audita la tabla de cierre (filas 5326–5334 de `RESUMEN TOTAL`), desglosando el recaudo por código de plano contable (`PL109`, `PL253`, `PL008`, `PL009`, `PL086`, `PL087`, `PL250`, `AMB403`, `AMB408`) y exportando a Excel (`.xlsx`) y CSV contable.
+---
 
-### 4.4 Módulo 4: Desprendible / Estado de Cuenta Golden Print por Local y Roadmap ERP (`/admin/erp-roadmap`)
-- **Inspector de Local + Estado de Cuenta Imprimible (`Golden Print PDF`):** Al hacer clic en cualquier local de los 5.318, abre su ficha técnica detallada con la trazabilidad matemática de cada peso cobrado (lectura anterior, lectura actual, foto/estado del medidor, $m^2$, factor aplicado en cada servicio) y botón de impresión PDF a 300 DPI.
-- **Centro de Escalamiento ERP Corabastos (Land & Expand):** Vista interactiva de arquitectura para presentar a la Junta Directiva / Gerencia de Corabastos cómo este motor de Servicios Públicos (Anillo 1) se conecta con Facturación DIAN y Recaudo PSE/WhatsApp (Anillo 2), Gestión de Arrendamientos y Catastro (Anillo 3), Mantenimiento CMMS de Red de Fríos (Anillo 4) y PGIRS Básculas/SAC (Anillo 5).
+### 3.7 Estado Operativo de las 68 Bodegas & Motor Jurídico-Contable de Vacancia (`BodegaStatusEngine`)
+El sistema monitorea el estado individual de cada una de las **68 bodegas** (`bodegaId` `"01"`..`"98"`) y modela jurídicamente qué ocurre cuando un local o una bodega completa se encuentra vacía:
+
+1. **Caso 1 — Local Activo en Operación (`ACTIVO`):**
+   - Liquida consumo medido (`CONTADOR`) o cuota comunal (`COMUNAL` / `PRORRATEO`) + Alumbrado + CREG + Acueducto + PGIRS + Aseo + Vigilancia + Policía conforme al Artículo 46.
+2. **Caso 2 — Local Vacío o Cerrado CON Contrato de Arrendamiento/Tenencia Vigente (`VACIO_CON_CONTRATO` — `L, VACIO` / `L, CERRADO`):**
+   - Aunque el consumo físico en medidor sea `0 kWh` y `0 m³`, la disponibilidad de red y la tenencia jurídica obligan al comerciante titular a pagar:
+     - **Energía:** Cargo de Factura Mínima (`$20.498` Principal / `$20.489` BP) + Alumbrado Público General ($m^2$) + Alero/Comunal de Bodega ($m^2$) + CREG (`20%` / `15,7%`).
+     - **Acueducto:** Tope mínimo de $1\;m^3$ (`$10.921,45`) + Cuota Agua Comunal ($m^2$).
+     - **Expensas Fijas:** Aseo ($m^2$), Vigilancia ($m^2$), Residuos PGIRS según categoría base y Policía (cuota parte equitativa).
+3. **Caso 3 — Local o Bodega Vacía SIN Contrato / Restituida a Corabastos o en Mantenimiento (`VACIO_SIN_CONTRATO_CORPORACION`):**
+   - **Prohibición de Sobrecosto a Vecinos:** Cuando una bodega o local está restituido a la Corporación (sin arrendatario activo), **su área en $m^2$ NO se elimina del denominador técnico**, para evitar inflar artificialmente la tarifa por $m^2$ de los comerciantes activos vecinos.
+   - **Absorción Contable Corporativa (`VALOR ASUMIDO CORPORACIÓN`):** La cuota parte de áreas comunes, alumbrado y expensas generada por los $m^2$ vacíos sin contrato se liquida y se imputa automáticamente al centro de costo **`VALOR ASUMIDO CORPORACIÓN`** (conciliando con los rubros de descuento corporativo de `ENERGIA_` fila `3479` y `RESUMEN TOTAL`).
+
+---
+
+### 3.8 Hallazgos Forenses Críticos del Libro Oficial (`06. LIQUIDACION JUNIO 2025.xlsm`) y Correcciones de Auditoría
+1. **Corrección de Unidad de Medida en Validación de Campo (`kWh/m³` vs `COP`):**
+   - En las hojas `ENERGIA_` (columnas Y, Z) y `ACUEDUCTO` (columnas U, V), las columnas llamadas `PROMEDIO<` y `PROMEDIO>` están expresadas en **Pesos COP (`Total Liquidado`)**, mientras que el consumo físico del mes anterior se encuentra en `ENERGIA_` col 22 (`CONSUMO ANTERIOR KW`), `ENERGIA BP` col 25 (`CONSUMO ANTERIOR KW`) y `ACUEDUCTO` col 17 (`CONSUMO ANTERIOR`).
+   - **Regla SDD:** En `/captura` el semáforo compara estrictamente **unidades físicas (`kWh` contra `energiaConsumoAntKw` y `m³` contra `aguaConsumoAntM3`)**. En la Consola Gerencial (`/`) y en la Cuenta Individual 360° se audita adicionalmente el total en pesos contra la banda financiera `PROMEDIO<` / `PROMEDIO>` en COP.
+2. **Detección de Doble Conteo en Columna `R` (`SUBTOTAL`) de la Hoja `RESUMEN TOTAL` del Excel Cliente:**
+   - En `RESUMEN TOTAL`, la columna `I` (`ALCANT`) contiene el total de Acueducto y Alcantarillado (`$239.477.572,80`) y la columna `J` (`TOTAL ACUE ALCAN`) aplica `=+H4+I4` (`$239.477.572,80`).
+   - La fórmula de la columna `R` (`SUBTOTAL`) del Excel original (`=SUM(F4:Q4)`) suma por error **tanto la columna `I` como la columna `J`**, duplicando **`$239.477.572,80 COP`** y mostrando `$3.861.030.409,65` en lugar de la suma real de los 6 servicios (**`$3.621.552.836,85 COP`**, que es el valor exacto certificado en el cuadro `V/FINANZAS vs V/LIQUIDADO` de la fila `5333`).
+   - **Regla SDD:** El motor de `Corabastos OS` liquida sobre la verdad contable de **`$3.621.552.836,85 COP`** (sin duplicar acueducto) y expone explícitamente un **Badge de Alerta Forense de Doble Conteo Excel (`+$239,47M`)** en el tablero de conciliación para trazabilidad ante la Dirección Financiera.
+
+---
+
+## 4. Especificación Funcional de Pantallas y Rutas Desacopladas (RBAC)
+
+### 4.1 Ruta Independiente 1: Terminal Móvil del Operador — Cola de Tareas por Corte (`/captura` — 100% Mobile-First)
+Aislada por RBAC de las cifras financieras corporativas:
+1. **Cabecera de Corte Activo y Selector de Zona Operativa:**
+   - Muestra el corte activo (`CORTE JUNIO 2025`), barra de progreso global de lecturas y píldoras de las **5 Zonas Operativas** (`Macromedidores [62]`, `Baños [16]`, `Comerciantes Principal`, `Bodega Popular`, `Red de Fríos`) más selector rápido de las **68 Bodegas** con badge del número de tareas pendientes en cada una.
+2. **Bandeja Inteligente "Solo Pendientes" (` filter = 'PENDIENTES' ` por defecto):**
+   - El operador en su celular **ve únicamente los medidores que le faltan por cargar en ese corte**.
+   - Cuenta con un toggle secundario (`Pendientes [N]` | `Completadas [M]`) por si requiere auditar o corregir una lectura ya enviada en el turno.
+3. **Tarjeta de Captura con Fotografía Probatoria, Semáforo Físico (`kWh`/`m³`) y Avance Automático:**
+   - Exibe Código del Local/Macromedidor, Serie del Medidor, Lectura Anterior, Consumo Físico Anterior (`kWh` o `m³`), y en Bodega Popular alerta visible de **Factor Multiplicador `8x`**.
+   - Al guardar una lectura válida (o reportar causal reglamentaria con foto), marca la tarea como `COMPLETADA` / `NOVEDAD_TECNICA`, la retira de la lista de pendientes y carga de inmediato la siguiente tarea pendiente de esa bodega.
+
+### 4.2 Ruta Independiente 2: Shell Global del ERP Corporativo (`/` — Desktop 1600px) & Módulo Dedicado de Servicios Públicos (`UtilitiesErpModuleView`)
+La consola principal se estructura en **2 niveles de navegación**:
+- **Nivel 1 — Barra Global del ERP (`src/app/page.tsx`):** Permite conmutar entre los **5 Macro-Módulos del ERP de Corabastos** (`1. Servicios Públicos & Expensas [ACTIVO]`, `2. Facturación DIAN & Cartera`, `3. Catastro & Contratos`, `4. Mantenimiento CMMS & Red de Fríos`, `5. Ambiental PGIRS & SAC`).
+- **Nivel 2 — Contenedor Dedicado del Módulo 1 (`src/components/UtilitiesErpModuleView.tsx`):** Agrupa de forma autocontenida las **4 sub-vistas operativas** del proceso de Liquidación de Servicios Públicos y Expensas:
+  1. **Sub-Vista 1.1 — Sábana Maestra de Liquidación (`5.318 Locales`), Conciliación (`V/Finanzas` vs `V/Liquidado`) & Cuenta Individual 360°:**
+     - Implementa el estándar `galeria-sticky-industrial` de 3 niveles congelados (`top-0` barra corporativa, `top-14` Omnibox + Píldoras de telemetría, `top-[148px]` encabezados `<th>` sólidos `#010F22`) y botón ícono esmeralda para exportación Excel/CSV.
+  2. **Sub-Vista 1.2 — Mapa de Estado de las 68 Bodegas, Avance del Corte & Gestión de Vacancia (`src/components/BodegasStatusView.tsx`):**
+     - Matriz visual y auditable de las **68 bodegas** (`01` a `98`) mostrando por cada bodega:
+       - Tipo de Bodega (`COMERCIANTES`, `BP MIN`, `BP MAY`, `RED FRIOS`, etc.), Total Locales y Área Total ($m^2$).
+       - **Avance de Tareas del Corte:** Medidores totales vs. leídos vs. pendientes (`% Progreso`) y alertas técnicas en la bodega (`DETENIDO`, `TAPADO`).
+       - **Estado de Ocupación y Vacancia:** Locales `ACTIVOS`, Locales `VACÍOS CON CONTRATO` (`L, VACIO` / `L, CERRADO`) y Locales/Áreas `VACÍOS SIN CONTRATO (Asumidos por Corporación)`, permitiendo simular o cambiar el estado de ocupación de una bodega/local y ver en vivo el impacto en la bolsa `VALOR ASUMIDO CORPORACIÓN` sin afectar la tarifa $/m^2$ de los comerciantes activos.
+  3. **Sub-Vista 1.3 — Macromedidores Comunales (Desacoplo Padre-Hijo) & Centro de Recibos Maestros (`src/components/MasterReceiptsSimulatorView.tsx`):**
+     - Auditoría de los **38 macromedidores de energía**, **24 macromedidores de agua comunal** y **16 baños públicos**, junto con el simulador de los 10 recibos maestros.
+  4. **Sub-Vista 1.4 — Monitor de Corte y Cola de Tareas de Terreno:**
+     - Resumen gerencial del avance del corte por las 5 zonas operativas, bitácora de lecturas recibidas en vivo y enlace directo a `/captura`.
+- **Expediente Modal / Drawer: Cuenta Individual 360° y Rendición de Cuentas por Local (`src/components/LocalAccountModal.tsx`):**
+  - Se abre al hacer clic en cualquier local desde la Sábana Maestra o desde el Mapa de Bodegas.
+  - Presenta la **Auditoría Forense Completa del Local**:
+    - **Identidad y Catastro:** Código (`010001`), Bodega, Tipo, Área ($m^2$), Participación porcentual dentro de su bodega (`% m²`), Estado de Ocupación (`ACTIVO` / `VACÍO CON CONTRATO` / `ASUMIDO CORPORACIÓN`) y Categoría PGIRS (`NP` / `MP` / `P`).
+    - **Trazabilidad Padre → Hijo:** Macromedidor de Alero y Macromedidor de Bodega que lo alimentan, consumo bruto de la bodega, descuento de contadores hijos y cuota exacta asignada al local.
+    - **Liquidación Matemática Paso a Paso de los 6 Servicios (Art. 46 Reglamento Interno):** Fórmulas desglosadas con números reales de Lectura Anterior, Lectura Actual, Consumo Físico vs. Mes Anterior (`kWh` / `m³`), Sobretasa CREG, Factura Mínima, Agua Comunal y Expensas por $m^2$ / Partes Iguales.
+    - **Auditoría contra Banda Histórica y Planos Contables:** Comparación del Total Liquidado contra `PROMEDIO <` y `PROMEDIO >` (en COP), mes anterior (`JUNIO` vs `MAYO`), códigos de plano (`PL109`..`AMB408`) y botón de **Impresión de Certificado de Cuenta Individual y Rendición de Cuentas (`Golden Print PDF`)**.
 
 ---
 
@@ -275,28 +327,28 @@ Implementa el estándar `galeria-sticky-industrial` y `estandar-galerias-frufres
 ### 5.1 Refacciones del Arsenal Global Integradas
 | Necesidad en Corabastos | Refacción del Arsenal / Proyecto Hermano | Aplicación en `corabastos` |
 | :--- | :--- | :--- |
-| Captura rápida en terreno con una mano | `REF-ERGONOMIA-TECLADO-TAB-ENTER.md` + `REF-INPUT-NUMERICO-SIN-CERO-Y-COMA-DECIMAL.md` | Avance inmediato entre medidores con `Enter` y validación numérica limpia |
-| Navegación móvil de 1 toque en bodega | `REF-SUBNAV-STICKY-1TAP-MOBILE.md` | Barra inferior/superior en `/ops/lecturas` para cambiar de Bodega o Servicio en 1 tap |
-| Sábana de 5.318 locales sin lag de renderizado | `galeria-sticky-industrial` + `optimizador-rendimiento` | Diccionarios indexados $O(1)$ por `codigo` y `bodegaId` + paginación/virtualización fluida |
-| Estados de cuenta individuales e informes | `REF-PDF-GOLDEN-PRINT-MEMBRETE.md` | Estado de cuenta oficial por local listo para impresión o envío |
-| Stack y persistencia híbrida | Proyecto `Seguridad (Help! On Risks)` | Next.js 16 + React 19 + TypeScript 5 + Firebase v12 + Tailwind v4 + Zod |
+| Captura rápida en terreno con una mano | `REF-ERGONOMIA-TECLADO-TAB-ENTER.md` + `REF-INPUT-NUMERICO-SIN-CERO-Y-COMA-DECIMAL.md` | Avance inmediato entre medidores pendientes con `Enter` y validación numérica limpia |
+| Navegación móvil de 1 toque en bodega | `REF-SUBNAV-STICKY-1TAP-MOBILE.md` | Selector de Zona y Bodega con contador de pendientes en `/captura` |
+| Sábana de 5.318 locales sin lag de renderizado | `galeria-sticky-industrial` + `estandar-galerias-frufresco` | Contenedor `1600px`, 3 niveles sticky docked y diccionarios $O(1)$ |
+| Cuenta Individual 360° e informes de auditoría | `REF-PDF-GOLDEN-PRINT-MEMBRETE.md` | Expediente individual de rendición de cuentas listo para impresión a 300 DPI |
+| Stack y persistencia híbrida Cloud | Proyecto Firebase `mjm-sistema-2026-aee19` | Next.js 16 + React 19 + TypeScript 5 + Firebase v12 (`Auth` + `Firestore`) + Zod |
 
 ### 5.2 Criterios de Aceptación Verificables (Gherkin Estricto)
 
-- **Escenario 1: Captura Móvil de Medidor con Validación Histórica In-Situ**
-  - **Given** que el operario está en `/ops/lecturas` en la `Bodega 01`, local `010001` (área `165,68 m²`, modalidad `CONTADOR`),
-  - **When** ingresa una lectura actual inferior a la lectura anterior o con una desviación fuera de la banda histórica (`PROMEDIO <` / `PROMEDIO >`),
-  - **Then** el sistema bloquea el guardado silencioso, resalta la alerta en carmesí y exige adjuntar soporte fotográfico o seleccionar la observación técnica (`VERIFICADO POR IMAGEN`, `C, DETENIDO`, `C, TAPADO`) antes de pasar al local `010002`.
+- **Escenario 1: Cola de Tareas "Solo Pendientes" por Corte y Zona en `/captura`**
+  - **Given** que se abre el `Corte Junio 2025` y el operario ingresa desde su celular a `/captura` seleccionando `Zona 3 — Comerciantes Principal` -> `Bodega 01`,
+  - **When** visualiza su lista de trabajo y registra la lectura válida del medidor `010001` (validada en `kWh` contra `energiaConsumoAntKw`),
+  - **Then** la tarea `010001` cambia a estado `COMPLETADA`, desaparece inmediatamente de la bandeja de pendientes del operador, el contador de pendientes de la `Bodega 01` disminuye en `1` y la pantalla carga automáticamente el siguiente medidor pendiente.
 
-- **Escenario 2: Desacoplo Automático Padre-Hijo en Macromedidor Comunal**
-  - **Given** el macromedidor `BODEGA 03 COMUNAL` en `AGUA COMUNAL` con Lectura Anterior `9.744 m³` y Lectura Actual `9.843 m³` (`99 m³` brutos), y los locales hijos de la Bodega 03 con medidor individual que suman `16 m³`,
-  - **When** el motor ejecuta la liquidación comunal de la Bodega 03,
-  - **Then** descuenta automáticamente los `16 m³` de los medidores hijos obteniendo `83 m³` netos y los prorratea exactamente entre los `1.321,86 m²` de área comunal de la Bodega 03 sin requerir edición manual de fórmulas.
+- **Escenario 2: Bodega o Local Vacío (Con Contrato vs. Sin Contrato / Asumido por Corporación)**
+  - **Given** una bodega con locales en estado `VACIO_CON_CONTRATO` (`L, VACIO`) y locales en estado `VACIO_SIN_CONTRATO_CORPORACION` (restituidos a Corabastos),
+  - **When** el motor ejecuta `recalculateAllLocales`,
+  - **Then** al local `VACIO_CON_CONTRATO` se le liquida Factura Mínima (`$20.498`) + Alumbrado/Agua Comunal ($m^2$) + Expensas de ley, mientras que al local `VACIO_SIN_CONTRATO_CORPORACION` se le mantiene su área ($m^2$) en el denominador técnico de la bodega (sin subirle la tarifa $/m^2$ a los comerciantes activos) y su costo se traslada a la bolsa contable `VALOR ASUMIDO CORPORACIÓN`.
 
-- **Escenario 3: Exactitud de Factores en Servicios Públicos y Expensas (Junio 2025)**
-  - **Given** los valores reales de los recibos de Junio 2025 cargados en el motor,
-  - **When** se liquida el local `010001` (`165,68 m²`, `CONTADOR`, categoría residuos `NP`),
-  - **Then** el sistema liquida exactamente: Energía Corabastos `$340.978,00`, Acueducto `$193.960,58`, Aseo `$270.247,88`, Residuos (`NP` al `0.4`) `$417.439,76`, Vigilancia (`$13.785,91/m²`) `$2.284.049,97` y Policía (partes iguales `$215.384.615 / 5.300`) `$40.638,61`, para un subtotal exacto de **`$3.741.275,37`**.
+- **Escenario 3: Cuenta Individual 360° y Rendición de Cuentas por Local**
+  - **Given** cualquier local de los 5.318 en la consola administrativa (ej. `010001` o un puesto de Bodega Popular con factor `8x`),
+  - **When** el auditor hace clic sobre la fila del local para abrir su `Cuenta Individual 360°`,
+  - **Then** el sistema despliega el expediente completo con ficha catastral, trazabilidad del macromedidor padre de su bodega, desglose matemático de las fórmulas del Art. 46 para los 6 servicios, comparativo contra consumo físico anterior (`kWh`/`m³`) y banda financiera (`PROMEDIO <` / `PROMEDIO >`), y permite imprimir el soporte oficial de rendición de cuentas.
 
 ---
 
@@ -304,7 +356,11 @@ Implementa el estándar `galeria-sticky-industrial` y `estandar-galerias-frufres
 
 - `[x]` **Tarea 1.0:** Ingeniería inversa completa de `06. LIQUIDACION JUNIO 2025.xlsm` y formalización de `SPEC.md` + registro de puerto `3013` en `PROJECTS_PORTS_REGISTRY.md`.
 - `[x]` **Tarea 2.0:** Extracción automatizada del dataset semilla real desde `06. LIQUIDACION JUNIO 2025.xlsm` (`src/data/corabastos-junio-2025.json` con el censo completo de los **5.318 locales**, **38 macromedidores de energía**, **24 macromedidores de agua**, **16 medidores de baños** y parámetros de los **10 recibos maestros**).
-- `[x]` **Tarea 3.0:** Inicialización del proyecto Next.js 16 + React 19 + TypeScript 5 + Tailwind CSS v4 + Firebase v12 + Zod + Lucide Icons en el puerto `3013` (Stack `Seguridad / Help! On Risks`).
-- `[x]` **Tarea 4.0:** Construcción del Headless Core (`src/contracts/domain-contracts.ts` + `src/lib/liquidation-engine.ts`) implementando el desacoplo Padre-Hijo y las fórmulas exactas de Energía, Acueducto, Residuos (`0.4 / 1.2 / P`), Aseo, Vigilancia y Policía.
-- `[x]` **Tarea 5.0:** Construcción de la App Móvil de Terreno para Lecturistas (`/ops/lecturas`), el Centro de Recibos y Factores (`/admin/recibos`), la Sábana Maestra de Liquidación y Conciliación de 5.318 locales (`/admin/liquidacion`), el Estado de Cuenta Golden Print y la Vista de Escalamiento ERP Corabastos.
-- `[x]` **Tarea 6.0:** Certificación `npx tsc --noEmit` (`EXIT 0`) y verificación en vivo en `http://localhost:3013`.
+- `[x]` **Tarea 3.0:** Inicialización del proyecto Next.js 16 + React 19 + TypeScript 5 + Tailwind CSS v4 + Firebase v12 (`mjm-sistema-2026-aee19`) + Zod + Lucide Icons en el puerto `3013`.
+- `[x]` **Tarea 4.0:** Construcción del Headless Core (`src/contracts/domain-contracts.ts` + `src/lib/liquidation-engine.ts`) implementando el desacoplo Padre-Hijo y las fórmulas exactas de Energía, Acueducto, Residuos (`0.4 / 1.2 / P`), Aseo, Vigilancia y Policía bajo el Reglamento Interno (Directiva 033-06).
+- `[x]` **Tarea 5.0:** Desacoplo RBAC de rutas (`/captura` para operario en terreno vs `/` para Consola Ejecutiva) y estandarización de la Sábana Maestra bajo `galeria-sticky-industrial` (`1600px`, 3 niveles sticky docked).
+- `[x]` **Tarea 6.0:** Actualización del contrato `SPEC.md` v1.3.0 incorporando Arquitectura ERP de 2 Niveles, Cola de Tareas por Corte y Zonas, Estado de las 68 Bodegas / Motor de Vacancia, Cuenta Individual 360° por Local y corrección forense de unidades (`kWh`/`m³` vs `COP`).
+- `[x]` **Tarea 7.0:** Enriquecimiento del dataset semilla (`src/data/corabastos-junio-2025.json`) y contratos (`src/contracts/domain-contracts.ts`, `src/contracts/erp-bridges.ts`) con `energiaConsumoAntKw`, `aguaConsumoAntM3`, `estadoOcupacion` y estructura de Zonas/Tareas por Corte.
+- `[x]` **Tarea 8.0:** Evolución de `/captura` (`src/app/captura/page.tsx` + `src/lib/reading-tasks-engine.ts`) como **Cola de Tareas Pendientes por Corte y Zonas** (Macromedidores, Baños, Comerciantes Principal, Bodega Popular, Red de Fríos) con filtro por defecto de solo pendientes, validación física `kWh`/`m³` y salto automático.
+- `[x]` **Tarea 9.0:** Construcción del **Shell ERP de 2 Niveles (`src/app/page.tsx`)**, el **Contenedor Dedicado del Módulo 01 (`src/components/UtilitiesErpModuleView.tsx`)**, el **Tablero de Estado de las 68 Bodegas y Vacancia (`src/components/BodegasStatusView.tsx`)** y el **Modal/Expediente de Cuenta Individual 360° y Rendición de Cuentas por Local (`src/components/LocalAccountModal.tsx`)**.
+- `[x]` **Tarea 10.0:** Certificación `npx tsc --noEmit` (`EXIT 0`), verificación funcional en `http://localhost:3013` y `http://localhost:3013/captura`, y dictamen independiente de `auditor-tirano-sdd`.

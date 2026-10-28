@@ -2,6 +2,7 @@
 
 import React from "react";
 import { useCorabastos } from "@/context/CorabastosContext";
+import { CommunalMacrometersAuditTable } from "@/components/CommunalMacrometersAuditTable";
 import {
   Zap,
   Droplets,
@@ -475,6 +476,9 @@ export function MasterReceiptsSimulatorView() {
           </div>
         </div>
       </div>
+
+      {/* AUDITORÍA DE LOS 38 MACROMEDIDORES DE ENERGÍA, 24 DE AGUA COMUNAL Y 16 BAÑOS PÚBLICOS */}
+      <CommunalMacrometersAuditTable />
     </div>
   );
 }
