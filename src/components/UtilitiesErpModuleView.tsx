@@ -6,6 +6,8 @@ import { LiquidationMatrixView } from "@/components/LiquidationMatrixView";
 import { BodegasStatusView } from "@/components/BodegasStatusView";
 import { MasterReceiptsSimulatorView } from "@/components/MasterReceiptsSimulatorView";
 import { MobileFieldCaptureView } from "@/components/MobileFieldCaptureView";
+import { BiLongitudinalKpisView } from "@/components/BiLongitudinalKpisView";
+import { LocalAccountModal } from "@/components/LocalAccountModal";
 import { useCorabastos } from "@/context/CorabastosContext";
 import {
   TableProperties,
@@ -16,13 +18,24 @@ import {
   RotateCcw,
   AlertTriangle,
   CheckCircle2,
+  BarChart3,
 } from "lucide-react";
 
-type UtilitiesSubTab = "SABANA_360" | "BODEGAS_68" | "RECIBOS_MACROS" | "MONITOR_CAMPO";
+type UtilitiesSubTab =
+  | "SABANA_360"
+  | "BODEGAS_68"
+  | "RECIBOS_MACROS"
+  | "MONITOR_CAMPO"
+  | "BI_KPIS";
 
 export function UtilitiesErpModuleView() {
   const { locales, receipts, resetToOfficialJune2025, completedTaskIds } = useCorabastos();
   const [subTab, setSubTab] = useState<UtilitiesSubTab>("SABANA_360");
+  const [inspectedLocalCode, setInspectedLocalCode] = useState<string | null>(null);
+
+  const inspectedLocal = inspectedLocalCode
+    ? locales.find((l) => l.codigo === inspectedLocalCode) ?? null
+    : null;
 
   const totalReal6Servicios = locales.reduce((acc, l) => acc + l.calcTotalCop, 0);
   const totalExcelColR = locales.reduce((acc, l) => acc + l.totalJunioCop, 0);
@@ -135,6 +148,19 @@ export function UtilitiesErpModuleView() {
             <CheckCircle2 className="w-4 h-4 text-emerald-400" />
             <span>1.4 Monitor de Corte & Auditoría Terreno ({evacuatedCount} leídas)</span>
           </button>
+
+          <button
+            type="button"
+            onClick={() => setSubTab("BI_KPIS")}
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
+              subTab === "BI_KPIS"
+                ? "bg-[#010F22] text-white shadow-xs"
+                : "bg-emerald-50 text-emerald-900 border border-emerald-200 hover:bg-emerald-100"
+            }`}
+          >
+            <BarChart3 className="w-4 h-4 text-emerald-500" />
+            <span>1.5 Inteligencia BI & 6 KPIs Longitudinales</span>
+          </button>
         </div>
       </div>
 
@@ -143,6 +169,14 @@ export function UtilitiesErpModuleView() {
       {subTab === "BODEGAS_68" && <BodegasStatusView />}
       {subTab === "RECIBOS_MACROS" && <MasterReceiptsSimulatorView />}
       {subTab === "MONITOR_CAMPO" && <MobileFieldCaptureView />}
+      {subTab === "BI_KPIS" && (
+        <BiLongitudinalKpisView onSelectLocalCode={(code) => setInspectedLocalCode(code)} />
+      )}
+
+      <LocalAccountModal
+        local={inspectedLocal}
+        onClose={() => setInspectedLocalCode(null)}
+      />
     </div>
   );
 }

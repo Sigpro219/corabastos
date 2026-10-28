@@ -1,7 +1,7 @@
 # 🛡️ CORABASTOS OS (ERP Corporativo & Motor de Liquidación de Servicios Públicos y Expensas Comunes) — Contrato Canónico de Arquitectura (SPEC.md)
 
 > **Documento Canónico de Especificación (Spec-Anchored — SDD)**  
-> **Versión:** 1.3.0 (Shell ERP Corporativo de 2 Niveles + Módulo Dedicado de Servicios Públicos y Expensas + Cola de Tareas por Corte en `/captura` + Motor de Vacancia 68 Bodegas + Cuenta Individual 360°)  
+> **Versión:** 1.4.0 (Shell ERP Corporativo de 2 Niveles + Módulo Dedicado de Servicios Públicos y Expensas + Sub-Módulo 1.5 Inteligencia BI & 6 KPIs Longitudinales Corte a Corte + Cola de Tareas por Corte en `/captura` + Motor de Vacancia 68 Bodegas + Cuenta Individual 360°)  
 > **Fecha de Actualización:** 28 de Octubre de 2026  
 > **Estado:** 🟢 VIGENTE & 100% BLINDADO PARA CONSTRUCCIÓN  
 > **Ubicación Oficial:** `C:\Users\German Higuera\OneDrive\Documentos\Projects\corabastos`  
@@ -17,7 +17,7 @@
 1. **Contract-First Schema & Diccionario Único de Identidad (`src/contracts/domain-contracts.ts`):**
    - Prohibición absoluta de ambigüedades entre módulos. Los códigos de local (`codigoLocal`, ej. `"010001"`, `"02004B"`, `"980031"`), indicadores de bodega (`bodegaId`, ej. `"01"`..`"98"`), modalidades de cobro (`CONTADOR`, `COMUNAL`, `PRORRATEO`, `RED_FRIOS`, `BASICOS`) y planos contables (`PL109`, `PL008`, `PL009`, `PL003`, `PL007`, `PL004`, `PL141`, `PL253`, `PL086`, `PL087`, `PL250`, `AMB403`, `AMB408`) se rigen por un único contrato tipado en TypeScript + Zod (`< 250 líneas`).
 2. **Headless Core + Thin UI (Prohibición de Monolitos `.tsx > 600 líneas`):**
-   - **Headless Engine (`src/lib/liquidation-engine.ts`, `src/lib/communal-hierarchy.ts`, `src/lib/accounting-export.ts`):** Funciones puras, deterministas, sin dependencias de React, que ejecutan el cálculo exacto al centavo sobre los **5.318 locales** y los **62 macromedidores comunales**.
+   - **Headless Engine (`src/lib/liquidation-engine.ts`, `src/lib/reading-tasks-engine.ts`, `src/lib/bi-kpis-engine.ts`, `src/lib/accounting-export.ts`):** Funciones puras, deterministas, sin dependencias de React, que ejecutan el cálculo exacto al centavo sobre los **5.318 locales**, los **62 macromedidores comunales** y los **6 KPIs Longitudinales BI**.
    - **Thin UI (`src/components/**/*.tsx`):** Vistas modulares (`<= 600 líneas`) dedicadas exclusivamente a captura móvil en terreno, auditoría tabular y visualización ejecutiva.
 3. **Estrategia de "Cables Pelados" (*Clean Boundary Harness*) & Escalamiento ERP Modular:**
    - El **Módulo 1 (Captura Móvil de Contadores + Liquidación de Servicios Públicos y Expensas)** es nuestro **Caballo de Troya ("Boleto de Entrada")** a la Corporación de Abastos de Bogotá S.A. (Corabastos).
@@ -284,6 +284,25 @@ El sistema monitorea el estado individual de cada una de las **68 bodegas** (`bo
 
 ---
 
+### 3.9 Motor de Inteligencia de Negocios (BI) & 6 KPIs Longitudinales Corte a Corte (`src/lib/bi-kpis-engine.ts`)
+Dentro del **Módulo 01 (`Servicios Públicos & Expensas`)**, el sub-módulo **1.5 Inteligencia BI & KPIs Longitudinales** transforma los datos históricos y del corte activo en **6 KPIs longitudinales estratégicos**:
+
+1. **KPI 1 — Índice de Pérdidas y Remanente Comunal por Bodega ($\Delta$ Macromedidor Padre vs. Contadores Hijos):**
+   - Mide qué porcentaje del consumo bruto de cada uno de los **62 macromedidores** (`38 Energía` + `24 Acueducto`) corresponde a consumo medido en contadores hijos ($\sum \text{Hijos}$) frente a remanente comunal ($\text{Bruto} - \sum \text{Hijos}$).
+   - Compara longitudinalmente `Consumo Neto Comunal Actual` vs. `Consumo Neto Comunal Anterior` (`consumoAnteriorKw` / `consumoAnteriorM3`) y dispara alerta de **Sospecha de Fuga o Derivación No Autorizada** cuando el remanente comunal salta **`> +20%`** intermensual.
+2. **KPI 2 — Brecha de Absorción Financiera Corporativa (`V/Finanzas` vs. `V/Liquidado` + `Asumido Corporación`):**
+   - Cuantifica corte a corte por cada servicio (`Energía`, `Acueducto`, `Residuos PGIRS`, `Aseo`, `Vigilancia`, `Policía`) la relación entre la factura del operador externo (`V/Finanzas`), el recaudo trasladado a comerciantes (`V/Liquidado`), el subsidio corporativo fijo (`Asumido Corporación` + `Asumido Covial`) y la bolsa dinámica por vacancia sin contrato (`VACIO_SIN_CONTRATO_CORPORACION`).
+3. **KPI 3 — Salud y Envejecimiento del Parque Metrológico (`1.835 Medidores Físicos`):**
+   - Clasifica el estado técnico de los medidores físicos en `OK (Operativos)` vs. anomalías reglamentarias (`C, DETENIDO`, `M, DETENIDO`, `C, TAPADO`, `M, TAPADO`, `C, RETIRADO`, `REVISAR`), midiendo cuántos **$m^2$** y cuántos **millones de COP** migran forzosamente a cobro por área/prorrateo bajo el Artículo 46 por falta de reemplazo oportuno de medidores.
+4. **KPI 4 — Intensidad Energética e Hídrica por $m^2$ (`kWh/m²`, `m³/m²`, `$/m²`) & Ranking Pareto de Bodegas y Locales:**
+   - Calcula el benchmark de consumo físico y costo por metro cuadrado entre las **68 bodegas** y expone el **Top 15 Pareto de Locales** con mayor consumo absoluto y mayor desviación intermensual (`Junio 2025` vs `Mayo 2025` en `energiaConsumoAntKw`, `aguaConsumoAntM3`, `totalAnteriorCop` y banda histórica `PROMEDIO >`).
+5. **KPI 5 — Evolución Longitudinal Multicorte (`Enero 2025 → Junio 2025`) de Tarifas Unitarias e Impacto PGIRS (`NP / MP / P`):**
+   - Serie longitudinal de 6 cortes mensuales (`2025-01` a `2025-06`) anclada en los cierres certificados de Mayo (`totalAnteriorCop = $3.541,69M`) y Junio (`calcTotalCop = $3.621,55M`), monitoreando la trayectoria de tarifas unitarias (`$/kWh`, `$/m³`, `$/m² Vigilancia`, `$/m² Aseo`, `$/m² Residuos NP/MP/P`).
+6. **KPI 6 — Eficiencia Operativa del Corte (`SLA de Lectura en Terreno` & Tasa de Locales Cerrados):**
+   - Mide el porcentaje de avance de las **1.835 tareas físicas** en las **5 Zonas Operativas**, el porcentaje de verificación fotográfica (`VERIFICADO POR IMAGEN`) y la tasa de inaccesibilidad en terreno (`L, CERRADO`, `L, VACIO`, `NO PERMITIO INGRESO`).
+
+---
+
 ## 4. Especificación Funcional de Pantallas y Rutas Desacopladas (RBAC)
 
 ### 4.1 Ruta Independiente 1: Terminal Móvil del Operador — Cola de Tareas por Corte (`/captura` — 100% Mobile-First)
@@ -300,7 +319,7 @@ Aislada por RBAC de las cifras financieras corporativas:
 ### 4.2 Ruta Independiente 2: Shell Global del ERP Corporativo (`/` — Desktop 1600px) & Módulo Dedicado de Servicios Públicos (`UtilitiesErpModuleView`)
 La consola principal se estructura en **2 niveles de navegación**:
 - **Nivel 1 — Barra Global del ERP (`src/app/page.tsx`):** Permite conmutar entre los **5 Macro-Módulos del ERP de Corabastos** (`1. Servicios Públicos & Expensas [ACTIVO]`, `2. Facturación DIAN & Cartera`, `3. Catastro & Contratos`, `4. Mantenimiento CMMS & Red de Fríos`, `5. Ambiental PGIRS & SAC`).
-- **Nivel 2 — Contenedor Dedicado del Módulo 1 (`src/components/UtilitiesErpModuleView.tsx`):** Agrupa de forma autocontenida las **4 sub-vistas operativas** del proceso de Liquidación de Servicios Públicos y Expensas:
+- **Nivel 2 — Contenedor Dedicado del Módulo 1 (`src/components/UtilitiesErpModuleView.tsx`):** Agrupa de forma autocontenida las **5 sub-vistas operativas y analíticas** del proceso de Liquidación de Servicios Públicos y Expensas:
   1. **Sub-Vista 1.1 — Sábana Maestra de Liquidación (`5.318 Locales`), Conciliación (`V/Finanzas` vs `V/Liquidado`) & Cuenta Individual 360°:**
      - Implementa el estándar `galeria-sticky-industrial` de 3 niveles congelados (`top-0` barra corporativa, `top-14` Omnibox + Píldoras de telemetría, `top-[148px]` encabezados `<th>` sólidos `#010F22`) y botón ícono esmeralda para exportación Excel/CSV.
   2. **Sub-Vista 1.2 — Mapa de Estado de las 68 Bodegas, Avance del Corte & Gestión de Vacancia (`src/components/BodegasStatusView.tsx`):**
@@ -312,8 +331,10 @@ La consola principal se estructura en **2 niveles de navegación**:
      - Auditoría de los **38 macromedidores de energía**, **24 macromedidores de agua comunal** y **16 baños públicos**, junto con el simulador de los 10 recibos maestros.
   4. **Sub-Vista 1.4 — Monitor de Corte y Cola de Tareas de Terreno:**
      - Resumen gerencial del avance del corte por las 5 zonas operativas, bitácora de lecturas recibidas en vivo y enlace directo a `/captura`.
+  5. **Sub-Vista 1.5 — Inteligencia BI & 6 KPIs Longitudinales Corte a Corte (`src/components/BiLongitudinalKpisView.tsx`):**
+     - Centro ejecutivo de analítica longitudinal que visualiza los **6 KPIs estratégicos** (Radar de Fugas en Macromedidores Padre-Hijo, Puente de Absorción Financiera Corporativa, Salud del Parque Metrológico de 1.835 medidores, Intensidad por $m^2$ y Ranking Pareto Top 15 con apertura directa de Cuenta Individual 360°, Curva Multicorte Enero–Junio 2025 de Tarifas Unitarias y SLA Operativo por Zona).
 - **Expediente Modal / Drawer: Cuenta Individual 360° y Rendición de Cuentas por Local (`src/components/LocalAccountModal.tsx`):**
-  - Se abre al hacer clic en cualquier local desde la Sábana Maestra o desde el Mapa de Bodegas.
+  - Se abre al hacer clic en cualquier local desde la Sábana Maestra, el Mapa de Bodegas o el Ranking Pareto del Sub-Módulo BI.
   - Presenta la **Auditoría Forense Completa del Local**:
     - **Identidad y Catastro:** Código (`010001`), Bodega, Tipo, Área ($m^2$), Participación porcentual dentro de su bodega (`% m²`), Estado de Ocupación (`ACTIVO` / `VACÍO CON CONTRATO` / `ASUMIDO CORPORACIÓN`) y Categoría PGIRS (`NP` / `MP` / `P`).
     - **Trazabilidad Padre → Hijo:** Macromedidor de Alero y Macromedidor de Bodega que lo alimentan, consumo bruto de la bodega, descuento de contadores hijos y cuota exacta asignada al local.
@@ -350,6 +371,11 @@ La consola principal se estructura en **2 niveles de navegación**:
   - **When** el auditor hace clic sobre la fila del local para abrir su `Cuenta Individual 360°`,
   - **Then** el sistema despliega el expediente completo con ficha catastral, trazabilidad del macromedidor padre de su bodega, desglose matemático de las fórmulas del Art. 46 para los 6 servicios, comparativo contra consumo físico anterior (`kWh`/`m³`) y banda financiera (`PROMEDIO <` / `PROMEDIO >`), y permite imprimir el soporte oficial de rendición de cuentas.
 
+- **Escenario 4: Inteligencia BI & 6 KPIs Longitudinales Corte a Corte (`1.5 Inteligencia BI & KPIs`)**
+  - **Given** el Módulo 01 (`Servicios Públicos & Expensas`) con el censo activo de `5.318 locales`, `62 macromedidores` y `1.835 tareas físicas`,
+  - **When** el director financiero o auditor abre la Sub-Vista `1.5 Inteligencia BI & KPIs Longitudinales`,
+  - **Then** el sistema calcula y renderiza reactivamente los **6 KPIs Longitudinales** (1. Pérdidas y saltos `> +20%` en Macromedidores Padre-Hijo, 2. Brecha de Absorción Financiera `V/Finanzas` vs `V/Liquidado` + `Asumido Corporación`, 3. Salud del Parque Metrológico y costo migrado a prorrateo por medidores detenidos/tapados, 4. Intensidad `kWh/m²` y `m³/m²` por Bodega + Top 15 Pareto de Locales con clic a Cuenta 360°, 5. Evolución Multicorte Enero–Junio 2025 de tarifas unitarias y facturación total, y 6. SLA de lectura en terreno y tasa de locales cerrados).
+
 ---
 
 ## 6. Plan de Ejecución Atómico
@@ -364,3 +390,4 @@ La consola principal se estructura en **2 niveles de navegación**:
 - `[x]` **Tarea 8.0:** Evolución de `/captura` (`src/app/captura/page.tsx` + `src/lib/reading-tasks-engine.ts`) como **Cola de Tareas Pendientes por Corte y Zonas** (Macromedidores, Baños, Comerciantes Principal, Bodega Popular, Red de Fríos) con filtro por defecto de solo pendientes, validación física `kWh`/`m³` y salto automático.
 - `[x]` **Tarea 9.0:** Construcción del **Shell ERP de 2 Niveles (`src/app/page.tsx`)**, el **Contenedor Dedicado del Módulo 01 (`src/components/UtilitiesErpModuleView.tsx`)**, el **Tablero de Estado de las 68 Bodegas y Vacancia (`src/components/BodegasStatusView.tsx`)** y el **Modal/Expediente de Cuenta Individual 360° y Rendición de Cuentas por Local (`src/components/LocalAccountModal.tsx`)**.
 - `[x]` **Tarea 10.0:** Certificación `npx tsc --noEmit` (`EXIT 0`), verificación funcional en `http://localhost:3013` y `http://localhost:3013/captura`, y dictamen independiente de `auditor-tirano-sdd`.
+- `[x]` **Tarea 11.0:** Actualización SDD `SPEC.md` v1.4.0 e implementación del **Sub-Módulo 1.5 Inteligencia BI & 6 KPIs Longitudinales Corte a Corte** (`src/lib/bi-kpis-engine.ts` + `src/components/BiLongitudinalKpisView.tsx`) integrado en `src/components/UtilitiesErpModuleView.tsx`.
