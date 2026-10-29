@@ -344,9 +344,11 @@ La consola administrativa implementa íntegramente el **Sistema de Diseño y Arq
    4. **Sub-Vista 1.4 — Monitor de Corte y Cola de Tareas de Terreno:**
       - Resumen gerencial del avance del corte por las 5 zonas operativas, bitácora de lecturas recibidas en vivo y enlace directo a `/captura`.
    5. **Sub-Vista 1.5 — Inteligencia BI & 6 KPIs Longitudinales Corte a Corte (`src/components/BiLongitudinalKpisView.tsx`):**
-      - Centro ejecutivo de analítica longitudinal que visualiza los **6 KPIs estratégicos** (Radar de Fugas en Macromedidores Padre-Hijo, Puente de Absorción Financiera Corporativa, Salud del Parque Metrológico de 1.835 medidores, Intensidad por $m^2$ y Ranking Pareto Top 15 con apertura directa de Cuenta Individual 360°, Curva Multicorte Enero–Junio 2025 de Tarifas Unitarias y SLA Operativo por Zona).
+      - Centro ejecutivo de analítica longitudinal que visualiza los **6 KPIs estratégicos** (Radar de Fugas en Macromedidores Padre-Hijo, Puente de Absorción Financiera Corporativa, Salud del Parque Metrológico de 1.835 medidores, Intensidad por $m^2$ y Ranking Pareto Top 15 con apertura directa de Cuenta Individual 360°, Comparativo Real Mayo 2025 vs. Junio 2025 y SLA Operativo por Zona).
+   6. **Sub-Vista 1.6 — Memoria de Cálculo & Reglas de Liquidación (`src/components/LiquidationMethodologyView.tsx`):**
+      - Subsección ejecutiva y pedagógica dedicada que documenta y demuestra matemáticamente cómo se liquidó el corte activo (`Junio 2025`) paso a paso y al centavo en cada uno de los **7 bloques de cobro** (`Energía Predio Matriz`, `Energía Bodega Popular Macro`, `Acueducto y Alcantarillado`, `Vigilancia`, `Policía`, `Barrido / Aseo`, y `Residuos Verdes NP / MP / P`), mostrando las fórmulas exactas del cliente y del Excel, las áreas divisoras, las bolsas de prorrateo, la regla de contadores compartidos (`/N`) y contadores en cero (`Mínima + %`).
 - **Expediente Modal / Drawer: Cuenta Individual 360° y Rendición de Cuentas por Local (`src/components/LocalAccountModal.tsx`):**
-  - Se abre al hacer clic en cualquier local desde la Sábana Maestra, el Mapa de Bodegas o el Ranking Pareto del Sub-Módulo BI.
+  - Se abre al hacer clic en cualquier local desde la Sábana Maestra, el Mapa de Bodegas o el Ranking Pareto del Sub-Módulo BI, e incluye la **Memoria de Cálculo Individual Reemplazada** con las cifras exactas del local seleccionado.
 
 ---
 
@@ -400,3 +402,5 @@ La consola administrativa implementa íntegramente el **Sistema de Diseño y Arq
 - `[x]` **Tarea 10.0:** Certificación `npx tsc --noEmit` (`EXIT 0`), verificación funcional en `http://localhost:3013` y `http://localhost:3013/captura`, y dictamen independiente de `auditor-tirano-sdd`.
 - `[x]` **Tarea 11.0:** Actualización SDD `SPEC.md` v1.4.0 e implementación del **Sub-Módulo 1.5 Inteligencia BI & 6 KPIs Longitudinales Corte a Corte** (`src/lib/bi-kpis-engine.ts` + `src/components/BiLongitudinalKpisView.tsx`) integrado en `src/components/UtilitiesErpModuleView.tsx`.
 - `[x]` **Tarea 12.0:** Actualización SDD `SPEC.md` v1.5.0 e implementación del **Sidebar Colapsable, Topbar Ejecutivo, Sistema de Color (`#0B132B` / `#1E3A5F` / `#f7931b`) y Popover Glassmorphism del Portal de Operaciones MJM** en `src/app/globals.css`, `src/app/page.tsx` y `src/components/UtilitiesErpModuleView.tsx`.
+- `[x]` **Tarea 13.0:** Actualización SDD `SPEC.md` v1.6.0 con las reglas oficiales de negocio del cliente, erradicación de meses simulados y extracción de las columnas reales de Mayo 2025 (`W`, `Z`, `R`) y divisores de contadores compartidos (`/N`).
+- `[x]` **Tarea 14.0:** Actualización SDD `SPEC.md` v1.7.0 e implementación de la **Sub-Vista 1.6 Memoria de Cálculo & Reglas de Liquidación (`src/components/LiquidationMethodologyView.tsx`)** y la explicación matemática reemplazada local por local en `src/components/LocalAccountModal.tsx`.

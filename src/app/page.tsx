@@ -31,6 +31,7 @@ import {
   TableProperties,
   Wrench,
   X,
+  BookOpen,
 } from "lucide-react";
 
 interface SidebarNavItem {
@@ -54,6 +55,7 @@ const SUBTAB_BREADCRUMB_LABELS: Record<UtilitiesSubTabId, string> = {
   RECIBOS_MACROS: "1.3 Recibos Maestros (10) & Macromedidores Padre-Hijo (62)",
   MONITOR_CAMPO: "1.4 Monitor de Corte & Auditoría en Terreno",
   BI_KPIS: "1.5 Inteligencia BI & 6 KPIs Longitudinales",
+  MEMORIA_CALCULO: "1.6 Memoria de Cálculo & Reglas Oficiales de Liquidación",
 };
 
 export default function CorabastosErpShellPage() {
@@ -187,6 +189,14 @@ export default function CorabastosErpShellPage() {
             icon: <BarChart3 size={16} />,
             isStarFeature: true,
             badgeText: "6 KPIs",
+          },
+          {
+            id: "SUB_MEMORIA",
+            label: "Cómo se Liquidó (Fórmulas)",
+            moduleId: "MOD_1_SERVICIOS_EXPENSAS",
+            subTabId: "MEMORIA_CALCULO",
+            icon: <BookOpen size={16} />,
+            badgeText: "Reglas",
           },
         ],
       },

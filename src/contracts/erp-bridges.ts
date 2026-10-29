@@ -13,7 +13,8 @@ export type UtilitiesSubTabId =
   | "BODEGAS_68"
   | "RECIBOS_MACROS"
   | "MONITOR_CAMPO"
-  | "BI_KPIS";
+  | "BI_KPIS"
+  | "MEMORIA_CALCULO";
 
 export interface ErpMacroModuleDefinition {
   id: ErpMacroModuleId;

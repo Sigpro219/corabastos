@@ -7,6 +7,7 @@ import { BodegasStatusView } from "@/components/BodegasStatusView";
 import { MasterReceiptsSimulatorView } from "@/components/MasterReceiptsSimulatorView";
 import { MobileFieldCaptureView } from "@/components/MobileFieldCaptureView";
 import { BiLongitudinalKpisView } from "@/components/BiLongitudinalKpisView";
+import { LiquidationMethodologyView } from "@/components/LiquidationMethodologyView";
 import { LocalAccountModal } from "@/components/LocalAccountModal";
 import { UtilitiesSubTabId } from "@/contracts/erp-bridges";
 import { useCorabastos } from "@/context/CorabastosContext";
@@ -21,6 +22,7 @@ import {
   CheckCircle2,
   BarChart3,
   Sparkles,
+  BookOpen,
 } from "lucide-react";
 
 interface UtilitiesErpModuleViewProps {
@@ -173,6 +175,19 @@ export function UtilitiesErpModuleView({
               <Sparkles className="w-2.5 h-2.5" /> BI
             </span>
           </button>
+
+          <button
+            type="button"
+            onClick={() => handleSelectSubTab("MEMORIA_CALCULO")}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
+              subTab === "MEMORIA_CALCULO"
+                ? "bg-[#0B132B] text-white border-l-2 border-[#f7931b] shadow-xs"
+                : "bg-[var(--surface-alt)] text-[var(--text-muted)] hover:text-[var(--text-main)]"
+            }`}
+          >
+            <BookOpen className={`w-3.5 h-3.5 ${subTab === "MEMORIA_CALCULO" ? "text-[#f7931b]" : "text-slate-400"}`} />
+            <span>1.6 Cómo se Liquidó (Reglas & Fórmulas)</span>
+          </button>
         </div>
       </div>
 
@@ -184,6 +199,7 @@ export function UtilitiesErpModuleView({
       {subTab === "BI_KPIS" && (
         <BiLongitudinalKpisView onSelectLocalCode={(code) => setInspectedLocalCode(code)} />
       )}
+      {subTab === "MEMORIA_CALCULO" && <LiquidationMethodologyView />}
 
       <LocalAccountModal
         local={inspectedLocal}
