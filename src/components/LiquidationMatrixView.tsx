@@ -38,9 +38,9 @@ export function LiquidationMatrixView() {
     const terms = rawQ.split(/\s+/).filter(Boolean);
 
     return locales.filter((loc) => {
-      // 1. Omnibox search
+      // 1. Omnibox search (busca sobre el universo completo de 5.318 locales en memoria)
       if (terms.length > 0) {
-        const searchableText = `${loc.codigo} ${loc.bodegaId} ${loc.tipoBodega} ${loc.modalidadGeneral} ${loc.categoriaResiduos} ${loc.energiaEstado} ${loc.aguaEstado} ${loc.planos.energia} ${loc.planos.agua}`.toLowerCase();
+        const searchableText = `${loc.codigo} bod${loc.bodegaId} ${loc.bodegaId} ${loc.tipoBodega} ${loc.bloqueEnergia} ${loc.modalidadGeneral} ${loc.modalidadEnergia} ${loc.modalidadAcueducto} ${loc.categoriaResiduos} ${loc.energiaObs} ${loc.aguaObs} ${loc.energiaEstado} ${loc.aguaEstado} ${loc.estadoOcupacion || "ACTIVO"} ${loc.planos.energia} ${loc.planos.agua}`.toLowerCase();
 
         const matchesAll = terms.every((term) => {
           if (term.startsWith("#")) {
@@ -289,8 +289,8 @@ export function LiquidationMatrixView() {
           {/* TELEMETRÍA DE FILTRADO Y PAGINACIÓN COMPACTA EN TOOLBAR */}
           <div className="flex items-center gap-2 text-xs">
             <span className="text-slate-500 font-medium hidden sm:inline">
-              Página <strong className="font-mono text-[#1D3557]">{currentPage}</strong> de{" "}
-              <strong className="font-mono text-[#1D3557]">{totalPages}</strong> ({filteredLocalesCount} locales)
+              Página <strong className="font-mono text-[#1D3557]">{formatInt(currentPage)}</strong> de{" "}
+              <strong className="font-mono text-[#1D3557]">{formatInt(totalPages)}</strong> ({formatInt(filteredLocalesCount)} de {formatInt(totalLocalesCount)} locales)
             </span>
             <div className="flex items-center gap-1">
               <button

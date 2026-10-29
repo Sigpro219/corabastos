@@ -121,13 +121,21 @@ export function BodegasStatusView() {
   }, [locales, completedTaskIds]);
 
   const filteredBodegas = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
     return bodegasRows.filter((b) => {
-      if (
-        searchQuery.trim() &&
-        !b.bodegaId.toLowerCase().includes(searchQuery.trim().toLowerCase()) &&
-        !b.tipoBodega.toLowerCase().includes(searchQuery.trim().toLowerCase())
-      ) {
-        return false;
+      if (q) {
+        const matchesBodegaHeader =
+          b.bodegaId.toLowerCase().includes(q) ||
+          b.tipoBodega.toLowerCase().includes(q);
+        const matchesAnyLocalIn5318 = b.localesList.some(
+          (loc) =>
+            loc.codigo.toLowerCase().includes(q) ||
+            loc.energiaObs.toLowerCase().includes(q) ||
+            loc.aguaObs.toLowerCase().includes(q)
+        );
+        if (!matchesBodegaHeader && !matchesAnyLocalIn5318) {
+          return false;
+        }
       }
       if (
         filterOccupancy === "CON_VACANCIA" &&
@@ -244,7 +252,7 @@ export function BodegasStatusView() {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Buscar bodega por código (01..98) o tipo (COMERCIANTES, BP MIN, RED FRIOS)..."
+            placeholder="Buscar en las 68 bodegas y 5.318 locales (ej. Bodega 01, local 810077, serie medidor)..."
             className="w-full h-10 pl-10 pr-4 rounded-lg border border-slate-300 text-xs font-mono text-slate-900 focus:outline-none focus:border-slate-900"
           />
         </div>

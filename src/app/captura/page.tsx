@@ -94,11 +94,22 @@ export default function OperadorTerrenoCapturePage() {
     return Array.from(map.entries()).sort((a, b) => a[0].localeCompare(b[0]));
   }, [allTasks, selectedZone]);
 
-  // Tareas filtradas según Zona, Bodega, Servicio y Bandeja (Solo Pendientes por defecto)
+  // Tareas filtradas: cuando hay texto en searchQuery, busca en TODO el universo del corte (todas las zonas y bodegas)
   const filteredTasks = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
     return allTasks.filter((t) => {
-      if (t.zonaId !== selectedZone) return false;
-      if (selectedBodega !== "ALL" && t.bodegaId !== selectedBodega) return false;
+      if (q.length > 0) {
+        const matchesTask =
+          t.codigo.toLowerCase().includes(q) ||
+          t.serieMedidor.toLowerCase().includes(q) ||
+          `bodega ${t.bodegaId}`.toLowerCase().includes(q);
+        if (!matchesTask) return false;
+      } else {
+        if (t.zonaId !== selectedZone) return false;
+        if (selectedBodega !== "ALL" && t.bodegaId !== selectedBodega) return false;
+        if (queueFilter === "PENDIENTES" && t.taskState !== "PENDIENTE") return false;
+        if (queueFilter === "COMPLETADAS" && t.taskState === "PENDIENTE") return false;
+      }
       if (serviceFilter === "ENERGIA" && t.servicio !== "ENERGIA" && t.servicio !== "MACRO_ENERGIA") {
         return false;
       }
@@ -110,14 +121,16 @@ export default function OperadorTerrenoCapturePage() {
       ) {
         return false;
       }
-      if (queueFilter === "PENDIENTES" && t.taskState !== "PENDIENTE") return false;
-      if (queueFilter === "COMPLETADAS" && t.taskState === "PENDIENTE") return false;
-      if (searchQuery.trim().length > 0 && !t.codigo.toLowerCase().includes(searchQuery.trim().toLowerCase())) {
-        return false;
-      }
       return true;
     });
   }, [allTasks, selectedZone, selectedBodega, serviceFilter, queueFilter, searchQuery]);
+
+  // Si el operador busca uno de los 5.318 locales que NO tiene medidor individual (ej. PRORRATEO / COMUNAL), lo identificamos
+  const nonMeteredCatalogMatch = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q || filteredTasks.length > 0) return null;
+    return locales.find((l) => l.codigo.toLowerCase().includes(q)) || null;
+  }, [locales, searchQuery, filteredTasks.length]);
 
   const activeTask = useMemo(() => {
     const found = filteredTasks.find((t) => t.taskKey === selectedTaskKey);
@@ -449,6 +462,19 @@ export default function OperadorTerrenoCapturePage() {
             handleSaveTask={handleSaveTask}
             saveToast={saveToast}
           />
+        ) : nonMeteredCatalogMatch ? (
+          <div className="bg-slate-900/90 border border-amber-400/40 rounded-2xl p-6 text-center space-y-2">
+            <h3 className="text-base font-bold text-amber-300 font-mono">
+              Local {nonMeteredCatalogMatch.codigo} · Bodega {nonMeteredCatalogMatch.bodegaId} ({nonMeteredCatalogMatch.tipoBodega})
+            </h3>
+            <p className="text-xs text-slate-300">
+              Este local existe en el catastro de <strong>5.318 locales</strong>, pero su modalidad es{" "}
+              <strong className="text-white">
+                Energía: {nonMeteredCatalogMatch.modalidadEnergia} / Acueducto: {nonMeteredCatalogMatch.modalidadAcueducto}
+              </strong>{" "}
+              (sin contador individual asignado en la cola de lectura).
+            </p>
+          </div>
         ) : (
           <div className="bg-slate-900/90 border border-emerald-500/30 rounded-2xl p-8 text-center space-y-2">
             <CheckCircle2 className="w-10 h-10 text-emerald-400 mx-auto" />
