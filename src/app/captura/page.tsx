@@ -149,7 +149,7 @@ export default function OperadorTerrenoCapturePage() {
       setOcrRunning(false);
       setPhotoCaptured(true);
       const increment =
-        activeTask.multiplicador > 1
+        activeTask.multiplicador !== 1 && activeTask.multiplicador > 0
           ? Math.max(1, Math.round(activeTask.consumoAnteriorFisico / activeTask.multiplicador))
           : Math.max(5, Math.round(activeTask.consumoAnteriorFisico));
       const suggested = Math.round(activeTask.lecturaAnterior + increment);

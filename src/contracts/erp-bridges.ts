@@ -219,7 +219,7 @@ export interface BiLongitudinalReport {
   kpi4PromedioCopM2Global: number;
   kpi4TopBodegasIntensidad: BiBodegaIntensityBenchmark[];
   kpi4TopParetoLocales: BiParetoLocalItem[];
-  // KPI 5: Serie Longitudinal Multicorte (Ene 2025 - Jun 2025)
+  // KPI 5: Comparativo Longitudinal Real Corte a Corte (Mayo 2025 vs Junio 2025)
   kpi5SerieLongitudinal: BiLongitudinalCutoffPoint[];
   kpi5VariacionMayoJunioPct: number;
   // KPI 6: Eficiencia Operativa del Corte (SLA Terreno)

@@ -1,7 +1,7 @@
 # 🛡️ CORABASTOS OS (ERP Corporativo & Motor de Liquidación de Servicios Públicos y Expensas Comunes) — Contrato Canónico de Arquitectura (SPEC.md)
 
 > **Documento Canónico de Especificación (Spec-Anchored — SDD)**  
-> **Versión:** 1.6.0 (Integración de Reglas Oficiales del Cliente: Vigilancia, Policía, Barrido, Residuos Verdes NP/MP/P, Energía BP y Predio Matriz + Medidores Compartidos `/N` con Misma Lectura + Contadores en Cero + Cero Datos Simulados Mayo vs. Junio 2025 Real)  
+> **Versión:** 1.7.0 (Integración de Reglas Oficiales del Cliente + Sub-Módulo 1.6 Memoria de Cálculo & Reglas de Liquidación + Medidores Compartidos `/N` + Cero Datos Simulados Mayo vs. Junio 2025 Real)  
 > **Fecha de Actualización:** 28 de Octubre de 2026  
 > **Estado:** 🟢 VIGENTE & 100% BLINDADO PARA CONSTRUCCIÓN  
 > **Ubicación Oficial:** `C:\Users\German Higuera\OneDrive\Documentos\Projects\corabastos`  
@@ -127,7 +127,7 @@ Cada unidad o local comercial posee:
 - `areaM2` (`number`): Área en metros cuadrados. Suma total del catastro: **`126.125,15 m²`**.
 - `modalidadEnergia` (`'CONTADOR' | 'COMUNAL' | 'PRORRATEO' | 'RED_FRIOS' | 'EXCLUIDO'`).
 - `modalidadAcueducto` (`'CONTADOR' | 'COMUNAL' | 'PRORRATEO' | 'RED_FRIOS' | 'EXCLUIDO'`).
-- `bloqueEnergia` (`'PRINCIPAL' | 'BODEGA_POPULAR'`): Define si el local se liquida en la sábana `ENERGIA_` (3.463 registros) o en `ENERGIA BP` (1.851 registros, donde los medidores físicos tienen relación de reducción **`1/8` → multiplicador `8x`** sobre `Lectura Actual - Lectura Anterior` y sobretasa CREG del **`15,7%`**).
+- `bloqueEnergia` (`'PRINCIPAL' | 'BODEGA_POPULAR'`): Define si el local se liquida en la sábana `ENERGIA_` (3.463 registros) o en `ENERGIA BP` (1.851 registros, con divisor `/N` en contadores compartidos de idéntica lectura y sobretasa CREG del **`15,7%`**).
 - `categoriaResiduos` (`'NP' | 'MP' | 'P' | 'BASICOS' | 'EXCLUIDO'`): Clasificación generadora de residuos sólidos ECSA según PGIRS.
 - `estadoOcupacion` (`'ACTIVO' | 'VACIO_CON_CONTRATO' | 'VACIO_SIN_CONTRATO_CORPORACION'`): Estado operativo y contractual del local (ver Sección 3.7).
 - **Separación Estricta de Unidades Históricas (Físicas vs. Financieras):**
@@ -314,7 +314,7 @@ Aislada por RBAC de las cifras financieras corporativas:
    - El operador en su celular **ve únicamente los medidores que le faltan por cargar en ese corte**.
    - Cuenta con un toggle secundario (`Pendientes [N]` | `Completadas [M]`) por si requiere auditar o corregir una lectura ya enviada en el turno.
 3. **Tarjeta de Captura con Fotografía Probatoria, Semáforo Físico (`kWh`/`m³`) y Avance Automático:**
-   - Exibe Código del Local/Macromedidor, Serie del Medidor, Lectura Anterior, Consumo Físico Anterior (`kWh` o `m³`), y en Bodega Popular alerta visible de **Factor Multiplicador `8x`**.
+   - Exhibe Código del Local/Macromedidor, Serie del Medidor, Lectura Anterior, Consumo Físico Anterior (`kWh` o `m³`), y badge visible de **Medidor Compartido `/N` Locales** cuando aplica.
    - Al guardar una lectura válida (o reportar causal reglamentaria con foto), marca la tarea como `COMPLETADA` / `NOVEDAD_TECNICA`, la retira de la lista de pendientes y carga de inmediato la siguiente tarea pendiente de esa bodega.
 
 ### 4.2 Ruta Independiente 2: Shell Global del ERP Corporativo Estilo Portal de Operaciones MJM (`/` — Desktop 1600px) & Módulo Dedicado (`UtilitiesErpModuleView`)
@@ -329,12 +329,12 @@ La consola administrativa implementa íntegramente el **Sistema de Diseño y Arq
    - **Secciones Jerárquicas con Micro-Títulos Monoespaciados (`navSections`):**
      - Encabezados en `text-[8.5px] font-mono font-bold tracking-widest text-slate-400/60 uppercase`.
      - Ítems con `px-3 py-1.5 rounded-lg text-[11.5px]`, ícono `size={16}`, estado activo **`bg-white/10 text-white font-semibold border-l-2 border-[#f7931b]`** con ícono en `#f7931b` y `<ChevronRight size={11} />`, y badge destacado en `#f7931b` con `<Sparkles />` para el Sub-Módulo BI.
-     - Agrupa ordenadamente las **5 Sub-Vistas del Módulo 01 (`Servicios Públicos & Expensas`)** y los **Anillos 2 a 5 de la Suite ERP Corabastos (`Cables Pelados`)**.
+     - Agrupa ordenadamente las **6 Sub-Vistas del Módulo 01 (`Servicios Públicos & Expensas`)** y los **Anillos 2 a 5 de la Suite ERP Corabastos (`Cables Pelados`)**.
    - **Pie de Firma Corporativa (`Footer Branding`):** Acción rápida de restauración/salida, leyenda `Powered by Delta CoreTech` y píldora `bg-white/5 border-white/5` con punto esmeralda pulsante (`w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse`) mostrando el corte publicado.
 3. **Topbar Ejecutivo Compañero (`sticky top-0 z-40 h-14` en `src/app/page.tsx`):**
    - **Izquierda:** Botón Hamburguesa (`<Menu size={16} />`) para alternar visibilidad del Sidebar (permitiendo modo pantalla completa `100%` para tablas anchas) + **Breadcrumb Dinámico** (`Módulo Activo > Sub-Vista Activa` con acento en `#1E3A5F` / `#f7931b`).
    - **Derecha:** Telemetría del Corte Activo (`$3.621,55M`), botón de apertura de `/captura` (`Terminal Móvil Operador`), selector Modo Día/Noche (`<Sun />` / `<Moon />`), campana `<Bell />` con **Popover Glassmorphism en Azul Profundo (`from-[#14284b]/95 via-[#0d1d36]/95 to-[#091528]/95`)** para Alertas Críticas del Corte, y avatar corporativo (`CO`).
-4. **Nivel 2 — Contenedor Dedicado del Módulo 1 (`src/components/UtilitiesErpModuleView.tsx`):** Agrupa de forma autocontenida y sincronizada con el Sidebar las **5 sub-vistas operativas y analíticas** del proceso de Liquidación de Servicios Públicos y Expensas:
+4. **Nivel 2 — Contenedor Dedicado del Módulo 1 (`src/components/UtilitiesErpModuleView.tsx`):** Agrupa de forma autocontenida y sincronizada con el Sidebar las **6 sub-vistas operativas y analíticas** del proceso de Liquidación de Servicios Públicos y Expensas:
    1. **Sub-Vista 1.1 — Sábana Maestra de Liquidación (`5.318 Locales`), Conciliación (`V/Finanzas` vs `V/Liquidado`) & Cuenta Individual 360°:**
       - Implementa el estándar `galeria-sticky-industrial` de 3 niveles congelados (`top-0` Topbar corporativo, `top-14` Omnibox + Píldoras de telemetría, `top-[148px]` encabezados `<th>` sólidos `#0B132B`) y botón ícono esmeralda para exportación Excel/CSV.
    2. **Sub-Vista 1.2 — Mapa de Estado de las 68 Bodegas, Avance del Corte & Gestión de Vacancia (`src/components/BodegasStatusView.tsx`):**
@@ -377,14 +377,14 @@ La consola administrativa implementa íntegramente el **Sistema de Diseño y Arq
   - **Then** al local `VACIO_CON_CONTRATO` se le liquida Factura Mínima (`$20.498`) + Alumbrado/Agua Comunal ($m^2$) + Expensas de ley, mientras que al local `VACIO_SIN_CONTRATO_CORPORACION` se le mantiene su área ($m^2$) en el denominador técnico de la bodega (sin subirle la tarifa $/m^2$ a los comerciantes activos) y su costo se traslada a la bolsa contable `VALOR ASUMIDO CORPORACIÓN`.
 
 - **Escenario 3: Cuenta Individual 360° y Rendición de Cuentas por Local**
-  - **Given** cualquier local de los 5.318 en la consola administrativa (ej. `010001` o un puesto de Bodega Popular con factor `8x`),
+  - **Given** cualquier local de los 5.318 en la consola administrativa (ej. `010001` o un puesto de Bodega Popular con contador compartido `/N`),
   - **When** el auditor hace clic sobre la fila del local para abrir su `Cuenta Individual 360°`,
   - **Then** el sistema despliega el expediente completo con ficha catastral, trazabilidad del macromedidor padre de su bodega, desglose matemático de las fórmulas del Art. 46 para los 6 servicios, comparativo contra consumo físico anterior (`kWh`/`m³`) y banda financiera (`PROMEDIO <` / `PROMEDIO >`), y permite imprimir el soporte oficial de rendición de cuentas.
 
 - **Escenario 4: Inteligencia BI & 6 KPIs Longitudinales Corte a Corte (`1.5 Inteligencia BI & KPIs`)**
   - **Given** el Módulo 01 (`Servicios Públicos & Expensas`) con el censo activo de `5.318 locales`, `62 macromedidores` y `1.835 tareas físicas`,
   - **When** el director financiero o auditor abre la Sub-Vista `1.5 Inteligencia BI & KPIs Longitudinales`,
-  - **Then** el sistema calcula y renderiza reactivamente los **6 KPIs Longitudinales** (1. Pérdidas y saltos `> +20%` en Macromedidores Padre-Hijo, 2. Brecha de Absorción Financiera `V/Finanzas` vs `V/Liquidado` + `Asumido Corporación`, 3. Salud del Parque Metrológico y costo migrado a prorrateo por medidores detenidos/tapados, 4. Intensidad `kWh/m²` y `m³/m²` por Bodega + Top 15 Pareto de Locales con clic a Cuenta 360°, 5. Evolución Multicorte Enero–Junio 2025 de tarifas unitarias y facturación total, y 6. SLA de lectura en terreno y tasa de locales cerrados).
+  - **Then** el sistema calcula y renderiza reactivamente los **6 KPIs Longitudinales** (1. Pérdidas y saltos `> +20%` en Macromedidores Padre-Hijo, 2. Brecha de Absorción Financiera `V/Finanzas` vs `V/Liquidado` + `Asumido Corporación`, 3. Salud del Parque Metrológico y costo migrado a prorrateo por medidores detenidos/tapados, 4. Intensidad `kWh/m²` y `m³/m²` por Bodega + Top 15 Pareto de Locales con clic a Cuenta 360°, 5. Comparativo Longitudinal Real Mayo 2025 vs. Junio 2025 sin meses simulados, y 6. SLA de lectura en terreno y tasa de locales cerrados).
 
 ---
 
