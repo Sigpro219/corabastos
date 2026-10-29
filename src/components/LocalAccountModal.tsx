@@ -285,16 +285,16 @@ export function LocalAccountModal({ local, onClose }: LocalAccountModalProps) {
                     <td className="py-3 px-3 text-[11px] text-slate-700">
                       <div>
                         {local.modalidadEnergia === "PRORRATEO"
-                          ? `Prorrateo Área: ${formatDec(local.areaM2, 2)} m² × $${isBP ? "7.041,51" : "10.548,66"}/m²`
+                          ? `Prorrateo Área: ${formatDec(local.areaM2, 1)} m² × $${isBP ? "7.041,5" : "10.548,7"}/m²`
                           : `(${formatDec(
                               local.energiaConsumoIndivKw +
                                 local.energiaConsumoComunalKw +
                                 local.energiaConsumoAleroKw,
-                              2
-                            )} kWh × $${formatDec(receipts.energia.tarifaKwh, 2)})`}
+                              1
+                            )} kWh × $${formatDec(receipts.energia.tarifaKwh, 1)})`}
                       </div>
                       <div>
-                        + Alumbrado ({formatDec(local.areaM2, 2)} m² × $929,46) + {formatDec(cregPct, 1)}% CREG (Mín: $
+                        + Alumbrado ({formatDec(local.areaM2, 1)} m² × $929,5) + {formatDec(cregPct, 1)}% CREG (Mín: $
                         {isBP ? "20.489" : "20.498"})
                       </div>
                     </td>
@@ -344,10 +344,10 @@ export function LocalAccountModal({ local, onClose }: LocalAccountModalProps) {
                     <td className="py-3 px-3 text-[11px] text-slate-700">
                       <div>
                         {local.modalidadAcueducto === "PRORRATEO"
-                          ? `Prorrateo: ${formatDec(local.areaM2, 2)} m² × $1.249,44/m²`
-                          : `(${formatDec(local.aguaConsumoIndivM3 + local.aguaConsumoComunalM3, 2)} m³ × $${formatDec(receipts.acueducto.tarifaM3, 2)} [Mín 1m³])`}
+                          ? `Prorrateo: ${formatDec(local.areaM2, 1)} m² × $1.249,4/m²`
+                          : `(${formatDec(local.aguaConsumoIndivM3 + local.aguaConsumoComunalM3, 1)} m³ × $${formatDec(receipts.acueducto.tarifaM3, 1)} [Mín 1m³])`}
                       </div>
-                      <div>+ Agua Comunal Gral ({formatDec(local.areaM2, 2)} m² × $198,20/m²)</div>
+                      <div>+ Agua Comunal Gral ({formatDec(local.areaM2, 1)} m² × $198,2/m²)</div>
                     </td>
                     <td className="py-3 px-3 text-[11px]">
                       {local.aguaPromMax > 0 ? (
@@ -406,11 +406,11 @@ export function LocalAccountModal({ local, onClose }: LocalAccountModalProps) {
                     </td>
                     <td className="py-3 px-3 text-[11px] text-slate-700">
                       {local.categoriaResiduos === "NP"
-                        ? `${formatDec(local.areaM2, 2)} m² × $2.519,55/m² (NP 0,4x)`
+                        ? `${formatDec(local.areaM2, 1)} m² × $2.519,6/m² (NP 0,4x)`
                         : local.categoriaResiduos === "MP"
-                        ? `${formatDec(local.areaM2, 2)} m² × $7.558,66/m² (MP 1,2x)`
+                        ? `${formatDec(local.areaM2, 1)} m² × $7.558,7/m² (MP 1,2x)`
                         : local.categoriaResiduos === "P"
-                        ? `${formatDec(local.areaM2, 2)} m² × $9.987,32/m² (Bolsa Restante P)`
+                        ? `${formatDec(local.areaM2, 1)} m² × $9.987,3/m² (Bolsa Restante P)`
                         : "Tarifa Básica Fija"}
                     </td>
                     <td className="py-3 px-3 text-[11px] text-slate-500">
@@ -457,7 +457,7 @@ export function LocalAccountModal({ local, onClose }: LocalAccountModalProps) {
                     </td>
                     <td className="py-3 px-3 text-[11px]">Divisor: 5.300 locales</td>
                     <td className="py-3 px-3 text-[11px] text-slate-700">
-                      $215.384.615 ÷ 5.300 locales = $40.638,61
+                      $215.384.615 ÷ 5.300 locales = $40.638,6
                     </td>
                     <td className="py-3 px-3 text-[11px] text-slate-500">
                       Mes Ant: ${(local.policiaAnteriorCop || 0).toLocaleString("es-CO")}

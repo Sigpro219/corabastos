@@ -105,7 +105,7 @@ export function LiquidationMethodologyView() {
               {fmtCop(receipts.acueducto.tarifaM3, 2)} / m³
             </span>
             <span className="text-[10px] text-slate-400 block mt-0.5">
-              Comunal Gral: $198,20/m²
+              Comunal Gral: $198,2/m²
             </span>
           </div>
 
@@ -197,7 +197,7 @@ export function LiquidationMethodologyView() {
                   3. Base $ = MÁX({fmtCop(receipts.energia.principal.topeMinimaCop)}, Total_kWh × {fmtCop(receipts.energia.tarifaKwh, 2)})
                 </div>
                 <div className="text-emerald-700 font-bold">
-                  4. Total = (Base $ + Área_m² × $929,46) × 1,20 (CREG 20%)
+                  4. Total = (Base $ + Área_m² × $929,5) × 1,2 (CREG 20%)
                 </div>
               </div>
               <div className="text-[11px] text-slate-600 flex items-start gap-1.5">
@@ -234,7 +234,7 @@ export function LiquidationMethodologyView() {
                   3. Si tiene Alero: se suma la misma formulación (kWh_Alero ÷ Área_Bodega × Área_Local)
                 </div>
                 <div className="text-emerald-700 font-bold">
-                  4. Total = (kWh_Total × $720,48 + Alumbrado_m²) × 1,20
+                  4. Total = (kWh_Total × $720,5 + Alumbrado_m²) × 1,2
                 </div>
               </div>
               <div className="text-[11px] text-slate-600 flex items-start gap-1.5">
@@ -252,7 +252,7 @@ export function LiquidationMethodologyView() {
                   MODALIDAD C · PRORRATEO POR ÁREA
                 </span>
                 <span className="font-mono text-[11px] font-bold text-indigo-800">
-                  $10.548,66 / m² (+CREG)
+                  $10.548,7 / m² (+CREG)
                 </span>
               </div>
               <p className="text-slate-700 leading-relaxed">
@@ -261,19 +261,19 @@ export function LiquidationMethodologyView() {
               <div className="p-2.5 rounded-lg bg-white border border-slate-200 font-mono text-[11px] space-y-1">
                 <div className="text-slate-500 font-bold">Cálculo de la Bolsa de Prorrateo (Junio 2025):</div>
                 <div className="text-slate-900">
-                  • Valor Neto Servicio Matriz: {fmtCop(receipts.energia.principal.valorNetoServicio, 2)}
+                  • Valor Neto Servicio Matriz: {fmtCop(receipts.energia.principal.valorNetoServicio, 1)}
                 </div>
                 <div className="text-slate-900">
-                  • (−) Total Contadores y Comunales: $318.017.402,04
+                  • (−) Total Contadores y Comunales: $318.017.402,0
                 </div>
                 <div className="text-slate-900">
-                  • (=) Bolsa Prorrateo: <strong>{fmtCop(receipts.energia.principal.bolsaProrrateo, 2)}</strong>
+                  • (=) Bolsa Prorrateo: <strong>{fmtCop(receipts.energia.principal.bolsaProrrateo, 1)}</strong>
                 </div>
                 <div className="text-slate-900">
-                  • (÷) Área Total Prorrateo: <strong>{fmtNum(receipts.energia.principal.areaProrrateoM2, 3)} m²</strong>
+                  • (÷) Área Total Prorrateo: <strong>{fmtNum(receipts.energia.principal.areaProrrateoM2, 1)} m²</strong>
                 </div>
                 <div className="text-indigo-700 font-bold">
-                  • Factor Base: $10.548,66 / m² + Alumbrado ($929,46/m²) + 20% CREG
+                  • Factor Base: $10.548,7 / m² + Alumbrado ($929,5/m²) + 20% CREG
                 </div>
               </div>
             </div>
@@ -307,7 +307,7 @@ export function LiquidationMethodologyView() {
                 2A · LOCALES CON CONTADOR EN BODEGA POPULAR
               </span>
               <p className="text-slate-700 leading-relaxed">
-                Se toma <strong>Lectura Actual − Lectura Anterior = Consumo × Valor kWh ($720,48)</strong>. Adicionalmente, todo local asume su proporción del <strong>20% de la factura de Bodega Popular como Consumo Comunal de la Bodega</strong> ({fmtCop(receipts.energia.bodegaPopular.consumoComunal20Pct)} ÷ {fmtNum(receipts.energia.bodegaPopular.areaTotalM2, 2)} m² = <strong>2,8313 kWh/m²</strong>) + el <strong>20% de la factura general como Alumbrado Público</strong> ($929,46/m²) + la sobretasa CREG del recibo BP (<strong>15,7%</strong>).
+                Se toma <strong>Lectura Actual − Lectura Anterior = Consumo × Valor kWh ($720,5)</strong>. Adicionalmente, todo local asume su proporción del <strong>20% de la factura de Bodega Popular como Consumo Comunal de la Bodega</strong> ({fmtCop(receipts.energia.bodegaPopular.consumoComunal20Pct)} ÷ {fmtNum(receipts.energia.bodegaPopular.areaTotalM2, 1)} m² = <strong>2,8 kWh/m²</strong>) + el <strong>20% de la factura general como Alumbrado Público</strong> ($929,5/m²) + la sobretasa CREG del recibo BP (<strong>15,7%</strong>).
               </p>
               <div className="p-3 rounded-lg bg-white border border-slate-200 font-mono text-[11px] space-y-1">
                 <div>• <strong>Misma Lectura (Contadores Compartidos):</strong> En 35 puestos que comparten medidor (ej. 810077 al 810150 con lectura 32.652 → 34.223), la fórmula divide <code>(E − D) / N</code> (entre 2, 3, 6 u 8 puestos).</div>
@@ -320,15 +320,15 @@ export function LiquidationMethodologyView() {
                 2B · PRORRATEO EN BODEGA POPULAR (SIN CONTADOR)
               </span>
               <p className="text-slate-700 leading-relaxed">
-                Del valor neto de consumo de la factura de Bodega Popular (<strong>{fmtCop(receipts.energia.bodegaPopular.valorFacturaNeto)}</strong> después de separar el 20% comunal) se resta la suma total pagada por los locales con contador (<strong>$33.856.075,68</strong>). El saldo restante se divide entre el área de los locales en prorrateo.
+                Del valor neto de consumo de la factura de Bodega Popular (<strong>{fmtCop(receipts.energia.bodegaPopular.valorFacturaNeto)}</strong> después de separar el 20% comunal) se resta la suma total pagada por los locales con contador (<strong>$33.856.075,7</strong>). El saldo restante se divide entre el área de los locales en prorrateo.
               </p>
               <div className="p-3 rounded-lg bg-white border border-slate-200 font-mono text-[11px] space-y-1">
                 <div>• Factura Neta BP (80%): {fmtCop(receipts.energia.bodegaPopular.valorFacturaNeto)}</div>
-                <div>• (−) Total Contadores BP: $33.856.075,68</div>
-                <div>• (=) Bolsa Prorrateo BP: <strong>{fmtCop(receipts.energia.bodegaPopular.bolsaProrrateo, 2)}</strong></div>
-                <div>• (÷) Área Prorrateo BP: <strong>{fmtNum(receipts.energia.bodegaPopular.areaProrrateoM2, 4)} m²</strong></div>
+                <div>• (−) Total Contadores BP: $33.856.075,7</div>
+                <div>• (=) Bolsa Prorrateo BP: <strong>{fmtCop(receipts.energia.bodegaPopular.bolsaProrrateo, 1)}</strong></div>
+                <div>• (÷) Área Prorrateo BP: <strong>{fmtNum(receipts.energia.bodegaPopular.areaProrrateoM2, 1)} m²</strong></div>
                 <div className="text-amber-800 font-bold">
-                  • Factor Prorrateo BP: $7.041,51 / m² + 20% Comunal BP ($2.039,92/m²) + Alumbrado ($929,46/m²) + 15,7% CREG
+                  • Factor Prorrateo BP: $7.041,5 / m² + 20% Comunal BP ($2.039,9/m²) + Alumbrado ($929,5/m²) + 15,7% CREG
                 </div>
               </div>
             </div>
@@ -362,7 +362,7 @@ export function LiquidationMethodologyView() {
                 3A · CONTADORES Y COMUNALES DE BODEGA
               </span>
               <p className="text-slate-700">
-                Cada local con medidor liquida <code>(LecturaAct − LecturaAnt) ÷ N_compartidos × $10.921,45/m³</code> (con cobro mínimo de <strong>1 m³ = $10.921,45</strong> si el consumo es cero). En las 24 bodegas con macromedidor de agua comunal (<code>AGUA COMUNAL</code>), se restan primero los contadores hijos ({sharedWaterLocales} compartidos auditados) y el neto se distribuye por m².
+                Cada local con medidor liquida <code>(LecturaAct − LecturaAnt) ÷ N_compartidos × $10.921,5/m³</code> (con cobro mínimo de <strong>1 m³ = $10.921,5</strong> si el consumo es cero). En las 24 bodegas con macromedidor de agua comunal (<code>AGUA COMUNAL</code>), se restan primero los contadores hijos ({formatInt(sharedWaterLocales)} compartidos auditados) y el neto se distribuye por m².
               </p>
             </div>
 
@@ -371,7 +371,7 @@ export function LiquidationMethodologyView() {
                 3B · AGUA COMUNAL GENERAL (10% + BAÑOS)
               </span>
               <p className="text-slate-700">
-                El 10% de la factura general ($23.412.311) menos el consumo medido en los <strong>16 Baños Públicos</strong> (1.565 m³) y asumidos corporativos conforma la bolsa de <strong>{fmtCop(receipts.acueducto.bolsaAguaComunalGeneral)}</strong>, dividida entre <strong>{fmtNum(receipts.acueducto.areaComunalGeneralM2, 2)} m²</strong> = <strong>$198,2038 / m²</strong> para todos los locales.
+                El 10% de la factura general ($23.412.311) menos el consumo medido en los <strong>16 Baños Públicos</strong> (1.565 m³) y asumidos corporativos conforma la bolsa de <strong>{fmtCop(receipts.acueducto.bolsaAguaComunalGeneral)}</strong>, dividida entre <strong>{fmtNum(receipts.acueducto.areaComunalGeneralM2, 1)} m²</strong> = <strong>$198,2 / m²</strong> para todos los locales.
               </p>
             </div>
 
@@ -380,7 +380,7 @@ export function LiquidationMethodologyView() {
                 3C · PRORRATEO Y RED DE FRÍOS
               </span>
               <p className="text-slate-700">
-                La bolsa restante no medida (<strong>{fmtCop(receipts.acueducto.bolsaProrrateo, 2)}</strong>) se divide entre los <strong>{fmtNum(receipts.acueducto.areaProrrateoM2, 2)} m²</strong> en modalidad Prorrateo (<strong>$1.249,44 / m²</strong>). En la Bodega 98 (Red de Fríos), su factura propia de {fmtCop(receipts.acueducto.valorFacturaRedFrios)} se divide entre {fmtNum(receipts.acueducto.areaRedFriosM2, 2)} m² (<strong>$708,30 / m²</strong>).
+                La bolsa restante no medida (<strong>{fmtCop(receipts.acueducto.bolsaProrrateo, 1)}</strong>) se divide entre los <strong>{fmtNum(receipts.acueducto.areaProrrateoM2, 1)} m²</strong> en modalidad Prorrateo (<strong>$1.249,4 / m²</strong>). En la Bodega 98 (Red de Fríos), su factura propia de {fmtCop(receipts.acueducto.valorFacturaRedFrios)} se divide entre {fmtNum(receipts.acueducto.areaRedFriosM2, 1)} m² (<strong>$708,3 / m²</strong>).
               </p>
             </div>
           </div>
@@ -415,7 +415,7 @@ export function LiquidationMethodologyView() {
               <div>• (=) Valor Neto a Distribuir: <strong>{fmtCop(receipts.expensas.vigilancia.valorNetoDistribuir)}</strong></div>
               <div>• (÷) Área Arrendada: <strong>{fmtNum(receipts.expensas.vigilancia.areaTotalM2, 4)} m²</strong></div>
               <div className="text-emerald-700 font-bold pt-1">
-                • Fórmula Local: Área_Local_m² × $13.785,9124 / m²
+                • Fórmula Local: Área_Local_m² × $13.785,9 / m²
               </div>
             </div>
           </div>
@@ -443,7 +443,7 @@ export function LiquidationMethodologyView() {
               <div>• Valor Total Factura (E5312): <strong>{fmtCop(receipts.expensas.policia.valorFactura)}</strong></div>
               <div>• (÷) N° Locales Arrendados (E5314): <strong>{formatInt(receipts.expensas.policia.localesActivosDivisor)} locales</strong></div>
               <div className="text-indigo-700 font-bold pt-1">
-                • Cuota Fija por Local: $215.384.615 ÷ 5.300 = $40.638,61
+                • Cuota Fija por Local: $215.384.615 ÷ 5.300 = $40.638,6
               </div>
             </div>
           </div>
@@ -472,7 +472,7 @@ export function LiquidationMethodologyView() {
               <div>• (=) Valor Neto Barrido (C5313): <strong>{fmtCop(receipts.expensas.aseo.valorNetoDistribuir, 1)}</strong></div>
               <div>• (÷) Área Arrendada (B5305): <strong>{fmtNum(receipts.expensas.aseo.areaTotalM2, 4)} m²</strong></div>
               <div className="text-teal-700 font-bold pt-1">
-                • Fórmula Local: Área_Local_m² × $1.631,1436 / m²
+                • Fórmula Local: Área_Local_m² × $1.631,1 / m²
               </div>
             </div>
           </div>
@@ -523,10 +523,10 @@ export function LiquidationMethodologyView() {
                   1. NO PRODUCTOR (NP)
                 </span>
                 <p className="text-slate-700">
-                  Transfiere el factor reducido (<strong>0,40 de la tarifa base 100%/m²</strong>, equivalente a ~17,86% de la factura neta) a sus <strong>{fmtNum(resCfg.areaNpM2, 2)} m²</strong>.
+                  Transfiere el factor reducido (<strong>0,4 de la tarifa base 100%/m²</strong>, equivalente a ~17,9% de la factura neta) a sus <strong>{fmtNum(resCfg.areaNpM2, 1)} m²</strong>.
                 </p>
                 <div className="font-mono text-[11px] pt-1 font-bold text-emerald-900">
-                  • Tarifa NP: {fmtCop(resCfg.tarifaEfectivaNpM2, 2)} / m²
+                  • Tarifa NP: {fmtCop(resCfg.tarifaEfectivaNpM2, 1)} / m²
                   <br />• Total NP: {fmtCop(totalNpCop, 0)}
                 </div>
               </div>
@@ -536,10 +536,10 @@ export function LiquidationMethodologyView() {
                   2. MEDIANO PRODUCTOR (MP)
                 </span>
                 <p className="text-slate-700">
-                  Transfiere el factor intermedio (<strong>1,20 de la tarifa base 100%/m²</strong>) a sus <strong>{fmtNum(resCfg.areaMpM2, 2)} m²</strong> identificados como MP.
+                  Transfiere el factor intermedio (<strong>1,2 de la tarifa base 100%/m²</strong>) a sus <strong>{fmtNum(resCfg.areaMpM2, 1)} m²</strong> identificados como MP.
                 </p>
                 <div className="font-mono text-[11px] pt-1 font-bold text-amber-900">
-                  • Tarifa MP: {fmtCop(resCfg.tarifaEfectivaMpM2, 2)} / m²
+                  • Tarifa MP: {fmtCop(resCfg.tarifaEfectivaMpM2, 1)} / m²
                   <br />• Total MP: {fmtCop(totalMpCop, 0)}
                 </div>
               </div>
@@ -549,10 +549,10 @@ export function LiquidationMethodologyView() {
                   3. PRODUCTOR (P — PERECEDEROS)
                 </span>
                 <p className="text-slate-700">
-                  <strong>Regla Cliente:</strong> Se toma el <strong>restante después de descontar NP y MP</strong> ({fmtCop(bolsaRestantePCop, 0)}) y se divide entre el área de los identificados <strong>P</strong> ({fmtNum(resCfg.areaPM2, 2)} m²).
+                  <strong>Regla Cliente:</strong> Se toma el <strong>restante después de descontar NP y MP</strong> ({fmtCop(bolsaRestantePCop, 0)}) y se divide entre el área de los identificados <strong>P</strong> ({fmtNum(resCfg.areaPM2, 1)} m²).
                 </p>
                 <div className="font-mono text-[11px] pt-1 font-bold text-rose-900">
-                  • Tarifa Efectiva P: {fmtCop(resCfg.tarifaEfectivaPM2, 2)} / m²
+                  • Tarifa Efectiva P: {fmtCop(resCfg.tarifaEfectivaPM2, 1)} / m²
                 </div>
               </div>
             </div>

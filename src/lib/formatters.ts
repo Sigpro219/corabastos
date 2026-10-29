@@ -2,24 +2,27 @@
  * Utilidades Canónicas de Formato Numérico Colombiano (es-CO).
  * Ley Marcial SDD #8 (disenador-web):
  * - Separador de miles: punto (.) -> ej. 1.457.589
- * - Separador de decimales: coma (,) -> ej. 165,68
+ * - Separador de decimales: coma (,) con 1 solo decimal -> ej. 165,7
  * - Prohibido el uso directo de .toFixed() en strings de UI.
  */
 
 export function formatCop(value: number, decimals = 0): string {
   const safe = Number.isFinite(value) ? value : 0;
-  const formatted = (decimals === 0 ? Math.round(safe) : safe).toLocaleString("es-CO", {
-    minimumFractionDigits: decimals,
-    maximumFractionDigits: decimals,
+  const targetDec = decimals > 0 ? 1 : 0;
+  const formatted = (targetDec === 0 ? Math.round(safe) : safe).toLocaleString("es-CO", {
+    minimumFractionDigits: targetDec,
+    maximumFractionDigits: targetDec,
   });
   return `$${formatted}`;
 }
 
-export function formatDec(value: number, minDecimals = 2, maxDecimals = minDecimals): string {
+export function formatDec(value: number, minDecimals = 1, maxDecimals = 1): string {
   const safe = Number.isFinite(value) ? value : 0;
+  const minD = minDecimals > 0 ? 1 : 0;
+  const maxD = maxDecimals > 0 ? 1 : 0;
   return safe.toLocaleString("es-CO", {
-    minimumFractionDigits: minDecimals,
-    maximumFractionDigits: maxDecimals,
+    minimumFractionDigits: minD,
+    maximumFractionDigits: Math.max(minD, maxD),
   });
 }
 
@@ -34,7 +37,7 @@ export function formatInt(value: number): string {
 export function formatPct(value: number, decimals = 1, includePlusSign = false): string {
   const safe = Number.isFinite(value) ? value : 0;
   const prefix = includePlusSign && safe > 0 ? "+" : "";
-  return `${prefix}${formatDec(safe, decimals)}%`;
+  return `${prefix}${formatDec(safe, decimals > 0 ? 1 : 0)}%`;
 }
 
 /**

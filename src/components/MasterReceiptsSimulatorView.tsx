@@ -222,7 +222,7 @@ export function MasterReceiptsSimulatorView() {
                 {formatCop(receipts.acueducto.valorFacturaRedFrios)}
               </div>
               <span className="text-[10px] text-slate-500 block text-right">
-                Área Red Fríos: {formatDec(receipts.acueducto.areaRedFriosM2, 2)} m² ($708,30/m²)
+                Área Red Fríos: {formatDec(receipts.acueducto.areaRedFriosM2, 1)} m² ($708,3/m²)
               </span>
             </div>
 
@@ -234,7 +234,7 @@ export function MasterReceiptsSimulatorView() {
                 {formatCop(receipts.acueducto.bolsaAguaComunalGeneral)}
               </div>
               <span className="text-[10px] text-slate-500 block text-right">
-                Factor Área: $198,20 / m² · Baños: 1.565 m³
+                Factor Área: $198,2 / m² · Baños: 1.565 m³
               </span>
             </div>
           </div>

@@ -208,8 +208,8 @@ export function LiquidationMatrixView() {
           <span className="text-sm sm:text-base font-mono font-bold text-emerald-400 mt-0.5 block">
             ${totals.granTotal.toLocaleString("es-CO")}
           </span>
-          <span className="text-[10px] text-amber-300 font-mono" title="En el Excel original col R se suma dos veces Acueducto (+$239,47M)">
-            Auditado (Sin dup. Acue +$239,4M)
+          <span className="text-[10px] text-amber-300 font-mono" title="En el Excel original col R se suma dos veces Acueducto (+$239,5M)">
+            Auditado (Sin dup. Acue +$239,5M)
           </span>
         </div>
       </div>

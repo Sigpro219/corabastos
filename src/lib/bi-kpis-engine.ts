@@ -24,9 +24,10 @@ export function formatCop(value: number): string {
 }
 
 export function formatNum(value: number, decimals = 1): string {
+  const targetDec = decimals > 0 ? 1 : 0;
   return value.toLocaleString("es-CO", {
-    minimumFractionDigits: decimals,
-    maximumFractionDigits: decimals,
+    minimumFractionDigits: targetDec,
+    maximumFractionDigits: targetDec,
   });
 }
 

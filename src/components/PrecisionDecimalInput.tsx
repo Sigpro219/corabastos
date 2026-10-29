@@ -24,7 +24,7 @@ export function PrecisionDecimalInput({
   value,
   onChange,
   minDecimals = 0,
-  maxDecimals = 2,
+  maxDecimals = 1,
   className = "",
   placeholder = "0",
   ariaLabel,

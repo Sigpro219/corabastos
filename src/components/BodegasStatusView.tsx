@@ -194,7 +194,7 @@ export function BodegasStatusView() {
               {bodegasRows.length} Bodegas
             </span>
             <span className="text-[11px] text-slate-400 block mt-0.5">
-              5.318 unidades · 126.125,15 m²
+              5.318 unidades · 126.125,2 m²
             </span>
           </div>
 
@@ -323,11 +323,7 @@ export function BodegasStatusView() {
                       {b.totalLocales}
                     </td>
                     <td className="py-2.5 px-3.5 text-right tabular-nums">
-                      {b.areaTotalM2.toLocaleString("es-CO", {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}{" "}
-                      m²
+                      {formatDec(b.areaTotalM2, 1)} m²
                     </td>
                     <td className="py-2.5 px-3.5 text-center">
                       {b.totalMetersInCutoff > 0 ? (
