@@ -74,6 +74,7 @@ export interface LocalUnitRecord {
   energiaLecturaAct: number;
   energiaConsumoIndivKw: number;
   energiaConsumoAntKw?: number;
+  energiaDivisorContador?: number;
   energiaConsumoComunalKw: number;
   energiaConsumoAleroKw: number;
   energiaEstado: string;
@@ -85,6 +86,7 @@ export interface LocalUnitRecord {
   aguaLecturaAct: number;
   aguaConsumoIndivM3: number;
   aguaConsumoAntM3?: number;
+  aguaDivisorContador?: number;
   aguaConsumoComunalM3: number;
   aguaEstado: string;
   aguaObs: string;
@@ -94,11 +96,17 @@ export interface LocalUnitRecord {
   estadoOcupacion?: OccupancyStatus | string;
   energiaBpCop: number;
   energiaPrincipalCop: number;
+  energiaAnteriorCop?: number;
   acueductoCop: number;
+  acueductoAnteriorCop?: number;
   aseoCop: number;
+  aseoAnteriorCop?: number;
   residuosCop: number;
+  residuosAnteriorCop?: number;
   vigilanciaCop: number;
+  vigilanciaAnteriorCop?: number;
   policiaCop: number;
+  policiaAnteriorCop?: number;
   totalJunioCop: number;
   totalAnteriorCop: number;
   planos: {

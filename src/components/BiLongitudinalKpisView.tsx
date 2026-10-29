@@ -159,54 +159,65 @@ export function BiLongitudinalKpisView({ onSelectLocalCode }: BiLongitudinalKpis
         </div>
       </div>
 
-      {/* SECCIÓN KPI 5 & KPI 6: EVOLUCIÓN MULTICORTE (ENE-JUN 2025) & SLA ZONAS */}
+      {/* SECCIÓN KPI 5 & KPI 6: EVOLUCIÓN REAL CORTE A CORTE (MAYO 2025 VS JUNIO 2025) & SLA ZONAS */}
       {(sectionFilter === "TODOS" || sectionFilter === "KPI5_6_EVOLUCION") && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
           <div className="lg:col-span-7 bg-white rounded-xl border border-slate-200 shadow-sm p-5">
             <div className="flex items-center justify-between mb-4">
               <div>
                 <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                  KPI 5 · Evolución Longitudinal Multicorte
+                  KPI 5 · Comparativo Real Corte Anterior vs. Corte Actual (Cero Mocks)
                 </span>
                 <h3 className="text-base font-black text-slate-900 mt-1">
-                  Trayectoria de Facturación Real y Tarifas Unitarias (Enero 2025 → Junio 2025)
+                  Facturación y Consumos Físicos Reales del Libro Oficial (Mayo 2025 → Junio 2025)
                 </h3>
               </div>
               <div className="text-right text-xs text-slate-500">
-                <div>Tarifa kWh Jun: <strong className="text-slate-900">{formatCop(receipts.energia.tarifaKwh)}</strong></div>
-                <div>Tarifa m³ Agua Jun: <strong className="text-slate-900">{formatCop(receipts.acueducto.tarifaM3)}</strong></div>
+                <div>Tarifa kWh: <strong className="text-slate-900">{formatCop(receipts.energia.tarifaKwh)}</strong></div>
+                <div>Tarifa m³ Agua: <strong className="text-slate-900">{formatCop(receipts.acueducto.tarifaM3)}</strong></div>
               </div>
             </div>
 
-            <div className="space-y-2.5">
+            <div className="space-y-3">
               {biReport.kpi5SerieLongitudinal.map((pt) => {
                 const widthPct = Math.min(100, Math.max(15, (pt.totalFacturadoRealCop / maxSerieFacturado) * 100));
                 const isCurrent = pt.corteId === "2025-06";
                 return (
                   <div
                     key={pt.corteId}
-                    className={`p-3 rounded-lg border ${
+                    className={`p-3.5 rounded-lg border ${
                       isCurrent ? "bg-slate-900 text-white border-slate-800" : "bg-slate-50 border-slate-200 text-slate-800"
                     }`}
                   >
-                    <div className="flex flex-wrap items-center justify-between gap-2 text-xs mb-1.5">
+                    <div className="flex flex-wrap items-center justify-between gap-2 text-xs mb-2">
                       <span className="font-bold flex items-center gap-1.5">
                         <Activity className="w-3.5 h-3.5 text-emerald-500" strokeWidth={1.75} />
                         {pt.etiqueta}
                       </span>
                       <div className="flex items-center gap-3 tabular-nums">
-                        <span className={isCurrent ? "text-slate-300" : "text-slate-500"}>
-                          kWh: <strong>{formatCop(pt.tarifaKwhPrincipalCop)}</strong>
+                        <span className={isCurrent ? "text-amber-300" : "text-amber-700"}>
+                          Energía: <strong>{formatNum(pt.consumoFisicoEnergiaKwh, 0)} kWh</strong> ({formatCop(pt.energiaTotalCop)})
                         </span>
-                        <span className={isCurrent ? "text-slate-300" : "text-slate-500"}>
-                          m³: <strong>{formatCop(pt.tarifaM3AguaCop)}</strong>
-                        </span>
-                        <span className={isCurrent ? "text-slate-300" : "text-slate-500"}>
-                          PGIRS (P): <strong>{formatCop(pt.tarifaM2ResiduosP)}/m²</strong>
+                        <span className={isCurrent ? "text-sky-300" : "text-sky-700"}>
+                          Agua: <strong>{formatNum(pt.consumoFisicoAguaM3, 0)} m³</strong> ({formatCop(pt.acueductoTotalCop)})
                         </span>
                         <span className="font-black text-sm text-emerald-500">
                           {formatCop(pt.totalFacturadoRealCop)}
                         </span>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px] mb-2 tabular-nums">
+                      <div className={isCurrent ? "text-slate-300" : "text-slate-600"}>
+                        Vigilancia: <strong>{formatCop(pt.vigilanciaTotalCop)}</strong>
+                      </div>
+                      <div className={isCurrent ? "text-slate-300" : "text-slate-600"}>
+                        Residuos: <strong>{formatCop(pt.residuosTotalCop)}</strong>
+                      </div>
+                      <div className={isCurrent ? "text-slate-300" : "text-slate-600"}>
+                        Barrido/Aseo: <strong>{formatCop(pt.aseoTotalCop)}</strong>
+                      </div>
+                      <div className={isCurrent ? "text-slate-300" : "text-slate-600"}>
+                        Policía: <strong>{formatCop(pt.policiaTotalCop)}</strong>
                       </div>
                     </div>
                     <div className="w-full h-2 bg-slate-200/70 rounded-full overflow-hidden flex">

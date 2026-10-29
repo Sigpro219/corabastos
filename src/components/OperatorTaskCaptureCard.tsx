@@ -61,9 +61,9 @@ export function OperatorTaskCaptureCard({
             <span className="px-2 py-0.5 rounded bg-white/10 text-amber-300 font-mono text-xs font-bold">
               {activeTask.etiquetaServicio}
             </span>
-            {activeTask.multiplicador > 1 && (
+            {activeTask.multiplicador < 1 && (
               <span className="px-2 py-0.5 rounded bg-amber-500 text-slate-950 font-mono text-xs font-black">
-                MULTIPLICADOR {activeTask.multiplicador}X
+                COMPARTIDO /{Math.round(1 / activeTask.multiplicador)} LOCALES
               </span>
             )}
           </div>

@@ -198,12 +198,12 @@ export function recalculateAllLocales(
     // Excepción reglamentaria: Si el contador está defectuoso o detenido, liquidación a prorrata de área.
     // -------------------------------------------------------------
     let calcEnergiaCop = loc.energiaBpCop + loc.energiaPrincipalCop;
-    const factorEnergia = loc.bloqueEnergia === "BODEGA_POPULAR" ? 8 : 1;
+    const divisorEnergia = Math.max(1, loc.energiaDivisorContador || 1);
     const computedIndivKw =
       loc.estadoOcupacion === "VACIO_CON_CONTRATO"
         ? 0
         : loc.modalidadEnergia === "CONTADOR"
-        ? Math.max(0, loc.energiaLecturaAct - loc.energiaLecturaAnt) * factorEnergia
+        ? Math.max(0, loc.energiaLecturaAct - loc.energiaLecturaAnt) / divisorEnergia
         : loc.energiaConsumoIndivKw;
 
     const isMeterDefective =
@@ -259,11 +259,12 @@ export function recalculateAllLocales(
     // 2. ACUEDUCTO Y ALCANTARILLADO (Reglamento Interno Art. 46)
     // -------------------------------------------------------------
     let calcAcueductoCop = loc.acueductoCop;
+    const divisorAgua = Math.max(1, loc.aguaDivisorContador || 1);
     const computedIndivM3 =
       loc.estadoOcupacion === "VACIO_CON_CONTRATO"
         ? 0
         : loc.modalidadAcueducto === "CONTADOR"
-        ? Math.max(0, loc.aguaLecturaAct - loc.aguaLecturaAnt)
+        ? Math.max(0, loc.aguaLecturaAct - loc.aguaLecturaAnt) / divisorAgua
         : loc.aguaConsumoIndivM3;
 
     const isWaterDefective =

@@ -160,6 +160,12 @@ export interface BiLongitudinalCutoffPoint {
   energiaTotalCop: number;
   acueductoTotalCop: number;
   expensasTotalCop: number;
+  vigilanciaTotalCop: number;
+  residuosTotalCop: number;
+  aseoTotalCop: number;
+  policiaTotalCop: number;
+  consumoFisicoEnergiaKwh: number;
+  consumoFisicoAguaM3: number;
   tarifaKwhPrincipalCop: number;
   tarifaM3AguaCop: number;
   tarifaM2VigilanciaCop: number;

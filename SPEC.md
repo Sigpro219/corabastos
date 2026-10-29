@@ -1,7 +1,7 @@
 # 🛡️ CORABASTOS OS (ERP Corporativo & Motor de Liquidación de Servicios Públicos y Expensas Comunes) — Contrato Canónico de Arquitectura (SPEC.md)
 
 > **Documento Canónico de Especificación (Spec-Anchored — SDD)**  
-> **Versión:** 1.5.0 (Shell ERP Portal de Operaciones MJM: Sidebar Colapsable `#0B132B` con Acento `#f7931b` + Topbar Ejecutivo con Breadcrumb, Modo Día/Noche & Popover Glassmorphism de Alertas + Módulo 01 Servicios Públicos & Sub-Módulo 1.5 BI KPIs Longitudinales)  
+> **Versión:** 1.6.0 (Integración de Reglas Oficiales del Cliente: Vigilancia, Policía, Barrido, Residuos Verdes NP/MP/P, Energía BP y Predio Matriz + Medidores Compartidos `/N` con Misma Lectura + Contadores en Cero + Cero Datos Simulados Mayo vs. Junio 2025 Real)  
 > **Fecha de Actualización:** 28 de Octubre de 2026  
 > **Estado:** 🟢 VIGENTE & 100% BLINDADO PARA CONSTRUCCIÓN  
 > **Ubicación Oficial:** `C:\Users\German Higuera\OneDrive\Documentos\Projects\corabastos`  
@@ -181,29 +181,29 @@ En lugar de las fórmulas manuales del Excel que restan celdas individuales (`-E
   - Regulación CREG BP (`D1860`): `$22.397.270` (Tasa efectiva sobre consumo + comunal: **`15,7%`**)
   - **Tope Mínimo BP:** **`$20.489`**
 
-#### Cálculo por Local en `ENERGIA_` (Principal — 3.463 Locales):
-1. **Consumo Total kWh (`I`):**
-   $$\text{kWh Total}_i = \text{kWh Individual}_i + \text{kWh Bodega Comunal}_i + \text{kWh Alero}_i$$
-   *(Soporta contadores compartidos/tripartitos mediante `divisorContador`, ej. `/ 3` en locales `810130`, `810131`, `810132`).*
-2. **Valor Consumo por Medidor/Comunal (`J`):**
-   $$\text{Valor Consumo kWh}_i = \text{kWh Total}_i \times \$720,48$$
-3. **Bolsa de Prorrateo (`J3481`):**
-   $$\text{Bolsa Prorrateo Principal} = \text{Valor Neto Servicio } (\$459.939.441,73) - \sum_{i \in (\text{CONTADOR, COMUNAL, PRORRATEO})} \text{Valor Consumo kWh}_i = \$141.922.039,69$$
-   $$\text{Tarifa Prorrateo } m^2 = \frac{\$141.922.039,69}{\sum_{p \in \text{PRORRATEO}} \text{Área}_p \; (13.454,03\;m^2)} = \$10.548,66 / m^2$$
-4. **Subtotal Consumo (`L` y `M`):**
-   $$\text{Subtotal}_i = \text{Valor Consumo kWh}_i + \begin{cases} \text{Área}_i \times \text{Tarifa Prorrateo } m^2 & \text{si } B_i = \text{PRORRATEO} \\ 0 & \text{en otro caso} \end{cases}$$
-5. **Valor Alumbrado Público General (`N`):**
-   - Bolsa Alumbrado Público (`J3486`): **`$116.439.893,43`** dividida entre el Área Total de Energía Principal + BP (`125.276,34 m²`) = **`$929,4644 / m²`**.
-   $$\text{Valor Alumbrado}_i = \text{Área}_i \times \$929,4644$$
-6. **Valor CREG (`O`):**
-   $$\text{Valor CREG}_i = (\text{Subtotal}_i + \text{Valor Alumbrado}_i) \times 20\%$$
-7. **Ajuste de Factura Mínima (`P`) y Compensación de Prorrateo (`Q`):**
-   - Si $\text{Subtotal}_i < \$20.498$ (y no es Red de Fríos), se adiciona $\text{Ajuste Mínima}_i = \$20.498 - \text{Subtotal}_i$.
-   - La suma de todos los ajustes de mínima (`$9.343.662,66`) se descuenta proporcionalmente por $m^2$ a los locales de `PRORRATEO` ($\text{Dif Prorrateo}_i = -\text{Área}_i \times \$694,49/m^2$) para que el total liquidado cuadre al centavo con la factura.
-8. **Total Liquidado Energía Principal (`R`):**
-   $$\text{Total Energía}_i = \text{Subtotal}_i + \text{Valor Alumbrado}_i + \text{Valor CREG}_i + \text{Ajuste Mínima}_i + \text{Dif Prorrateo}_i$$
+#### Cálculo por Local en `ENERGIA_` (Predio Matriz — 3.463 Locales) y `ENERGIA BP` (Bodega Popular Contador Macro — 1.851 Locales):
 
-*(En `ENERGIA BP` se aplica la misma estructura sumando además su cuota de Energía Comunal BP `N = ($28.531.012 / 13.991,22 m²) * Área`, CREG del `15,7%` `O`, más la cuota de Alumbrado Público General `T` y su 20% CREG PM `U`).*
+##### A. Energía Predio Matriz (`ENERGIA_`) — Tres Grupos de Identificación (`CONTADOR`, `BODEGA COMUNAL`, `PRORRATEO`):
+1. **Grupo 1 — Locales con Contador (`CONTADOR`):**
+   - Se toma la lectura del medidor: $\text{Consumo Individual kWh}_i = \frac{\text{Lectura Actual}_i - \text{Lectura Anterior}_i}{N_{\text{compartido}}}$, donde $N_{\text{compartido}} \in \{1, 2, 3, 4\}$ es el número de locales que comparten el mismo contador y tienen la misma lectura (ej. filas `776, 802, 1571` `/3`; filas `1635..1638` `/4`; o reparto por área en `35PF`).
+   - Se multiplica por el valor del $\text{kWh}$ (`$720,48`) + **`20%` Alumbrado Público General** (por $m^2$) + **`20%` Regulación CREG**.
+   - **Si la bodega cuenta con Alero:** Se toma la lectura del contador del alero ($\text{Lectura Actual}_{\text{alero}} - \text{Lectura Anterior}_{\text{alero}}$), su consumo se divide entre el **Área Total de la Bodega que tiene el alero** y se multiplica por el área del local ($\text{kWh Alero}_i = \frac{\text{Consumo Alero}_b}{\text{Área Bodega}_b} \times \text{Área}_i$).
+2. **Grupo 2 — Bodega o Contador Comunal (`COMUNAL`):**
+   - Es una bodega con varios locales bajo un macromedidor comunal: se toma el consumo neto del contador comunal de la bodega (descontando automáticamente los hijos con contador individual de esa bodega), se divide entre el área de los locales comunales de la bodega ($\frac{\text{Consumo Neto Comunal}_b}{\sum \text{Área Comunales}_b} \times \text{Área}_i$), se multiplica por el valor del $\text{kWh}$ (`$720,48`) + los porcentajes (`20%` Alumbrado + `20%` CREG), y **si la bodega tiene Alero**, usa exactamente la misma formulación de Alero por $m^2$.
+3. **Grupo 3 — Prorrateo (`PRORRATEO`):**
+   - Se toma el valor resultante de restar al Valor Neto del Servicio de la factura la suma de `Bodegas Comunales` y `Contadores` ($\text{Bolsa Prorrateo} = \$459.939.441,73 - \sum \text{Comunales} - \sum \text{Contadores} = \$141.922.039,69$).
+   - Esa diferencia se divide entre el **Área Total de Prorrateo** (`13.454,03 m²` $\rightarrow$ `$10.548,66 / m^2`), se multiplica por el área de cada local + los porcentajes (`20%` Alumbrado + `20%` CREG).
+4. **Ajuste de Factura Mínima (`P = $20.498`) y Compensación de Prorrateo (`Q`):**
+   - Si el subtotal de consumo de un local con contador en cero es menor a **`$20.498`**, paga el tope mínimo (`$20.498`) + los porcentajes de Alumbrado y CREG, y la suma de ajustes de mínima (`$9.343.662,66`) se descuenta proporcionalmente por $m^2$ a la bolsa de prorrateo (`-$694,49/m²`) para cuadrar al centavo con la factura.
+
+##### B. Energía Bodega Popular Contador Macro (`ENERGIA BP` — 1.851 Locales):
+Se identifican locales **con contador (`CONTADOR`)** y **sin contador (`PRORRATEO`)**:
+1. **Locales con Contador (`CONTADOR`):**
+   - $\text{Consumo kWh}_i = (\text{Lectura Actual}_i - \text{Lectura Anterior}_i) \times \text{Valor kWh } (\$720,48)$ + **`20%` de la factura de Bodega Popular como Consumo Comunal de la Bodega** (`$28.531.012 / 13.991,22 m²` $\times \text{Área}_i$) + **`20%` de la factura general como Alumbrado Público** (`$929,4644 / m²` $\times \text{Área}_i$) + **Regulación CREG** (`15,7%` BP + `20%` PM).
+   - **Regla de Contadores con la Misma Lectura (Medidores Compartidos `/N`):** Los locales que comparten físicamente un contador y por tanto registran **la misma `Lectura Anterior` y `Lectura Actual`** en la hoja `ENERGIA BP` **se promedian / dividen en partes iguales (`/ N`)** entre los $N$ locales que tienen esa misma lectura (ej. `850001..850002` con `D=81379, E=84295` usan `=(E-D)/2`; `820264..820313` usan `=(E-D)/6`; `810738..810825` usan `=(E-D)/3`; `810077..810150` con `D=32652, E=34223` usan `=(E-D)/8 = 196,375 kWh`).
+   - **Regla de Contadores en Cero (`Lectura Actual == Lectura Anterior`):** Los contadores cuyo consumo da **`0 kWh`** pagan el **Valor Mínimo (`$20.489`) + los porcentajes** (`20%` Consumo Comunal Bodega Popular + `20%` Alumbrado Público General + CREG).
+2. **Locales en Prorrateo (`PRORRATEO` — Sin Contador):**
+   - Se toma el valor neto de la factura de Bodega Popular (`$114.124.048`), se le resta el valor total consumido por los locales con contador (`$33.856.075,68`), y el resultado (`$80.267.972,32`) se divide entre el **Área Total de los locales identificados en Prorrateo** (`11.399,26 m²`) multiplicado por el área de cada puesto + los porcentajes de Comunal BP, Alumbrado Público y CREG.
 
 ---
 
@@ -217,7 +217,7 @@ En lugar de las fórmulas manuales del Excel que restan celdas individuales (`-E
 
 #### Cálculo por Local en `ACUEDUCTO`:
 1. **Valor Consumo Medido o Comunal de Bodega (`H`):**
-   $$\text{Valor Consumo}_i = (\text{Consumo Individual } m^3_i + \text{Consumo Comunal Bodega } m^3_i) \times \$10.921,4494$$
+   $$\text{Valor Consumo}_i = \left(\frac{\text{Lectura Actual } m^3_i - \text{Lectura Anterior } m^3_i}{N_{\text{compartido}}} + \text{Consumo Comunal Bodega } m^3_i\right) \times \$10.921,4494$$
 2. **Valor Prorrateo (`I`):**
    - Si es `PRORRATEO`: $\text{Área}_i \times \$1.249,4436$.
    - Si es `RED DE FRIOS`: $\text{Área}_i \times \$708,2965$.
@@ -227,14 +227,14 @@ En lugar de las fórmulas manuales del Excel que restan celdas individuales (`-E
 
 ---
 
-### 3.5 Fórmulas y Factores Exactos de los Otros 4 Servicios Públicos (Expensas Generales)
+### 3.5 Fórmulas y Reglas Operativas de los Otros 4 Servicios Públicos (Expensas Generales)
 
-| Servicio | Factura Neta a Distribuir (Junio 2025) | Base de Reparto | Factor / Fórmula Exacta por Local $i$ |
-| :--- | :--- | :--- | :--- |
-| **1. POLICÍA (`POLICIA`)** | **`$215.384.615,00`** | **5.300 locales activos** | **PARTES IGUALES (División Equitativa):**<br>$$\text{Valor Policía}_i = \frac{\$215.384.615}{5.300} = \$40.638,61 \text{ por local}$$ |
-| **2. VIGILANCIA (`VIGILANCIA`)** | **`$1.446.100.986,00`**<br>*(Factura `$1.457.589.006` - ND `$11.488.020`)* | **`104.897,01 m²`** | **100% POR FACTOR DE ÁREA ($m^2$):**<br>$$\text{Tarifa Vigilancia} = \$13.785,9124 / m^2$$<br>$$\text{Valor Vigilancia}_i = \text{Área}_i \times \$13.785,9124$$ |
-| **3. ASEO (`ASEO_`)** | **`$171.562.768,50`**<br>*(20% comerciantes sobre total operación aseo)* | **`105.179,44 m²`** | **100% POR FACTOR DE ÁREA ($m^2$):**<br>$$\text{Tarifa Aseo} = \$1.631,1436 / m^2$$<br>$$\text{Valor Aseo}_i = \text{Área}_i \times \$1.631,1436$$ |
-| **4. RESIDUOS SÓLIDOS (`RESIDUOS` - ECSA)** | **`$661.681.703,41`**<br>*(Factura `$680.905.800,76` - Básicos `$10.393.187,35` - ND `$8.830.910`)* | **`105.047,42 m²`**<br>• `NP`: `46.929,53 m²`<br>• `MP`: `15.235,55 m²`<br>• `P`: `42.882,34 m²` | **FACTOR PONDERADO POR ÁREA + VOLUMEN DE PRODUCCIÓN (`NP / MP / P`):**<br>Sea $\text{Tarifa Base } m^2 = \frac{\$661.681.703,41}{105.047,42\;m^2} = \$6.298,8858 / m^2$:<br>• **Si es `NP` (No Productor, factor `0.4`):**<br>$$\text{Valor Residuos}_i = \text{Área}_i \times \text{Tarifa Base } m^2 \times 0,4 = \text{Área}_i \times \$2.519,5543$$<br>• **Si es `MP` (Mediano Productor, factor `1.2`):**<br>$$\text{Valor Residuos}_i = \text{Área}_i \times \text{Tarifa Base } m^2 \times 1,2 = \text{Área}_i \times \$7.558,6630$$<br>• **Si es `P` (Gran Productor / Perecederos, absorbe el saldo):**<br>$$\text{Bolsa } P = \text{Factura Neta} - \sum_{NP} - \sum_{MP} = \$428.279.782,34$$<br>$$\text{Valor Residuos}_i = \text{Área}_i \times \frac{\text{Bolsa } P}{\text{Área Total } P} = \text{Área}_i \times \$9.987,3240$$ |
+| Servicio | Regla Operativa Oficial del Cliente | Liquidación Exacta en Libro Junio 2025 (`06. LIQUIDACION JUNIO 2025.xlsm`) |
+| :--- | :--- | :--- |
+| **1. VIGILANCIA (`VIGILANCIA`)** | **Se toma el valor de la factura de vigilancia, se resta el `20%` (asumido por la Corporación) y el `80%` restante se divide por el Área Total Arrendada ($m^2$).** | En la hoja `VIGILANCIA` de Junio 2025 se tomó la factura (`$1.457.589.006`), se restó la Nota Débito (`$11.488.020`) y el neto (`$1.446.100.986`) se dividió entre el Área Arrendada (`104.897,01 m²` = **`$13.785,9124 / m²`**). El motor soporta parametrizar el descuento corporativo (`0%` a `20%`) en los Recibos Maestros. |
+| **2. POLICÍA (`POLICIA`)** | **Se toma el valor total de la factura y se divide por el número de locales arrendados.** | Factura de **`$215.384.615,00`** dividida en partes iguales entre **`5.300` locales arrendados** = **`$40.638,61` por local**. |
+| **3. BARRIDO (`ASEO_`)** | **Se toma el valor de barrido (`20%` comercial de la operación de aseo) y se divide por el Área Total Arrendada ($m^2$).** | Valor neto de barrido **`$171.562.768,50`** dividido entre el Área Total Arrendada (`105.179,44 m²`) = **`$1.631,1436 / m²`**. |
+| **4. RESIDUOS VERDES (`RESIDUOS` - ECSA)** | **Se caracteriza por 3 tipos de transferencia según productor:**<br>• **No Productor (`NP`):** se transfiere el porcentaje asignado a `NP` (`20%` en regla general cliente; factor `0,4` = `17,87%` en hoja Junio 2025) dividido entre el área de los `NP` (`46.929,53 m²`).<br>• **Mediano Productor (`MP`):** se transfiere el porcentaje asignado a `MP` (`30%` en regla general cliente; factor `1,2` = `17,40%` en hoja Junio 2025) dividido entre el área de los `MP` (`15.235,55 m²`).<br>• **Productor (`P`):** se toma **el valor restante de la factura (`Factura - NP - MP`)** y se divide entre el área de los identificados como `P` (`42.882,34 m²`). | En Junio 2025 sobre **`$661.681.703,41`**:<br>• Bolsa `NP`: `$118.241.499,82` (`$2.519,5543 / m²`)<br>• Bolsa `MP`: `$115.160.421,25` (`$7.558,6630 / m²`)<br>• Bolsa `P` (Restante): `$428.279.782,34` (`$9.987,3240 / m²`). |
 
 ---
 
@@ -246,14 +246,14 @@ Para cada corte mensual (ej. `CORTE-2025-06`), el motor instancia una **Cola de 
 | **`ZONA_1_MACROMEDIDORES`** | `LECTURAS COMUNALES_` + `AGUA COMUNAL` | **62 tareas:** 26 Aleros Energía + 12 Bodegas Energía + 24 Macromedidores Agua Comunal | **CRÍTICA (Bloqueante de Prorrateo Comunal)** |
 | **`ZONA_2_BANOS_PUBLICOS`** | `ACUEDUCTO` (Sección Baños) | **16 tareas:** 16 medidores de baterías sanitarias públicas | **ALTA** |
 | **`ZONA_3_COMERCIANTES_PRINCIPAL`** | `ENERGIA_` + `ACUEDUCTO` | **1.375 tareas:** 989 contadores de Energía + 386 contadores de Acueducto en Bodegas Principal | **NORMAL (Barrido por Bodega)** |
-| **`ZONA_4_BODEGA_POPULAR`** | `ENERGIA BP` + `ACUEDUCTO` | **351 tareas:** 199 contadores de Energía (`8x`) + 152 contadores de Acueducto en Bodega Popular (`BP MIN` / `BP MAY`) | **NORMAL (Barrido por Bodega)** |
+| **`ZONA_4_BODEGA_POPULAR`** | `ENERGIA BP` + `ACUEDUCTO` | **351 tareas:** 199 contadores de Energía + 152 contadores de Acueducto en Bodega Popular (`BP MIN` / `BP MAY`, incluyendo medidores compartidos `/N`) | **NORMAL (Barrido por Bodega)** |
 | **`ZONA_5_RED_FRIOS`** | `ENERGIA_` + `ACUEDUCTO` (`98`) | **Inspección de 31 puestos de refrigeración** (`980001`..`980031`) | **NORMAL** |
 
 #### Máquina de Estados Finita (FSM) de cada Tarea de Lectura (`ReadingTaskState`):
 - **`PENDIENTE`**: El medidor aún no ha sido leído en el corte activo. **En el celular del operador (`/captura`) solo se listan por defecto las tareas en estado `PENDIENTE`** de la zona/bodega seleccionada, mostrando un contador regresivo (`Quedan N pendientes`).
 - **`COMPLETADA`**: Lectura física capturada + evidencia fotográfica validada dentro del rango histórico (`kWh` vs `energiaConsumoAntKw` o `m³` vs `aguaConsumoAntM3`). Al guardar, la tarea desaparece de la bandeja de pendientes del operador y el foco salta automáticamente al siguiente medidor contiguo.
-- **`NOVEDAD_TECNICA`**: Medidor reportado con causal técnica oficial (`C, DETENIDO`, `M, DETENIDO`, `C, TAPADO`, `M, TAPADO`, `C, RETIRADO`, `C, SUSPENDIDO`) + fotografía obligatoria. Da por evacuada la tarea de terreno y activa la regla del **Art. 46 del Reglamento Interno** (paso automático a cobro por área $m^2$ o promedio histórico).
-- **`CERRADO_SIN_ACCESO`**: Local reportado como `L, CERRADO`, `L, VACIO` o `NO PERMITIO INGRESO` + foto de la fachada/candado. Evacúa la tarea del operador y aplica el régimen de vacancia con contrato (factura mínima + expensas de ley).
+- **`NOVEDAD_TECNICA`**: Medidor reportado con causal técnica oficial (`C, DETENIDO`, `M, DETENIDO`, `C, TAPADO`, `M, TAPADO`, `C, RETIRADO`, `C, SUSPENDIDO`) + fotografía obligatoria. Da por evacuada la tarea de terreno y activa la regla del **Art. 46 del Reglamento Interno**.
+- **`CERRADO_SIN_ACCESO`**: Local reportado como `L, CERRADO`, `L, VACIO` o `NO PERMITIO INGRESO` + foto de la fachada/candado. Evacúa la tarea del operador y aplica el régimen de contador en cero / vacancia con contrato (factura mínima + porcentajes y expensas de ley).
 
 ---
 
@@ -261,45 +261,46 @@ Para cada corte mensual (ej. `CORTE-2025-06`), el motor instancia una **Cola de 
 El sistema monitorea el estado individual de cada una de las **68 bodegas** (`bodegaId` `"01"`..`"98"`) y modela jurídicamente qué ocurre cuando un local o una bodega completa se encuentra vacía:
 
 1. **Caso 1 — Local Activo en Operación (`ACTIVO`):**
-   - Liquida consumo medido (`CONTADOR`) o cuota comunal (`COMUNAL` / `PRORRATEO`) + Alumbrado + CREG + Acueducto + PGIRS + Aseo + Vigilancia + Policía conforme al Artículo 46.
-2. **Caso 2 — Local Vacío o Cerrado CON Contrato de Arrendamiento/Tenencia Vigente (`VACIO_CON_CONTRATO` — `L, VACIO` / `L, CERRADO`):**
-   - Aunque el consumo físico en medidor sea `0 kWh` y `0 m³`, la disponibilidad de red y la tenencia jurídica obligan al comerciante titular a pagar:
-     - **Energía:** Cargo de Factura Mínima (`$20.498` Principal / `$20.489` BP) + Alumbrado Público General ($m^2$) + Alero/Comunal de Bodega ($m^2$) + CREG (`20%` / `15,7%`).
+   - Liquida consumo medido (`CONTADOR`, aplicando el divisor `/N` si comparte lectura con otros locales) o cuota comunal (`COMUNAL` / `PRORRATEO`) + Alumbrado + CREG + Acueducto + Residuos Verdes + Barrido + Vigilancia + Policía conforme al Artículo 46.
+2. **Caso 2 — Local Vacío o Cerrado CON Contrato de Arrendamiento Vigente / Contador en Cero (`VACIO_CON_CONTRATO` — `L, VACIO` / `L, CERRADO`):**
+   - Cuando el consumo físico en medidor es `0 kWh` y `0 m³`, paga:
+     - **Energía:** Valor Mínimo (`$20.498` Predio Matriz / `$20.489` Bodega Popular) + los porcentajes de ley (`20%` Consumo Comunal BP si aplica + `20%` Alumbrado Público General + CREG).
      - **Acueducto:** Tope mínimo de $1\;m^3$ (`$10.921,45`) + Cuota Agua Comunal ($m^2$).
-     - **Expensas Fijas:** Aseo ($m^2$), Vigilancia ($m^2$), Residuos PGIRS según categoría base y Policía (cuota parte equitativa).
-3. **Caso 3 — Local o Bodega Vacía SIN Contrato / Restituida a Corabastos o en Mantenimiento (`VACIO_SIN_CONTRATO_CORPORACION`):**
-   - **Prohibición de Sobrecosto a Vecinos:** Cuando una bodega o local está restituido a la Corporación (sin arrendatario activo), **su área en $m^2$ NO se elimina del denominador técnico**, para evitar inflar artificialmente la tarifa por $m^2$ de los comerciantes activos vecinos.
-   - **Absorción Contable Corporativa (`VALOR ASUMIDO CORPORACIÓN`):** La cuota parte de áreas comunes, alumbrado y expensas generada por los $m^2$ vacíos sin contrato se liquida y se imputa automáticamente al centro de costo **`VALOR ASUMIDO CORPORACIÓN`** (conciliando con los rubros de descuento corporativo de `ENERGIA_` fila `3479` y `RESUMEN TOTAL`).
+     - **Expensas:** Barrido ($m^2$), Vigilancia ($m^2$), Residuos Verdes según categoría (`NP/MP/P`) y Policía (cuota por local arrendado).
+3. **Caso 3 — Local o Bodega Vacía SIN Contrato / Restituida a Corabastos (`VACIO_SIN_CONTRATO_CORPORACION`):**
+   - **Prohibición de Sobrecosto a Vecinos:** Su área en $m^2$ se mantiene controlada y su costo se imputa automáticamente al centro de costo **`VALOR ASUMIDO CORPORACIÓN`**.
 
 ---
 
 ### 3.8 Hallazgos Forenses Críticos del Libro Oficial (`06. LIQUIDACION JUNIO 2025.xlsm`) y Correcciones de Auditoría
-1. **Corrección de Unidad de Medida en Validación de Campo (`kWh/m³` vs `COP`):**
-   - En las hojas `ENERGIA_` (columnas Y, Z) y `ACUEDUCTO` (columnas U, V), las columnas llamadas `PROMEDIO<` y `PROMEDIO>` están expresadas en **Pesos COP (`Total Liquidado`)**, mientras que el consumo físico del mes anterior se encuentra en `ENERGIA_` col 22 (`CONSUMO ANTERIOR KW`), `ENERGIA BP` col 25 (`CONSUMO ANTERIOR KW`) y `ACUEDUCTO` col 17 (`CONSUMO ANTERIOR`).
-   - **Regla SDD:** En `/captura` el semáforo compara estrictamente **unidades físicas (`kWh` contra `energiaConsumoAntKw` y `m³` contra `aguaConsumoAntM3`)**. En la Consola Gerencial (`/`) y en la Cuenta Individual 360° se audita adicionalmente el total en pesos contra la banda financiera `PROMEDIO<` / `PROMEDIO>` en COP.
+1. **Mapeo Exacto de Columnas de Consumo Físico Anterior (`Mayo 2025`) vs. Banda en Pesos (`PROMEDIO<` / `PROMEDIO>`):**
+   - En las hojas `ENERGIA_` (columnas Y, Z), `ENERGIA BP` (columnas AB, AC) y `ACUEDUCTO` (columnas U, V), las columnas llamadas `PROMEDIO<` y `PROMEDIO>` están expresadas en **Pesos COP (`Total Liquidado`)**.
+   - El **Consumo Físico Real del Mes Anterior (`Mayo 2025`)** se encuentra exclusivamente en:
+     - `ENERGIA_` $\rightarrow$ **Columna `W`** (`W2: CONSUMO ANTERIOR KW`).
+     - `ENERGIA BP` $\rightarrow$ **Columna `Z`** (`Z2: CONSUMO ANTERIOR KW`).
+     - `ACUEDUCTO` $\rightarrow$ **Columna `R`** (`R2: CONSUMO ANTERIOR`).
+   - **Prohibición Absoluta de Datos Simulados:** El archivo semilla `src/data/corabastos-junio-2025.json` extrae directamente dichas columnas reales (`W`, `Z`, `R`) junto con el divisor real de medidor compartido (`divisorContadorEnergia` y `divisorContadorAgua` extraído de las fórmulas `+(E-D)/N` del Excel). Queda terminantemente prohibido inventar o interpolar consumos o meses que no existan en el libro oficial.
 2. **Detección de Doble Conteo en Columna `R` (`SUBTOTAL`) de la Hoja `RESUMEN TOTAL` del Excel Cliente:**
    - En `RESUMEN TOTAL`, la columna `I` (`ALCANT`) contiene el total de Acueducto y Alcantarillado (`$239.477.572,80`) y la columna `J` (`TOTAL ACUE ALCAN`) aplica `=+H4+I4` (`$239.477.572,80`).
-   - La fórmula de la columna `R` (`SUBTOTAL`) del Excel original (`=SUM(F4:Q4)`) suma por error **tanto la columna `I` como la columna `J`**, duplicando **`$239.477.572,80 COP`** y mostrando `$3.861.030.409,65` en lugar de la suma real de los 6 servicios (**`$3.621.552.836,85 COP`**, que es el valor exacto certificado en el cuadro `V/FINANZAS vs V/LIQUIDADO` de la fila `5333`).
-   - **Regla SDD:** El motor de `Corabastos OS` liquida sobre la verdad contable de **`$3.621.552.836,85 COP`** (sin duplicar acueducto) y expone explícitamente un **Badge de Alerta Forense de Doble Conteo Excel (`+$239,47M`)** en el tablero de conciliación para trazabilidad ante la Dirección Financiera.
+   - La fórmula de la columna `R` (`SUBTOTAL`) del Excel original (`=SUM(F4:Q4)`) suma por error **tanto la columna `I` como la columna `J`**, duplicando **`$239.477.572,80 COP`** y mostrando `$3.861.030.409,65` en lugar de la suma real de los 6 servicios (**`$3.621.552.836,85 COP`**).
 
 ---
 
-### 3.9 Motor de Inteligencia de Negocios (BI) & 6 KPIs Longitudinales Corte a Corte (`src/lib/bi-kpis-engine.ts`)
-Dentro del **Módulo 01 (`Servicios Públicos & Expensas`)**, el sub-módulo **1.5 Inteligencia BI & KPIs Longitudinales** transforma los datos históricos y del corte activo en **6 KPIs longitudinales estratégicos**:
+### 3.9 Motor de Inteligencia de Negocios (BI) & 6 KPIs Longitudinales (`100% Datos Reales Mayo 2025 vs. Junio 2025`)
+Dentro del **Módulo 01 (`Servicios Públicos & Expensas`)**, el sub-módulo **1.5 Inteligencia BI & KPIs Longitudinales** opera **exclusivamente sobre los datos reales certificados en el libro oficial (`Mayo 2025 [Anterior]` vs. `Junio 2025 [Actual]`), con cero meses ficticios o simulados**:
 
 1. **KPI 1 — Índice de Pérdidas y Remanente Comunal por Bodega ($\Delta$ Macromedidor Padre vs. Contadores Hijos):**
-   - Mide qué porcentaje del consumo bruto de cada uno de los **62 macromedidores** (`38 Energía` + `24 Acueducto`) corresponde a consumo medido en contadores hijos ($\sum \text{Hijos}$) frente a remanente comunal ($\text{Bruto} - \sum \text{Hijos}$).
-   - Compara longitudinalmente `Consumo Neto Comunal Actual` vs. `Consumo Neto Comunal Anterior` (`consumoAnteriorKw` / `consumoAnteriorM3`) y dispara alerta de **Sospecha de Fuga o Derivación No Autorizada** cuando el remanente comunal salta **`> +20%`** intermensual.
+   - Mide qué porcentaje del consumo bruto de cada uno de los **62 macromedidores** (`38 Energía` + `24 Acueducto`) corresponde a consumo medido en contadores hijos ($\sum \text{Hijos}$) frente a remanente comunal ($\text{Bruto} - \sum \text{Hijos}$), y compara el `Consumo Neto Actual (Junio 2025)` contra el `Consumo Neto Anterior Real (Mayo 2025)` (`consumoAnteriorKw` col `F` de `LECTURAS COMUNALES_` y `consumoAnteriorM3` col `F` de `AGUA COMUNAL`).
 2. **KPI 2 — Brecha de Absorción Financiera Corporativa (`V/Finanzas` vs. `V/Liquidado` + `Asumido Corporación`):**
-   - Cuantifica corte a corte por cada servicio (`Energía`, `Acueducto`, `Residuos PGIRS`, `Aseo`, `Vigilancia`, `Policía`) la relación entre la factura del operador externo (`V/Finanzas`), el recaudo trasladado a comerciantes (`V/Liquidado`), el subsidio corporativo fijo (`Asumido Corporación` + `Asumido Covial`) y la bolsa dinámica por vacancia sin contrato (`VACIO_SIN_CONTRATO_CORPORACION`).
+   - Cuantifica por cada servicio (`Energía`, `Acueducto`, `Residuos Verdes`, `Barrido/Aseo`, `Vigilancia`, `Policía`) la relación entre la factura del proveedor (`V/Finanzas`), el valor liquidado a comerciantes (`V/Liquidado`) y el valor asumido por la Corporación.
 3. **KPI 3 — Salud y Envejecimiento del Parque Metrológico (`1.835 Medidores Físicos`):**
-   - Clasifica el estado técnico de los medidores físicos en `OK (Operativos)` vs. anomalías reglamentarias (`C, DETENIDO`, `M, DETENIDO`, `C, TAPADO`, `M, TAPADO`, `C, RETIRADO`, `REVISAR`), midiendo cuántos **$m^2$** y cuántos **millones de COP** migran forzosamente a cobro por área/prorrateo bajo el Artículo 46 por falta de reemplazo oportuno de medidores.
+   - Clasifica el estado real de los medidores en `OK` vs. anomalías reportadas en el Excel (`C, DETENIDO`, `M, DETENIDO`, `C, TAPADO`, `M, TAPADO`, `C, RETIRADO`, `REVISAR`, `L, CERRADO`, `L, VACIO`), cuantificando cuántos $m^2$ y COP operan en cada estado.
 4. **KPI 4 — Intensidad Energética e Hídrica por $m^2$ (`kWh/m²`, `m³/m²`, `$/m²`) & Ranking Pareto de Bodegas y Locales:**
-   - Calcula el benchmark de consumo físico y costo por metro cuadrado entre las **68 bodegas** y expone el **Top 15 Pareto de Locales** con mayor consumo absoluto y mayor desviación intermensual (`Junio 2025` vs `Mayo 2025` en `energiaConsumoAntKw`, `aguaConsumoAntM3`, `totalAnteriorCop` y banda histórica `PROMEDIO >`).
-5. **KPI 5 — Evolución Longitudinal Multicorte (`Enero 2025 → Junio 2025`) de Tarifas Unitarias e Impacto PGIRS (`NP / MP / P`):**
-   - Serie longitudinal de 6 cortes mensuales (`2025-01` a `2025-06`) anclada en los cierres certificados de Mayo (`totalAnteriorCop = $3.541,69M`) y Junio (`calcTotalCop = $3.621,55M`), monitoreando la trayectoria de tarifas unitarias (`$/kWh`, `$/m³`, `$/m² Vigilancia`, `$/m² Aseo`, `$/m² Residuos NP/MP/P`).
+   - Calcula el benchmark real de consumo físico y costo por $m^2$ entre las **68 bodegas** y expone el **Top 15 Pareto de Locales** comparando su consumo físico real de Junio (`energiaConsumoIndivKw`, `aguaConsumoIndivM3`) contra su consumo físico real de Mayo (`energiaConsumoAntKw` col `W`/`Z`, `aguaConsumoAntM3` col `R`) y su facturación real (`calcTotalCop` vs. `totalAnteriorCop` col `AA` de `RESUMEN TOTAL`).
+5. **KPI 5 — Comparativo Longitudinal Real Corte a Corte (`Mayo 2025 [Valor Anterior Excel]` vs. `Junio 2025 [Valor Actual Excel]`):**
+   - Compara exclusivamente los **2 cortes reales existentes en el libro oficial (`2025-05 Mayo` vs. `2025-06 Junio`)**, servicio por servicio, utilizando las sumas exactas de las columnas `VALOR ANTERIOR` y `CONSUMO ANTERIOR` frente a `TOTAL LIQUIDADO` y `CONSUMO ACTUAL` del Excel, sin interpolar ni inventar meses inexistentes.
 6. **KPI 6 — Eficiencia Operativa del Corte (`SLA de Lectura en Terreno` & Tasa de Locales Cerrados):**
-   - Mide el porcentaje de avance de las **1.835 tareas físicas** en las **5 Zonas Operativas**, el porcentaje de verificación fotográfica (`VERIFICADO POR IMAGEN`) y la tasa de inaccesibilidad en terreno (`L, CERRADO`, `L, VACIO`, `NO PERMITIO INGRESO`).
+   - Mide el avance real de las **1.835 tareas físicas** en las **5 Zonas Operativas** y la tasa de locales cerrados/vacíos (`L, CERRADO`, `L, VACIO`).
 
 ---
 

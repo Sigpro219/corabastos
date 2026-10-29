@@ -67,9 +67,9 @@ export const ZONE_META: {
   },
   {
     id: "ZONA_4_BODEGA_POPULAR",
-    shortLabel: "Z4 · Bodega Popular (8x)",
-    title: "Zona 4: Bodega Popular Minorista/Mayorista (Factor 8x)",
-    priorityBadge: "FACTOR 8X",
+    shortLabel: "Z4 · Bodega Popular",
+    title: "Zona 4: Bodega Popular Minorista/Mayorista (Contadores Macro/Compartidos)",
+    priorityBadge: "BODEGA POPULAR",
   },
   {
     id: "ZONA_5_RED_FRIOS",
@@ -166,9 +166,10 @@ export function buildCutoffReadingTasks(
     if (loc.modalidadEnergia === "CONTADOR" || isRedFrios) {
       const key = buildTaskKey("ENERGIA", loc.codigo);
       const state = completedTaskIds[key] || loc.energiaTareaEstado || "PENDIENTE";
-      const mult = isBP ? 8 : 1;
+      const divE = Math.max(1, loc.energiaDivisorContador || 1);
+      const mult = 1 / divE;
       const antFisico =
-        loc.energiaConsumoAntKw && loc.energiaConsumoAntKw > 0
+        loc.energiaConsumoAntKw !== undefined
           ? loc.energiaConsumoAntKw
           : loc.energiaConsumoIndivKw;
       list.push({
@@ -177,7 +178,13 @@ export function buildCutoffReadingTasks(
         bodegaId: loc.bodegaId,
         zonaId,
         servicio: "ENERGIA",
-        etiquetaServicio: isBP ? "ENERGÍA BP (FACTOR 8X)" : "ENERGÍA INDIVIDUAL",
+        etiquetaServicio: isBP
+          ? divE > 1
+            ? `ENERGÍA BP (COMPARTIDO /${divE})`
+            : "ENERGÍA BP INDIVIDUAL"
+          : divE > 1
+          ? `ENERGÍA COMPARTIDA (/${divE})`
+          : "ENERGÍA INDIVIDUAL",
         unidad: "kWh",
         serieMedidor: `EN-${loc.codigo}`,
         areaM2: loc.areaM2,
@@ -193,8 +200,10 @@ export function buildCutoffReadingTasks(
     if (loc.modalidadAcueducto === "CONTADOR") {
       const key = buildTaskKey("AGUA", loc.codigo);
       const state = completedTaskIds[key] || loc.aguaTareaEstado || "PENDIENTE";
+      const divA = Math.max(1, loc.aguaDivisorContador || 1);
+      const multA = 1 / divA;
       const antFisico =
-        loc.aguaConsumoAntM3 && loc.aguaConsumoAntM3 > 0
+        loc.aguaConsumoAntM3 !== undefined
           ? loc.aguaConsumoAntM3
           : loc.aguaConsumoIndivM3;
       list.push({
@@ -203,11 +212,11 @@ export function buildCutoffReadingTasks(
         bodegaId: loc.bodegaId,
         zonaId,
         servicio: "AGUA",
-        etiquetaServicio: "ACUEDUCTO INDIVIDUAL",
+        etiquetaServicio: divA > 1 ? `ACUEDUCTO COMPARTIDO (/${divA})` : "ACUEDUCTO INDIVIDUAL",
         unidad: "m³",
         serieMedidor: `AQ-${loc.codigo}`,
         areaM2: loc.areaM2,
-        multiplicador: 1,
+        multiplicador: multA,
         lecturaAnterior: loc.aguaLecturaAnt,
         lecturaActual: loc.aguaLecturaAct,
         consumoAnteriorFisico: antFisico,
