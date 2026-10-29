@@ -6,6 +6,9 @@ export const metadata: Metadata = {
   title: "CORABASTOS OS · ERP Corporativo & Motor de Liquidación de Servicios Públicos",
   description:
     "Plataforma de Captura Móvil de Contadores en Terreno, Desacoplo Padre-Hijo de Macromedidores Comunales y Liquidación Exacta de Servicios Públicos y Expensas para 5.318 Locales.",
+  icons: {
+    icon: "/corabastos-isotipo.svg",
+  },
 };
 
 export default function RootLayout({

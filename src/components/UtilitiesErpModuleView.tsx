@@ -9,6 +9,7 @@ import { MobileFieldCaptureView } from "@/components/MobileFieldCaptureView";
 import { BiLongitudinalKpisView } from "@/components/BiLongitudinalKpisView";
 import { LiquidationMethodologyView } from "@/components/LiquidationMethodologyView";
 import { LocalAccountModal } from "@/components/LocalAccountModal";
+import { CorabastosBrandLogo } from "@/components/CorabastosBrandLogo";
 import { UtilitiesSubTabId } from "@/contracts/erp-bridges";
 import { useCorabastos } from "@/context/CorabastosContext";
 import {
@@ -58,18 +59,23 @@ export function UtilitiesErpModuleView({
       {/* CABECERA COMPACTA DEL MÓDULO 01 ESTILO MJM PRECISION CLINICAL SLATE */}
       <div className="premium-card p-3.5 space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--outline-color)] pb-3">
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="px-2 py-0.5 rounded bg-[#0B132B] text-[#f7931b] border border-[#f7931b]/30 font-mono text-[10px] font-black uppercase tracking-wider">
-                MÓDULO ERP 01 · SERVICIOS PÚBLICOS & EXPENSAS
-              </span>
-              <span className="text-[11px] font-mono text-[var(--text-muted)]">
-                Directiva No. 033-06 (Título VII · Art. 42 al 47)
-              </span>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center p-1 shadow-xs shrink-0">
+              <CorabastosBrandLogo variant="isotipo" size={32} />
             </div>
-            <h1 className="text-sm sm:text-base font-bold text-[var(--text-main)] mt-1 tracking-tight">
-              Liquidación y Transferencia de Servicios Públicos & Expensas Comunes ({receipts.nombrePeriodo})
-            </h1>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="px-2 py-0.5 rounded bg-[#0B132B] text-[#f7931b] border border-[#f7931b]/30 font-mono text-[10px] font-black uppercase tracking-wider">
+                  MÓDULO ERP 01 · SERVICIOS PÚBLICOS & EXPENSAS
+                </span>
+                <span className="text-[11px] font-mono text-[var(--text-muted)]">
+                  Directiva No. 033-06 (Título VII · Art. 42 al 47)
+                </span>
+              </div>
+              <h1 className="text-sm sm:text-base font-bold text-[var(--text-main)] mt-1 tracking-tight">
+                Liquidación y Transferencia de Servicios Públicos & Expensas Comunes ({receipts.nombrePeriodo})
+              </h1>
+            </div>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">

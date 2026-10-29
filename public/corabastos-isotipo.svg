@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" fill="none">
+  <defs>
+    <radialGradient id="corabastosSun" cx="62%" cy="32%" r="65%">
+      <stop offset="0%" stop-color="#FDE047" />
+      <stop offset="35%" stop-color="#F7931B" />
+      <stop offset="100%" stop-color="#DD6B20" />
+    </radialGradient>
+    <linearGradient id="leafTopGrad" x1="25%" y1="85%" x2="95%" y2="15%">
+      <stop offset="0%" stop-color="#14532D" />
+      <stop offset="55%" stop-color="#2E7D32" />
+      <stop offset="100%" stop-color="#84CC16" />
+    </linearGradient>
+    <linearGradient id="leafBottomRightGrad" x1="15%" y1="90%" x2="90%" y2="10%">
+      <stop offset="0%" stop-color="#14532D" />
+      <stop offset="55%" stop-color="#2E7D32" />
+      <stop offset="100%" stop-color="#84CC16" />
+    </linearGradient>
+    <linearGradient id="leafCradleLeftGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2E7D32" />
+      <stop offset="100%" stop-color="#14532D" />
+    </linearGradient>
+    <linearGradient id="leafCradleRightGrad" x1="100%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#2E7D32" />
+      <stop offset="100%" stop-color="#14532D" />
+    </linearGradient>
+  </defs>
+
+  <!-- Hoja Superior Envolvente (C) -->
+  <path
+    d="M24 114C38 56 88 22 146 24C165 24.8 182 30 192 36C174 64 142 74 106 68C68 62 40 82 24 114Z"
+    fill="url(#leafTopGrad)"
+  />
+
+  <!-- Sol / Fruto Central Naranja-Dorado -->
+  <circle cx="106" cy="138" r="54" fill="url(#corabastosSun)" />
+
+  <!-- Hojas Cuna Inferiores que abrazan el fruto -->
+  <path
+    d="M26 138C28 182 58 208 101 212C101 182 78 158 26 138Z"
+    fill="url(#leafCradleLeftGrad)"
+  />
+  <path
+    d="M186 138C184 182 154 208 111 212C111 182 134 158 186 138Z"
+    fill="url(#leafCradleRightGrad)"
+  />
+
+  <!-- Hoja Inferior Derecha Ascendente -->
+  <path
+    d="M102 228C152 240 202 210 226 154C232 139 235 124 234 112C202 120 180 146 168 178C156 208 132 224 102 228Z"
+    fill="url(#leafBottomRightGrad)"
+  />
+</svg>

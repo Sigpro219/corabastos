@@ -4,6 +4,7 @@ import React from "react";
 import { ComputedLocalLiquidation } from "@/lib/liquidation-engine";
 import { useCorabastos } from "@/context/CorabastosContext";
 import { OccupancyStatus } from "@/contracts/domain-contracts";
+import { CorabastosBrandLogo } from "@/components/CorabastosBrandLogo";
 import {
   X,
   Printer,
@@ -58,8 +59,8 @@ export function LocalAccountModal({ local, onClose }: LocalAccountModalProps) {
         {/* ENCABEZADO EXPEDIENTE INDIVIDUAL 360° */}
         <div className="bg-[#010F22] text-white px-6 py-4 flex flex-wrap items-center justify-between gap-3 border-b border-white/10">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center">
-              <FileCheck2 className="w-5 h-5 text-emerald-400" />
+            <div className="w-10 h-10 rounded-xl bg-white border border-white/20 flex items-center justify-center p-1 shadow-xs">
+              <CorabastosBrandLogo variant="isotipo" size={32} />
             </div>
             <div>
               <div className="flex items-center gap-2">

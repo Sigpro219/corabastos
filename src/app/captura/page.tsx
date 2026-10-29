@@ -12,6 +12,7 @@ import {
   ZONE_META,
 } from "@/lib/reading-tasks-engine";
 import { OperatorTaskCaptureCard } from "@/components/OperatorTaskCaptureCard";
+import { CorabastosBrandLogo } from "@/components/CorabastosBrandLogo";
 import {
   Zap,
   Droplets,
@@ -198,8 +199,8 @@ export default function OperadorTerrenoCapturePage() {
       {/* BARRA SUPERIOR TERMINAL OPERATIVA DE CAMPO */}
       <header className="sticky top-0 z-30 bg-[#010F22]/95 backdrop-blur-md border-b border-white/10 px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-xl bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center">
-            <Smartphone className="w-5 h-5 text-emerald-400" />
+          <div className="w-9 h-9 rounded-xl bg-white border border-white/20 flex items-center justify-center p-1 shadow-xs">
+            <CorabastosBrandLogo variant="isotipo" size={28} />
           </div>
           <div>
             <div className="flex items-center gap-2">

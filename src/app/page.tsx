@@ -10,6 +10,7 @@ import {
 } from "@/contracts/erp-bridges";
 import { UtilitiesErpModuleView } from "@/components/UtilitiesErpModuleView";
 import { ErpRoadmapExpansionView } from "@/components/ErpRoadmapExpansionView";
+import { CorabastosBrandLogo } from "@/components/CorabastosBrandLogo";
 import {
   AlertCircle,
   BarChart3,
@@ -258,18 +259,18 @@ export default function CorabastosErpShellPage() {
 
   const renderSidebarContent = () => (
     <div className="w-64 flex flex-col h-full shrink-0 select-none">
-      {/* BRANDING DEL TENANT ESTILO PORTAL DE OPERACIONES MJM */}
+      {/* BRANDING DEL TENANT ESTILO PORTAL DE OPERACIONES MJM CON LOGO OFICIAL RE-RENDERIZADO */}
       <div className="p-4 mb-1 border-b border-white/10 flex items-center justify-between">
         <div className="flex items-center gap-3 min-w-0">
-          <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center overflow-hidden border border-white/10 shadow-xs shrink-0">
-            <Building2 className="w-5 h-5 text-[#0B132B]" strokeWidth={2} />
+          <div className="w-9 h-9 bg-white rounded-lg flex items-center justify-center overflow-hidden border border-white/15 shadow-xs shrink-0 p-1">
+            <CorabastosBrandLogo variant="isotipo" size={28} />
           </div>
           <div className="flex-1 min-w-0">
             <h1 className="font-bold text-white text-[11px] tracking-tight uppercase leading-none truncate">
-              Corabastos OS · ERP
+              Corabastos S.A. · ERP
             </h1>
             <p className="text-[7.5px] text-[#f7931b] font-mono font-medium uppercase tracking-widest mt-1 truncate">
-              Directiva 033-06 · 68 Bodegas
+              NIT 860.028.093-7 · 68 Bodegas
             </p>
           </div>
         </div>
