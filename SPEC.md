@@ -1,7 +1,7 @@
 # 🛡️ CORABASTOS OS (ERP Corporativo & Motor de Liquidación de Servicios Públicos y Expensas Comunes) — Contrato Canónico de Arquitectura (SPEC.md)
 
 > **Documento Canónico de Especificación (Spec-Anchored — SDD)**  
-> **Versión:** 1.7.0 (Integración de Reglas Oficiales del Cliente + Sub-Módulo 1.6 Memoria de Cálculo & Reglas de Liquidación + Medidores Compartidos `/N` + Cero Datos Simulados Mayo vs. Junio 2025 Real)  
+> **Versión:** 1.8.0 (Estandarización de Formato Numérico Colombiano `es-CO`: Punto `.` para Miles y Coma `,` para Decimales + Prohibición de `.toFixed()` en UI y `<input type="number">` + Logo Oficial Vectorizado + Memoria de Cálculo 1.6)  
 > **Fecha de Actualización:** 28 de Octubre de 2026  
 > **Estado:** 🟢 VIGENTE & 100% BLINDADO PARA CONSTRUCCIÓN  
 > **Ubicación Oficial:** `C:\Users\German Higuera\OneDrive\Documentos\Projects\corabastos`  
@@ -38,6 +38,10 @@
      4. **`MOD_4_MANTENIMIENTO_CMMS` (`Mantenimiento Industrial & Red de Fríos` — Cable Pelado Anillo 4)**
      5. **`MOD_5_AMBIENTAL_PGIRS_SAC` (`Gestión Ambiental PGIRS, Básculas & SAC` — Cable Pelado Anillo 5)**
    - **Nivel 2 (Sub-Navegación Interna de cada Macro-Módulo):** Prohibido mezclar las sub-pestañas internas de `Servicios Públicos & Expensas` en la barra global del ERP; dichas sub-vistas (`1.1 Sábana & Cuenta Individual 360°`, `1.2 Estado de 68 Bodegas & Vacancia`, `1.3 Recibos Maestros & Macromedidores`, `1.4 Monitor de Corte & Tareas de Campo`) viven encapsuladas dentro del contenedor dedicado `src/components/UtilitiesErpModuleView.tsx`.
+8. **Estándar Innegociable de Formato Numérico Colombiano (`es-CO`) e Inputs Numéricos Anti-Cero (`src/lib/formatters.ts` — `disenador-web`):**
+   - **Separador de Miles (`.`) y Separador de Decimales (`,`):** Todo número, moneda COP, área ($m^2$), lectura de medidor, tarifa o porcentaje renderizado en pantalla o exportado a CSV debe utilizar exclusivamente la convención colombiana `es-CO` (**punto `.` para miles y coma `,` para decimales**, ej. `$1.457.589.006`, `165,68 m²`, `$720,48/kWh`, `0,40x`).
+   - **Prohibición Absoluta de `.toFixed()` Directo en UI:** Queda **TERMINANTEMENTE PROHIBIDO** usar `.toFixed(n)` directamente en plantillas JSX/TSX o strings de interfaz, ya que `.toFixed()` en JavaScript inserta punto decimal anglosajón (`.` en vez de `,`) y omite los puntos separadores de miles. Toda vista debe consumir las funciones canónicas de `src/lib/formatters.ts` (`formatCop`, `formatDec`, `formatInt`, `formatPct`).
+   - **Prohibición de `<input type="number">` (`REF-INPUT-NUMERICO-SIN-CERO-Y-COMA-DECIMAL.md`):** Queda prohibido el uso de `<input type="number">` en formularios de tarifas, facturas o lecturas de medidores. Todo campo numérico editable debe utilizar `<input type="text" inputMode="decimal">` (o el componente `PrecisionDecimalInput`), purgando ceros a la izquierda (`raw.replace(/^0+(?=\d)/, '')`) y aceptando tanto coma (`,`) como punto (`.`) decimal.
 
 ---
 
@@ -404,3 +408,4 @@ La consola administrativa implementa íntegramente el **Sistema de Diseño y Arq
 - `[x]` **Tarea 12.0:** Actualización SDD `SPEC.md` v1.5.0 e implementación del **Sidebar Colapsable, Topbar Ejecutivo, Sistema de Color (`#0B132B` / `#1E3A5F` / `#f7931b`) y Popover Glassmorphism del Portal de Operaciones MJM** en `src/app/globals.css`, `src/app/page.tsx` y `src/components/UtilitiesErpModuleView.tsx`.
 - `[x]` **Tarea 13.0:** Actualización SDD `SPEC.md` v1.6.0 con las reglas oficiales de negocio del cliente, erradicación de meses simulados y extracción de las columnas reales de Mayo 2025 (`W`, `Z`, `R`) y divisores de contadores compartidos (`/N`).
 - `[x]` **Tarea 14.0:** Actualización SDD `SPEC.md` v1.7.0 e implementación de la **Sub-Vista 1.6 Memoria de Cálculo & Reglas de Liquidación (`src/components/LiquidationMethodologyView.tsx`)** y la explicación matemática reemplazada local por local en `src/components/LocalAccountModal.tsx`.
+- `[x]` **Tarea 15.0:** Blindaje SDD `SPEC.md` v1.8.0 (Ley Marcial #8 en §0.1) y regularización integral por `disenador-web` de todos los separadores de miles (`.`) y decimales (`,`) en todas las pantallas (`src/lib/formatters.ts`, `src/components/PrecisionDecimalInput.tsx`, `LiquidationMatrixView`, `BodegasStatusView`, `MasterReceiptsSimulatorView`, `CommunalMacrometersAuditTable`, `LocalAccountModal`, `BiLongitudinalKpisView`, `LiquidationMethodologyView`, `OperatorTaskCaptureCard`, `/captura` y `accounting-export.ts`), erradicando el 100% de llamadas `.toFixed()` en UI y el 100% de `<input type="number">`.

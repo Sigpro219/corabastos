@@ -383,11 +383,11 @@ export const ERP_EXPANSION_RINGS: ErpModuleExpansionRing[] = [
     estado: "ACTIVO_MVP",
     origenArsenal: "Ingeniería Inversa 06. LIQUIDACION JUNIO 2025.xlsm + frufresco (/ops/compras) + galeria-sticky-industrial",
     dolorQueResuelve:
-      "Reemplaza la macro-sábana Excel de 10.7 MB, las fórmulas manuales con #REF! en macromedidores comunales y la digitación tardía de fotos de contadores en oficina.",
+      "Reemplaza la macro-sábana Excel de 10,7 MB, las fórmulas manuales con #REF! en macromedidores comunales y la digitación tardía de fotos de contadores en oficina.",
     entregablesClave: [
       "App Móvil PWA para Lecturistas en Terreno con alerta in-situ de desviación y foto probatoria",
       "Desacoplo automático Padre-Hijo en los 62 macromedidores comunales (Aleros, Bodega Energía y Agua Comunal)",
-      "Motor matemático exacto para los 3 recibos de Energía, 3 de Acueducto y 4 facturas de expensas (Policía partes iguales, Vigilancia/Aseo por m², Residuos NP 0.4 / MP 1.2 / P Saldo)",
+      "Motor matemático exacto para los 3 recibos de Energía, 3 de Acueducto y 4 facturas de expensas (Policía partes iguales, Vigilancia/Aseo por m², Residuos NP 0,4 / MP 1,2 / P Saldo)",
       "Conciliación V/Finanzas vs V/Liquidado y planos contables (PL109, PL008, PL009, PL253, PL086, PL250)",
     ],
     impactoFinancieroEstimado: "$3.861 Millones COP/mes auditados al centavo · Reducción del ciclo de liquidación de 12 días a 4 horas",

@@ -2,6 +2,7 @@
 
 import React from "react";
 import { OBSERVATION_OPTIONS, UnifiedReadingTask } from "@/lib/reading-tasks-engine";
+import { formatDec, formatInt, sanitizeDecimalInputString } from "@/lib/formatters";
 import {
   Camera,
   CheckCircle2,
@@ -37,7 +38,7 @@ export function OperatorTaskCaptureCard({
   handleSaveTask,
   saveToast,
 }: OperatorTaskCaptureCardProps) {
-  const numericInput = Number(inputReading);
+  const numericInput = Number(inputReading.replace(",", "."));
   const deltaLectura = numericInput - activeTask.lecturaAnterior;
   const consumoFisicoCalculado = Math.max(0, deltaLectura) * activeTask.multiplicador;
 
@@ -73,7 +74,7 @@ export function OperatorTaskCaptureCard({
           <span className="text-[11px] text-slate-400 block">Serie Medidor</span>
           <span className="text-sm font-bold text-emerald-400">{activeTask.serieMedidor}</span>
           {activeTask.areaM2 > 0 && (
-            <span className="text-[11px] text-slate-400 block">{activeTask.areaM2} m²</span>
+            <span className="text-[11px] text-slate-400 block">{formatDec(activeTask.areaM2, 2)} m²</span>
           )}
         </div>
       </div>
@@ -140,10 +141,14 @@ export function OperatorTaskCaptureCard({
               2. Lectura Actual Odómetro
             </label>
             <input
-              type="number"
+              type="text"
               inputMode="decimal"
               value={inputReading}
-              onChange={(e) => setInputReading(e.target.value)}
+              onFocus={(e) => e.currentTarget.select()}
+              onChange={(e) => {
+                const { displayRaw } = sanitizeDecimalInputString(e.target.value);
+                setInputReading(displayRaw);
+              }}
               onKeyDown={(e) => {
                 if (e.key === "Enter") handleSaveTask();
               }}
@@ -178,14 +183,14 @@ export function OperatorTaskCaptureCard({
                   : "VALIDACIÓN FÍSICA OK: Dentro del rango histórico"}
               </span>
               <span className="font-mono text-base font-black tabular-nums">
-                {consumoFisicoCalculado.toLocaleString("es-CO")} {activeTask.unidad}
+                {formatDec(consumoFisicoCalculado, 2)} {activeTask.unidad}
               </span>
             </div>
             <p className="mt-1 opacity-90">
               {isNegativeReading
                 ? "Verifica los dígitos del medidor o reporta cambio/reinicio de contador."
                 : isOutOfHistoricalBand
-                ? `El consumo calculado (${consumoFisicoCalculado} ${activeTask.unidad}) se desvía del mes anterior (${activeTask.consumoAnteriorFisico} ${activeTask.unidad}). Confirma con foto o selecciona causal técnica.`
+                ? `El consumo calculado (${formatDec(consumoFisicoCalculado, 2)} ${activeTask.unidad}) se desvía del mes anterior (${formatDec(activeTask.consumoAnteriorFisico, 2)} ${activeTask.unidad}). Confirma con foto o selecciona causal técnica.`
                 : "Lectura consistente con el comportamiento histórico del medidor."}
             </p>
           </div>

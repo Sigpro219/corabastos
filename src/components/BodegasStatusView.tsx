@@ -5,6 +5,7 @@ import { useCorabastos, buildTaskKey } from "@/context/CorabastosContext";
 import { ComputedLocalLiquidation } from "@/lib/liquidation-engine";
 import { OccupancyStatus } from "@/contracts/domain-contracts";
 import { LocalAccountModal } from "@/components/LocalAccountModal";
+import { formatCop, formatDec, formatInt } from "@/lib/formatters";
 import {
   Building2,
   CheckCircle2,
@@ -448,9 +449,9 @@ export function BodegasStatusView() {
                       <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                     )}
                   </div>
-                  <div className="text-[10px] text-slate-500 mt-0.5">{loc.areaM2} m²</div>
+                  <div className="text-[10px] text-slate-500 mt-0.5">{formatDec(loc.areaM2, 2)} m²</div>
                   <div className="text-[11px] font-bold text-slate-900 mt-1 tabular-nums">
-                    ${loc.calcTotalCop.toLocaleString("es-CO")}
+                    {formatCop(loc.calcTotalCop)}
                   </div>
                 </button>
               );

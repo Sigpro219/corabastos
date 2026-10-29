@@ -136,7 +136,7 @@ export function MobileFieldCaptureView() {
           <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
             <MapPin className="w-4 h-4 text-emerald-600" />
             <span>
-              Bitácora de Terreno en Tiempo Real ({totalCompleted} tareas evacuadas en este corte)
+              Bitácora de Terreno en Tiempo Real ({totalCompleted.toLocaleString("es-CO")} tareas evacuadas en este corte)
             </span>
           </h3>
           <span className="text-xs font-mono text-slate-500">

@@ -141,7 +141,7 @@ export default function OperadorTerrenoCapturePage() {
     }
   }, [activeTask]);
 
-  const numericInput = Number(inputReading);
+  const numericInput = Number(inputReading.replace(",", "."));
 
   const simulateOcrCapture = () => {
     if (!activeTask) return;
@@ -271,7 +271,7 @@ export default function OperadorTerrenoCapturePage() {
                       {z.priorityBadge}
                     </span>
                     <span className="px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 font-mono text-[10px] font-bold">
-                      {stats.pending} pend.
+                      {stats.pending.toLocaleString("es-CO")} pend.
                     </span>
                   </div>
                   <div className="font-bold text-xs mt-1 truncate">{z.shortLabel}</div>
@@ -297,7 +297,7 @@ export default function OperadorTerrenoCapturePage() {
                 <option value="ALL">Todas las Bodegas de la Zona</option>
                 {zoneBodegas.map(([bod, st]) => (
                   <option key={bod} value={bod}>
-                    Bodega {bod} ({st.pending} pendientes de {st.total})
+                    Bodega {bod} ({st.pending.toLocaleString("es-CO")} pendientes de {st.total.toLocaleString("es-CO")})
                   </option>
                 ))}
               </select>
@@ -400,8 +400,8 @@ export default function OperadorTerrenoCapturePage() {
             <div className="flex items-center justify-between mb-1.5">
               <span className="text-[11px] text-slate-300 font-semibold">
                 {queueFilter === "PENDIENTES"
-                  ? `Cola de Tareas Pendientes en esta Ruta (${filteredTasks.length})`
-                  : `Tareas ya Evacuadas en esta Ruta (${filteredTasks.length})`}
+                  ? `Cola de Tareas Pendientes en esta Ruta (${filteredTasks.length.toLocaleString("es-CO")})`
+                  : `Tareas ya Evacuadas en esta Ruta (${filteredTasks.length.toLocaleString("es-CO")})`}
               </span>
               <span className="text-[10px] font-mono text-emerald-300">
                 Al guardar, la tarea desaparece de pendientes y salta a la siguiente

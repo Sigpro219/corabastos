@@ -3,6 +3,8 @@
 import React from "react";
 import { useCorabastos } from "@/context/CorabastosContext";
 import { CommunalMacrometersAuditTable } from "@/components/CommunalMacrometersAuditTable";
+import { PrecisionDecimalInput } from "@/components/PrecisionDecimalInput";
+import { formatCop, formatDec, formatInt } from "@/lib/formatters";
 import {
   Zap,
   Droplets,
@@ -58,7 +60,7 @@ export function MasterReceiptsSimulatorView() {
             Ingesta de Recibos Maestros (3 Energía · 3 Acueducto · 4 Expensas y Factores)
           </h2>
           <p className="text-xs text-[#4C607B] mt-0.5">
-            Cualquier ajuste en tarifas unitarias ($/kWh, $/m³), montos de facturas o factores (0.4 NP / 1.2 MP / Partes Iguales) recalcula en tiempo real los 5.318 locales.
+            Cualquier ajuste en tarifas unitarias ($/kWh, $/m³), montos de facturas o factores (0,4 NP / 1,2 MP / Partes Iguales) recalcula en tiempo real los 5.318 locales.
           </p>
         </div>
 
@@ -93,7 +95,7 @@ export function MasterReceiptsSimulatorView() {
             <div className="text-right">
               <span className="text-[10px] uppercase text-slate-400 block">Tarifa kWh Activa</span>
               <span className="text-base font-mono font-bold text-[#1D3557]">
-                ${receipts.energia.tarifaKwh.toLocaleString("es-CO")} / kWh
+                ${formatDec(receipts.energia.tarifaKwh, 2)} / kWh
               </span>
             </div>
           </div>
@@ -103,14 +105,15 @@ export function MasterReceiptsSimulatorView() {
               <label className="text-[10px] uppercase font-bold text-slate-500 block mb-1">
                 Tarifa Unitaria ($ / kWh)
               </label>
-              <input
-                type="number"
-                step="0.01"
+              <PrecisionDecimalInput
+                ariaLabel="Tarifa Unitaria kWh"
                 value={receipts.energia.tarifaKwh}
-                onChange={(e) =>
+                minDecimals={2}
+                maxDecimals={2}
+                onChange={(val) =>
                   updateReceipts({
                     ...receipts,
-                    energia: { ...receipts.energia, tarifaKwh: Number(e.target.value) || 0 },
+                    energia: { ...receipts.energia, tarifaKwh: val },
                   })
                 }
                 className="w-full bg-white border border-slate-300 rounded-lg px-3 py-1.5 font-mono font-bold text-right text-[#1D3557]"
@@ -122,10 +125,10 @@ export function MasterReceiptsSimulatorView() {
                 Recibo 1: Consumo Principal ($)
               </label>
               <div className="font-mono font-bold text-right text-sm text-[#1D3557] py-1">
-                ${receipts.energia.principal.valorConsumoFactura.toLocaleString("es-CO")}
+                {formatCop(receipts.energia.principal.valorConsumoFactura)}
               </div>
               <span className="text-[10px] text-slate-500 block text-right">
-                +20% CREG/Alumbrado · Tope Mín: ${receipts.energia.principal.topeMinimaCop.toLocaleString("es-CO")}
+                +20% CREG/Alumbrado · Tope Mín: {formatCop(receipts.energia.principal.topeMinimaCop)}
               </span>
             </div>
 
@@ -134,10 +137,10 @@ export function MasterReceiptsSimulatorView() {
                 Recibo 2: Bodega Popular ($)
               </label>
               <div className="font-mono font-bold text-right text-sm text-[#1D3557]">
-                ${receipts.energia.bodegaPopular.totalFactura.toLocaleString("es-CO")}
+                {formatCop(receipts.energia.bodegaPopular.totalFactura)}
               </div>
               <span className="text-[10px] text-slate-500 block text-right">
-                Consumo: ${receipts.energia.bodegaPopular.valorConsumoFactura.toLocaleString("es-CO")} · CREG: 15,7%
+                Consumo: {formatCop(receipts.energia.bodegaPopular.valorConsumoFactura)} · CREG: 15,7%
               </span>
             </div>
 
@@ -146,10 +149,10 @@ export function MasterReceiptsSimulatorView() {
                 Recibo 3: Red de Fríos + Alumbrado Gral
               </label>
               <div className="font-mono font-bold text-right text-sm text-[#1D3557]">
-                ${receipts.energia.redFrios.valorFacturaTotal.toLocaleString("es-CO")}
+                {formatCop(receipts.energia.redFrios.valorFacturaTotal)}
               </div>
               <span className="text-[10px] text-slate-500 block text-right">
-                Alumbrado Gral: ${receipts.energia.alumbradoGeneral.tarifaPorM2.toFixed(2)} / m²
+                Alumbrado Gral: ${formatDec(receipts.energia.alumbradoGeneral.tarifaPorM2, 2)} / m²
               </span>
             </div>
           </div>
@@ -174,7 +177,7 @@ export function MasterReceiptsSimulatorView() {
             <div className="text-right">
               <span className="text-[10px] uppercase text-slate-400 block">Tarifa m³ Activa</span>
               <span className="text-base font-mono font-bold text-[#1D3557]">
-                ${receipts.acueducto.tarifaM3.toLocaleString("es-CO", { maximumFractionDigits: 2 })} / m³
+                ${formatDec(receipts.acueducto.tarifaM3, 2)} / m³
               </span>
             </div>
           </div>
@@ -184,14 +187,15 @@ export function MasterReceiptsSimulatorView() {
               <label className="text-[10px] uppercase font-bold text-slate-500 block mb-1">
                 Tarifa Unitaria ($ / m³ = Mínima 1 m³)
               </label>
-              <input
-                type="number"
-                step="1"
+              <PrecisionDecimalInput
+                ariaLabel="Tarifa Unitaria Acueducto m3"
                 value={receipts.acueducto.tarifaM3}
-                onChange={(e) =>
+                minDecimals={2}
+                maxDecimals={2}
+                onChange={(val) =>
                   updateReceipts({
                     ...receipts,
-                    acueducto: { ...receipts.acueducto, tarifaM3: Number(e.target.value) || 0 },
+                    acueducto: { ...receipts.acueducto, tarifaM3: val },
                   })
                 }
                 className="w-full bg-white border border-slate-300 rounded-lg px-3 py-1.5 font-mono font-bold text-right text-[#1D3557]"
@@ -203,10 +207,10 @@ export function MasterReceiptsSimulatorView() {
                 Recibo 1: Factura General Acueducto
               </label>
               <div className="font-mono font-bold text-right text-sm text-[#1D3557] py-1">
-                ${receipts.acueducto.valorFacturaGeneral.toLocaleString("es-CO")}
+                {formatCop(receipts.acueducto.valorFacturaGeneral)}
               </div>
               <span className="text-[10px] text-slate-500 block text-right">
-                Prorrateo: ${(receipts.acueducto.bolsaProrrateo / receipts.acueducto.areaProrrateoM2).toFixed(2)} / m²
+                Prorrateo: ${formatDec(receipts.acueducto.bolsaProrrateo / receipts.acueducto.areaProrrateoM2, 2)} / m²
               </span>
             </div>
 
@@ -215,10 +219,10 @@ export function MasterReceiptsSimulatorView() {
                 Recibo 2: Acueducto Red de Fríos
               </label>
               <div className="font-mono font-bold text-right text-sm text-[#1D3557]">
-                ${receipts.acueducto.valorFacturaRedFrios.toLocaleString("es-CO")}
+                {formatCop(receipts.acueducto.valorFacturaRedFrios)}
               </div>
               <span className="text-[10px] text-slate-500 block text-right">
-                Área Red Fríos: {receipts.acueducto.areaRedFriosM2.toLocaleString("es-CO")} m² ($708,30/m²)
+                Área Red Fríos: {formatDec(receipts.acueducto.areaRedFriosM2, 2)} m² ($708,30/m²)
               </span>
             </div>
 
@@ -227,7 +231,7 @@ export function MasterReceiptsSimulatorView() {
                 Cargo Agua Comunal General (10%)
               </label>
               <div className="font-mono font-bold text-right text-sm text-[#1D3557]">
-                ${receipts.acueducto.bolsaAguaComunalGeneral.toLocaleString("es-CO")}
+                {formatCop(receipts.acueducto.bolsaAguaComunalGeneral)}
               </div>
               <span className="text-[10px] text-slate-500 block text-right">
                 Factor Área: $198,20 / m² · Baños: 1.565 m³
@@ -258,17 +262,19 @@ export function MasterReceiptsSimulatorView() {
               <label className="text-[10px] uppercase font-bold text-slate-500 block mb-1">
                 Valor Total Factura Policía ($)
               </label>
-              <input
-                type="number"
+              <PrecisionDecimalInput
+                ariaLabel="Valor Total Factura Policia"
                 value={receipts.expensas.policia.valorFactura}
-                onChange={(e) =>
+                minDecimals={0}
+                maxDecimals={0}
+                onChange={(val) =>
                   updateReceipts({
                     ...receipts,
                     expensas: {
                       ...receipts.expensas,
                       policia: {
                         ...receipts.expensas.policia,
-                        valorFactura: Number(e.target.value) || 0,
+                        valorFactura: val,
                       },
                     },
                   })
@@ -280,13 +286,13 @@ export function MasterReceiptsSimulatorView() {
             <div className="flex items-center justify-between pt-2 border-t border-slate-100">
               <span className="text-slate-600">Divisor Locales Activos:</span>
               <span className="font-mono font-bold text-[#1D3557]">
-                {receipts.expensas.policia.localesActivosDivisor.toLocaleString("es-CO")} locales
+                {formatInt(receipts.expensas.policia.localesActivosDivisor)} locales
               </span>
             </div>
             <div className="p-2.5 rounded-xl bg-indigo-50/70 border border-indigo-200 flex items-center justify-between">
               <span className="font-semibold text-[#1D3557]">Cuota Fija por Local:</span>
               <span className="font-mono font-bold text-sm text-indigo-900">
-                ${cuotaPolicia.toLocaleString("es-CO", { maximumFractionDigits: 2 })}
+                ${formatDec(cuotaPolicia, 2)}
               </span>
             </div>
           </div>
@@ -315,17 +321,19 @@ export function MasterReceiptsSimulatorView() {
                   <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
                   Vigilancia Neta:
                 </span>
-                <input
-                  type="number"
+                <PrecisionDecimalInput
+                  ariaLabel="Vigilancia Neta"
                   value={receipts.expensas.vigilancia.valorNetoDistribuir}
-                  onChange={(e) =>
+                  minDecimals={0}
+                  maxDecimals={0}
+                  onChange={(val) =>
                     updateReceipts({
                       ...receipts,
                       expensas: {
                         ...receipts.expensas,
                         vigilancia: {
                           ...receipts.expensas.vigilancia,
-                          valorNetoDistribuir: Number(e.target.value) || 0,
+                          valorNetoDistribuir: val,
                         },
                       },
                     })
@@ -334,9 +342,9 @@ export function MasterReceiptsSimulatorView() {
                 />
               </div>
               <div className="flex justify-between text-[11px] text-slate-600">
-                <span>Área: {receipts.expensas.vigilancia.areaTotalM2.toLocaleString("es-CO")} m²</span>
+                <span>Área: {formatDec(receipts.expensas.vigilancia.areaTotalM2, 2)} m²</span>
                 <strong className="font-mono text-emerald-700">
-                  Factor: ${tarifaVigilancia.toLocaleString("es-CO", { maximumFractionDigits: 2 })} / m²
+                  Factor: ${formatDec(tarifaVigilancia, 2)} / m²
                 </strong>
               </div>
             </div>
@@ -347,17 +355,19 @@ export function MasterReceiptsSimulatorView() {
                   <Sparkles className="w-3.5 h-3.5 text-sky-600" />
                   Aseo Neto (20%):
                 </span>
-                <input
-                  type="number"
+                <PrecisionDecimalInput
+                  ariaLabel="Aseo Neto"
                   value={receipts.expensas.aseo.valorNetoDistribuir}
-                  onChange={(e) =>
+                  minDecimals={0}
+                  maxDecimals={0}
+                  onChange={(val) =>
                     updateReceipts({
                       ...receipts,
                       expensas: {
                         ...receipts.expensas,
                         aseo: {
                           ...receipts.expensas.aseo,
-                          valorNetoDistribuir: Number(e.target.value) || 0,
+                          valorNetoDistribuir: val,
                         },
                       },
                     })
@@ -366,9 +376,9 @@ export function MasterReceiptsSimulatorView() {
                 />
               </div>
               <div className="flex justify-between text-[11px] text-slate-600">
-                <span>Área: {receipts.expensas.aseo.areaTotalM2.toLocaleString("es-CO")} m²</span>
+                <span>Área: {formatDec(receipts.expensas.aseo.areaTotalM2, 2)} m²</span>
                 <strong className="font-mono text-sky-700">
-                  Factor: ${tarifaAseo.toLocaleString("es-CO", { maximumFractionDigits: 2 })} / m²
+                  Factor: ${formatDec(tarifaAseo, 2)} / m²
                 </strong>
               </div>
             </div>
@@ -395,12 +405,12 @@ export function MasterReceiptsSimulatorView() {
             <div className="flex items-center justify-between">
               <span className="text-slate-600 font-medium">Neto a Prorratear ECSA:</span>
               <span className="font-mono font-bold text-[#1D3557]">
-                ${resCfg.valorNetoProrratear.toLocaleString("es-CO")}
+                {formatCop(resCfg.valorNetoProrratear)}
               </span>
             </div>
             <div className="flex items-center justify-between text-[11px] text-slate-500">
               <span>Tarifa Base 100% por m²:</span>
-              <span className="font-mono font-semibold">${tarifaBaseResM2.toFixed(2)} / m²</span>
+              <span className="font-mono font-semibold">${formatDec(tarifaBaseResM2, 2)} / m²</span>
             </div>
 
             <div className="grid grid-cols-2 gap-2 pt-1">
@@ -408,18 +418,19 @@ export function MasterReceiptsSimulatorView() {
                 <label className="text-[10px] font-bold text-slate-600 block">
                   Factor NP (No Productor)
                 </label>
-                <input
-                  type="number"
-                  step="0.05"
+                <PrecisionDecimalInput
+                  ariaLabel="Factor NP"
                   value={resCfg.factorNP}
-                  onChange={(e) =>
+                  minDecimals={1}
+                  maxDecimals={2}
+                  onChange={(val) =>
                     updateReceipts({
                       ...receipts,
                       expensas: {
                         ...receipts.expensas,
                         residuosEcsa: {
                           ...resCfg,
-                          factorNP: Number(e.target.value) || 0,
+                          factorNP: val,
                         },
                       },
                     })
@@ -427,7 +438,7 @@ export function MasterReceiptsSimulatorView() {
                   className="w-full mt-1 bg-white border border-slate-300 rounded px-2 py-1 font-mono font-bold text-right text-[#1D3557]"
                 />
                 <span className="text-[10px] font-mono text-slate-500 block text-right mt-0.5">
-                  ${tarifaNp.toFixed(2)} / m²
+                  ${formatDec(tarifaNp, 2)} / m²
                 </span>
               </div>
 
@@ -435,18 +446,19 @@ export function MasterReceiptsSimulatorView() {
                 <label className="text-[10px] font-bold text-slate-600 block">
                   Factor MP (Mediano Prod.)
                 </label>
-                <input
-                  type="number"
-                  step="0.05"
+                <PrecisionDecimalInput
+                  ariaLabel="Factor MP"
                   value={resCfg.factorMP}
-                  onChange={(e) =>
+                  minDecimals={1}
+                  maxDecimals={2}
+                  onChange={(val) =>
                     updateReceipts({
                       ...receipts,
                       expensas: {
                         ...receipts.expensas,
                         residuosEcsa: {
                           ...resCfg,
-                          factorMP: Number(e.target.value) || 0,
+                          factorMP: val,
                         },
                       },
                     })
@@ -454,7 +466,7 @@ export function MasterReceiptsSimulatorView() {
                   className="w-full mt-1 bg-white border border-slate-300 rounded px-2 py-1 font-mono font-bold text-right text-[#1D3557]"
                 />
                 <span className="text-[10px] font-mono text-slate-500 block text-right mt-0.5">
-                  ${tarifaMp.toFixed(2)} / m²
+                  ${formatDec(tarifaMp, 2)} / m²
                 </span>
               </div>
             </div>
@@ -466,11 +478,11 @@ export function MasterReceiptsSimulatorView() {
                   Categoría P (Perecederos):
                 </span>
                 <span className="text-[10px] text-slate-600">
-                  Absorbe bolsa restante (${Math.round(bolsaP).toLocaleString("es-CO")})
+                  Absorbe bolsa restante ({formatCop(Math.round(bolsaP))})
                 </span>
               </div>
               <span className="font-mono font-bold text-sm text-[#E73A46]">
-                ${tarifaP.toLocaleString("es-CO", { maximumFractionDigits: 2 })} / m²
+                ${formatDec(tarifaP, 2)} / m²
               </span>
             </div>
           </div>

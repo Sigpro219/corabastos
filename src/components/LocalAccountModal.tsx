@@ -5,6 +5,7 @@ import { ComputedLocalLiquidation } from "@/lib/liquidation-engine";
 import { useCorabastos } from "@/context/CorabastosContext";
 import { OccupancyStatus } from "@/contracts/domain-contracts";
 import { CorabastosBrandLogo } from "@/components/CorabastosBrandLogo";
+import { formatCop, formatDec, formatInt } from "@/lib/formatters";
 import {
   X,
   Printer,
@@ -114,7 +115,7 @@ export function LocalAccountModal({ local, onClose }: LocalAccountModalProps) {
                   Área Ocupada
                 </span>
                 <span className="font-mono text-base font-black text-slate-900 tabular-nums">
-                  {local.areaM2.toFixed(2)} m²
+                  {formatDec(local.areaM2, 2)} m²
                 </span>
                 <span className="text-[11px] text-slate-500 block">{local.bloqueEnergia}</span>
               </div>
@@ -139,9 +140,9 @@ export function LocalAccountModal({ local, onClose }: LocalAccountModalProps) {
                 <span className="text-[10px] text-slate-500 block mt-0.5">
                   Factor:{" "}
                   {local.categoriaResiduos === "NP"
-                    ? "0.4x"
+                    ? "0,4x"
                     : local.categoriaResiduos === "MP"
-                    ? "1.2x"
+                    ? "1,2x"
                     : local.categoriaResiduos === "P"
                     ? "Gran Productor"
                     : "Básico"}
@@ -206,12 +207,12 @@ export function LocalAccountModal({ local, onClose }: LocalAccountModalProps) {
                       <span className="text-amber-600">Serie: {pm.contadorSerie}</span>
                     </div>
                     <div className="text-[11px] text-slate-600">
-                      Bruto Bodega: <strong>{pm.consumoBruto} kWh</strong> − Hijos con Contador ({pm.hijosCount}):{" "}
-                      <strong>{pm.consumoHijosDescontado} kWh</strong> = Neto Comunal:{" "}
-                      <strong className="text-emerald-700">{pm.consumoNetoComunal} kWh</strong>
+                      Bruto Bodega: <strong>{formatDec(pm.consumoBruto, 2)} kWh</strong> − Hijos con Contador ({formatInt(pm.hijosCount)}):{" "}
+                      <strong>{formatDec(pm.consumoHijosDescontado, 2)} kWh</strong> = Neto Comunal:{" "}
+                      <strong className="text-emerald-700">{formatDec(pm.consumoNetoComunal, 2)} kWh</strong>
                     </div>
                     <div className="text-[10px] text-slate-500">
-                      Área Bodega: {pm.areaComunalM2} m² · Factor: {pm.factorPorM2.toFixed(4)} kWh/m²
+                      Área Bodega: {formatDec(pm.areaComunalM2, 2)} m² · Factor: {formatDec(pm.factorPorM2, 4)} kWh/m²
                     </div>
                   </div>
                 ))}
@@ -225,12 +226,12 @@ export function LocalAccountModal({ local, onClose }: LocalAccountModalProps) {
                       <span className="text-sky-600">Serie: {wm.contadorSerie}</span>
                     </div>
                     <div className="text-[11px] text-slate-600">
-                      Bruto Bodega: <strong>{wm.consumoBruto} m³</strong> − Hijos con Contador ({wm.hijosCount}):{" "}
-                      <strong>{wm.consumoHijosDescontado} m³</strong> = Neto Comunal:{" "}
-                      <strong className="text-emerald-700">{wm.consumoNetoComunal} m³</strong>
+                      Bruto Bodega: <strong>{formatDec(wm.consumoBruto, 2)} m³</strong> − Hijos con Contador ({formatInt(wm.hijosCount)}):{" "}
+                      <strong>{formatDec(wm.consumoHijosDescontado, 2)} m³</strong> = Neto Comunal:{" "}
+                      <strong className="text-emerald-700">{formatDec(wm.consumoNetoComunal, 2)} m³</strong>
                     </div>
                     <div className="text-[10px] text-slate-500">
-                      Área Comunal: {wm.areaComunalM2} m² · Factor: {wm.factorPorM2.toFixed(4)} m³/m²
+                      Área Comunal: {formatDec(wm.areaComunalM2, 2)} m² · Factor: {formatDec(wm.factorPorM2, 4)} m³/m²
                     </div>
                   </div>
                 ))}
@@ -268,31 +269,32 @@ export function LocalAccountModal({ local, onClose }: LocalAccountModalProps) {
                     </td>
                     <td className="py-3 px-3 text-[11px]">
                       <div>
-                        Ant: <strong>{local.energiaLecturaAnt}</strong> → Act:{" "}
-                        <strong>{local.energiaLecturaAct}</strong>{" "}
+                        Ant: <strong>{formatInt(local.energiaLecturaAnt)}</strong> → Act:{" "}
+                        <strong>{formatInt(local.energiaLecturaAct)}</strong>{" "}
                         {divisorEnergia > 1 ? `(Compartido /${divisorEnergia})` : ""}
                       </div>
                       <div>
-                        Indiv: <strong>{local.energiaConsumoIndivKw.toFixed(2)} kWh</strong> (Mes ant:{" "}
-                        {(local.energiaConsumoAntKw || 0).toFixed(2)} kWh)
+                        Indiv: <strong>{formatDec(local.energiaConsumoIndivKw, 2)} kWh</strong> (Mes ant:{" "}
+                        {formatDec(local.energiaConsumoAntKw || 0, 2)} kWh)
                       </div>
                       <div className="text-slate-500">
-                        Comunal: {local.energiaConsumoComunalKw.toFixed(2)} kWh · Alero:{" "}
-                        {local.energiaConsumoAleroKw.toFixed(2)} kWh
+                        Comunal: {formatDec(local.energiaConsumoComunalKw, 2)} kWh · Alero:{" "}
+                        {formatDec(local.energiaConsumoAleroKw, 2)} kWh
                       </div>
                     </td>
                     <td className="py-3 px-3 text-[11px] text-slate-700">
                       <div>
                         {local.modalidadEnergia === "PRORRATEO"
-                          ? `Prorrateo Área: ${local.areaM2.toFixed(2)} m² × $${isBP ? "7.041,51" : "10.548,66"}/m²`
-                          : `(${(
+                          ? `Prorrateo Área: ${formatDec(local.areaM2, 2)} m² × $${isBP ? "7.041,51" : "10.548,66"}/m²`
+                          : `(${formatDec(
                               local.energiaConsumoIndivKw +
-                              local.energiaConsumoComunalKw +
-                              local.energiaConsumoAleroKw
-                            ).toFixed(2)} kWh × $${receipts.energia.tarifaKwh.toFixed(2)})`}
+                                local.energiaConsumoComunalKw +
+                                local.energiaConsumoAleroKw,
+                              2
+                            )} kWh × $${formatDec(receipts.energia.tarifaKwh, 2)})`}
                       </div>
                       <div>
-                        + Alumbrado ({local.areaM2.toFixed(2)} m² × $929,46) + {cregPct}% CREG (Mín: $
+                        + Alumbrado ({formatDec(local.areaM2, 2)} m² × $929,46) + {formatDec(cregPct, 1)}% CREG (Mín: $
                         {isBP ? "20.489" : "20.498"})
                       </div>
                     </td>
@@ -327,25 +329,25 @@ export function LocalAccountModal({ local, onClose }: LocalAccountModalProps) {
                     </td>
                     <td className="py-3 px-3 text-[11px]">
                       <div>
-                        Ant: <strong>{local.aguaLecturaAnt}</strong> → Act:{" "}
-                        <strong>{local.aguaLecturaAct}</strong>{" "}
+                        Ant: <strong>{formatInt(local.aguaLecturaAnt)}</strong> → Act:{" "}
+                        <strong>{formatInt(local.aguaLecturaAct)}</strong>{" "}
                         {divisorAgua > 1 ? `(Compartido /${divisorAgua})` : ""}
                       </div>
                       <div>
-                        Indiv: <strong>{local.aguaConsumoIndivM3.toFixed(2)} m³</strong> (Mes ant:{" "}
-                        {(local.aguaConsumoAntM3 || 0).toFixed(2)} m³)
+                        Indiv: <strong>{formatDec(local.aguaConsumoIndivM3, 2)} m³</strong> (Mes ant:{" "}
+                        {formatDec(local.aguaConsumoAntM3 || 0, 2)} m³)
                       </div>
                       <div className="text-slate-500">
-                        Comunal Bodega: {local.aguaConsumoComunalM3.toFixed(2)} m³
+                        Comunal Bodega: {formatDec(local.aguaConsumoComunalM3, 2)} m³
                       </div>
                     </td>
                     <td className="py-3 px-3 text-[11px] text-slate-700">
                       <div>
                         {local.modalidadAcueducto === "PRORRATEO"
-                          ? `Prorrateo: ${local.areaM2.toFixed(2)} m² × $1.249,44/m²`
-                          : `(${(local.aguaConsumoIndivM3 + local.aguaConsumoComunalM3).toFixed(2)} m³ × $${receipts.acueducto.tarifaM3.toFixed(2)} [Mín 1m³])`}
+                          ? `Prorrateo: ${formatDec(local.areaM2, 2)} m² × $1.249,44/m²`
+                          : `(${formatDec(local.aguaConsumoIndivM3 + local.aguaConsumoComunalM3, 2)} m³ × $${formatDec(receipts.acueducto.tarifaM3, 2)} [Mín 1m³])`}
                       </div>
-                      <div>+ Agua Comunal Gral ({local.areaM2.toFixed(2)} m² × $198,20/m²)</div>
+                      <div>+ Agua Comunal Gral ({formatDec(local.areaM2, 2)} m² × $198,20/m²)</div>
                     </td>
                     <td className="py-3 px-3 text-[11px]">
                       {local.aguaPromMax > 0 ? (
@@ -376,15 +378,15 @@ export function LocalAccountModal({ local, onClose }: LocalAccountModalProps) {
                         Plano: {local.planos.aseo || "PL003"}
                       </span>
                     </td>
-                    <td className="py-3 px-3 text-[11px]">Base: {local.areaM2.toFixed(2)} m²</td>
+                    <td className="py-3 px-3 text-[11px]">Base: {formatDec(local.areaM2, 2)} m²</td>
                     <td className="py-3 px-3 text-[11px] text-slate-700">
-                      {local.areaM2.toFixed(2)} m² × ${receipts.expensas.aseo.tarifaPorM2.toFixed(2)} / m²
+                      {formatDec(local.areaM2, 2)} m² × ${formatDec(receipts.expensas.aseo.tarifaPorM2, 2)} / m²
                     </td>
                     <td className="py-3 px-3 text-[11px] text-slate-500">
-                      Mes Ant: ${(local.aseoAnteriorCop || 0).toLocaleString("es-CO")}
+                      Mes Ant: {formatCop(local.aseoAnteriorCop || 0)}
                     </td>
                     <td className="py-3 px-3 text-right font-black text-slate-900 text-sm tabular-nums">
-                      ${local.calcAseoCop.toLocaleString("es-CO")}
+                      {formatCop(local.calcAseoCop)}
                     </td>
                   </tr>
 
@@ -400,22 +402,22 @@ export function LocalAccountModal({ local, onClose }: LocalAccountModalProps) {
                       </span>
                     </td>
                     <td className="py-3 px-3 text-[11px]">
-                      Categoría: <strong>{local.categoriaResiduos}</strong> ({local.areaM2.toFixed(2)} m²)
+                      Categoría: <strong>{local.categoriaResiduos}</strong> ({formatDec(local.areaM2, 2)} m²)
                     </td>
                     <td className="py-3 px-3 text-[11px] text-slate-700">
                       {local.categoriaResiduos === "NP"
-                        ? `${local.areaM2.toFixed(2)} m² × $2.519,55/m² (NP 0,4x)`
+                        ? `${formatDec(local.areaM2, 2)} m² × $2.519,55/m² (NP 0,4x)`
                         : local.categoriaResiduos === "MP"
-                        ? `${local.areaM2.toFixed(2)} m² × $7.558,66/m² (MP 1,2x)`
+                        ? `${formatDec(local.areaM2, 2)} m² × $7.558,66/m² (MP 1,2x)`
                         : local.categoriaResiduos === "P"
-                        ? `${local.areaM2.toFixed(2)} m² × $9.987,32/m² (Bolsa Restante P)`
+                        ? `${formatDec(local.areaM2, 2)} m² × $9.987,32/m² (Bolsa Restante P)`
                         : "Tarifa Básica Fija"}
                     </td>
                     <td className="py-3 px-3 text-[11px] text-slate-500">
-                      Mes Ant: ${(local.residuosAnteriorCop || 0).toLocaleString("es-CO")}
+                      Mes Ant: {formatCop(local.residuosAnteriorCop || 0)}
                     </td>
                     <td className="py-3 px-3 text-right font-black text-slate-900 text-sm tabular-nums">
-                      ${local.calcResiduosCop.toLocaleString("es-CO")}
+                      {formatCop(local.calcResiduosCop)}
                     </td>
                   </tr>
 
@@ -430,9 +432,9 @@ export function LocalAccountModal({ local, onClose }: LocalAccountModalProps) {
                         Plano: {local.planos.vigilancia || "PL086"}
                       </span>
                     </td>
-                    <td className="py-3 px-3 text-[11px]">Base: {local.areaM2.toFixed(2)} m²</td>
+                    <td className="py-3 px-3 text-[11px]">Base: {formatDec(local.areaM2, 2)} m²</td>
                     <td className="py-3 px-3 text-[11px] text-slate-700">
-                      {local.areaM2.toFixed(2)} m² × ${receipts.expensas.vigilancia.tarifaPorM2.toFixed(2)} / m²
+                      {formatDec(local.areaM2, 2)} m² × ${formatDec(receipts.expensas.vigilancia.tarifaPorM2, 2)} / m²
                     </td>
                     <td className="py-3 px-3 text-[11px] text-slate-500">
                       Mes Ant: ${(local.vigilanciaAnteriorCop || 0).toLocaleString("es-CO")}
@@ -480,8 +482,8 @@ export function LocalAccountModal({ local, onClose }: LocalAccountModalProps) {
                 </span>
               </div>
               <p className="text-[11px] text-slate-300">
-                Mes Anterior: ${local.totalAnteriorCop.toLocaleString("es-CO")} COP (Variación:{" "}
-                {(local.variacionTotalPct * 100).toFixed(1)}%)
+                Mes Anterior: {formatCop(local.totalAnteriorCop)} COP (Variación:{" "}
+                {formatDec(local.variacionTotalPct * 100, 1)}%)
               </p>
               {local.totalJunioCop > local.calcTotalCop && (
                 <p className="text-[11px] text-amber-300 flex items-center gap-1">

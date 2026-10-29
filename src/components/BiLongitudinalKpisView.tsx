@@ -2,7 +2,8 @@
 
 import React, { useMemo, useState } from "react";
 import { useCorabastos } from "@/context/CorabastosContext";
-import { computeBiLongitudinalReport, formatCop, formatNum } from "@/lib/bi-kpis-engine";
+import { computeBiLongitudinalReport, formatNum } from "@/lib/bi-kpis-engine";
+import { formatCop, formatInt } from "@/lib/formatters";
 import { Activity, AlertTriangle, ArrowUpRight, BarChart3, Building2, CheckCircle2, ClipboardCheck, Droplets, Eye, Gauge, Layers, Scale, TrendingUp, Zap } from "lucide-react";
 
 interface BiLongitudinalKpisViewProps {
@@ -110,10 +111,10 @@ export function BiLongitudinalKpisView({ onSelectLocalCode }: BiLongitudinalKpis
               <Gauge className="w-4 h-4 text-emerald-400" strokeWidth={1.75} />
             </div>
             <div className="text-lg font-black text-emerald-300 mt-1 tabular-nums">
-              {formatNum(biReport.kpi3SaludMetrologicaPct, 1)}% ({biReport.kpi3MedidoresOperativosOk}/{biReport.kpi3TotalMedidoresFisicos})
+              {formatNum(biReport.kpi3SaludMetrologicaPct, 1)}% ({formatInt(biReport.kpi3MedidoresOperativosOk)}/{formatInt(biReport.kpi3TotalMedidoresFisicos)})
             </div>
             <div className="text-[11px] text-amber-300 mt-1">
-              {biReport.kpi3MedidoresAnomalos} dañados/tapados ({formatCop(biReport.kpi3CopForzadoProrrateo)})
+              {formatInt(biReport.kpi3MedidoresAnomalos)} dañados/tapados ({formatCop(biReport.kpi3CopForzadoProrrateo)})
             </div>
           </div>
 
@@ -150,7 +151,7 @@ export function BiLongitudinalKpisView({ onSelectLocalCode }: BiLongitudinalKpis
               <ClipboardCheck className="w-4 h-4 text-cyan-400" strokeWidth={1.75} />
             </div>
             <div className="text-lg font-black text-cyan-300 mt-1 tabular-nums">
-              {formatNum(biReport.kpi6SlaTerrenoPct, 1)}% ({biReport.kpi6TareasEvacuadas}/{biReport.kpi6TotalTareasCorte})
+              {formatNum(biReport.kpi6SlaTerrenoPct, 1)}% ({formatInt(biReport.kpi6TareasEvacuadas)}/{formatInt(biReport.kpi6TotalTareasCorte)})
             </div>
             <div className="text-[11px] text-slate-400 mt-1">
               Locales cerrados: {formatNum(biReport.kpi6TasaCerradosPct, 1)}%
@@ -173,8 +174,8 @@ export function BiLongitudinalKpisView({ onSelectLocalCode }: BiLongitudinalKpis
                 </h3>
               </div>
               <div className="text-right text-xs text-slate-500">
-                <div>Tarifa kWh: <strong className="text-slate-900">{formatCop(receipts.energia.tarifaKwh)}</strong></div>
-                <div>Tarifa m³ Agua: <strong className="text-slate-900">{formatCop(receipts.acueducto.tarifaM3)}</strong></div>
+                <div>Tarifa kWh: <strong className="text-slate-900">{formatCop(receipts.energia.tarifaKwh, 2)}</strong></div>
+                <div>Tarifa m³ Agua: <strong className="text-slate-900">{formatCop(receipts.acueducto.tarifaM3, 2)}</strong></div>
               </div>
             </div>
 
@@ -248,7 +249,7 @@ export function BiLongitudinalKpisView({ onSelectLocalCode }: BiLongitudinalKpis
                   <div className="flex items-center justify-between text-xs font-bold text-slate-800 mb-1">
                     <span>{z.etiqueta}</span>
                     <span className="tabular-nums text-emerald-700">
-                      {formatNum(z.avancePct, 1)}% ({z.totalTareas - z.pendientes}/{z.totalTareas})
+                      {formatNum(z.avancePct, 1)}% ({formatInt(z.totalTareas - z.pendientes)}/{formatInt(z.totalTareas)})
                     </span>
                   </div>
                   <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden mb-2">
@@ -258,10 +259,10 @@ export function BiLongitudinalKpisView({ onSelectLocalCode }: BiLongitudinalKpis
                     />
                   </div>
                   <div className="grid grid-cols-4 gap-2 text-[11px] text-slate-600 tabular-nums">
-                    <div>Pendientes: <strong className="text-amber-700">{z.pendientes}</strong></div>
-                    <div>Leídos OK: <strong className="text-emerald-700">{z.completadas}</strong></div>
-                    <div>Novedad Téc.: <strong className="text-rose-700">{z.novedadesTecnicas}</strong></div>
-                    <div>Cerrados: <strong className="text-slate-800">{z.cerradosSinAcceso}</strong></div>
+                    <div>Pendientes: <strong className="text-amber-700">{formatInt(z.pendientes)}</strong></div>
+                    <div>Leídos OK: <strong className="text-emerald-700">{formatInt(z.completadas)}</strong></div>
+                    <div>Novedad Téc.: <strong className="text-rose-700">{formatInt(z.novedadesTecnicas)}</strong></div>
+                    <div>Cerrados: <strong className="text-slate-800">{formatInt(z.cerradosSinAcceso)}</strong></div>
                   </div>
                 </div>
               ))}
@@ -455,9 +456,9 @@ export function BiLongitudinalKpisView({ onSelectLocalCode }: BiLongitudinalKpis
                   {biReport.kpi3DesgloseSalud.map((h) => (
                     <tr key={h.categoria} className="hover:bg-slate-50">
                       <td className="py-2.5 px-3 font-bold text-slate-900">{h.causal}</td>
-                      <td className="py-2.5 px-3 text-right tabular-nums">{h.cantidadEnergia}</td>
-                      <td className="py-2.5 px-3 text-right tabular-nums">{h.cantidadAcueducto}</td>
-                      <td className="py-2.5 px-3 text-right tabular-nums font-black">{h.totalMedidores}</td>
+                      <td className="py-2.5 px-3 text-right tabular-nums">{formatInt(h.cantidadEnergia)}</td>
+                      <td className="py-2.5 px-3 text-right tabular-nums">{formatInt(h.cantidadAcueducto)}</td>
+                      <td className="py-2.5 px-3 text-right tabular-nums font-black">{formatInt(h.totalMedidores)}</td>
                       <td className="py-2.5 px-3 text-right tabular-nums text-slate-600">{formatNum(h.areaAfectadaM2, 1)} m²</td>
                       <td className="py-2.5 px-3 text-right tabular-nums font-semibold text-rose-700">
                         {h.categoria === "OPERATIVO" ? "—" : formatCop(h.facturacionMigradaProrrateoCop)}
@@ -499,7 +500,7 @@ export function BiLongitudinalKpisView({ onSelectLocalCode }: BiLongitudinalKpis
                   {biReport.kpi4TopBodegasIntensidad.map((b) => (
                     <tr key={b.bodegaId} className="hover:bg-slate-50">
                       <td className="py-2.5 px-3 font-bold text-slate-900">
-                        Bod. {b.bodegaId} <span className="text-[10px] font-normal text-slate-500">({b.totalLocales} loc)</span>
+                        Bod. {b.bodegaId} <span className="text-[10px] font-normal text-slate-500">({formatInt(b.totalLocales)} loc)</span>
                       </td>
                       <td className="py-2.5 px-3 text-right tabular-nums text-slate-600">{formatNum(b.areaTotalM2, 0)}</td>
                       <td className="py-2.5 px-3 text-right tabular-nums font-semibold text-amber-700">{formatNum(b.kwhPorM2, 2)}</td>

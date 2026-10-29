@@ -4,6 +4,7 @@ import React, { useState, useMemo } from "react";
 import { useCorabastos } from "@/context/CorabastosContext";
 import { ComputedLocalLiquidation } from "@/lib/liquidation-engine";
 import { buildSabanaCsvContent } from "@/lib/accounting-export";
+import { formatCop, formatDec, formatInt } from "@/lib/formatters";
 import { LocalAccountModal } from "@/components/LocalAccountModal";
 import {
   Search,
@@ -233,7 +234,7 @@ export function LiquidationMatrixView() {
                   : "text-slate-600 hover:text-slate-900"
               }`}
             >
-              Todos ({filteredLocalesCount !== totalLocalesCount ? `${filteredLocalesCount}/${totalLocalesCount}` : totalLocalesCount})
+              Todos ({filteredLocalesCount !== totalLocalesCount ? `${formatInt(filteredLocalesCount)}/${formatInt(totalLocalesCount)}` : formatInt(totalLocalesCount)})
             </button>
 
             <button
@@ -498,28 +499,28 @@ export function LiquidationMatrixView() {
                     </span>
                   </td>
                   <td className="py-2 px-3 font-mono text-right font-semibold text-slate-700 border-b border-slate-100 tabular-nums">
-                    {loc.areaM2.toFixed(2)}
+                    {formatDec(loc.areaM2, 2)}
                   </td>
                   <td className="py-2 px-3 font-mono text-right text-slate-800 border-b border-slate-100 tabular-nums">
-                    ${loc.calcEnergiaCop.toLocaleString("es-CO")}
+                    {formatCop(loc.calcEnergiaCop)}
                   </td>
                   <td className="py-2 px-3 font-mono text-right text-slate-800 border-b border-slate-100 tabular-nums">
-                    ${loc.calcAcueductoCop.toLocaleString("es-CO")}
+                    {formatCop(loc.calcAcueductoCop)}
                   </td>
                   <td className="py-2 px-3 font-mono text-right text-slate-700 border-b border-slate-100 tabular-nums">
-                    ${loc.calcAseoCop.toLocaleString("es-CO")}
+                    {formatCop(loc.calcAseoCop)}
                   </td>
                   <td className="py-2 px-3 font-mono text-right text-slate-800 font-medium border-b border-slate-100 tabular-nums">
-                    ${loc.calcResiduosCop.toLocaleString("es-CO")}
+                    {formatCop(loc.calcResiduosCop)}
                   </td>
                   <td className="py-2 px-3 font-mono text-right text-slate-800 border-b border-slate-100 tabular-nums">
-                    ${loc.calcVigilanciaCop.toLocaleString("es-CO")}
+                    {formatCop(loc.calcVigilanciaCop)}
                   </td>
                   <td className="py-2 px-3 font-mono text-right text-slate-600 border-b border-slate-100 tabular-nums">
-                    ${loc.calcPoliciaCop.toLocaleString("es-CO")}
+                    {formatCop(loc.calcPoliciaCop)}
                   </td>
                   <td className="py-2 px-3 font-mono text-right font-bold text-[#1D3557] bg-slate-50/80 group-hover:bg-sky-100/70 border-b border-slate-100 tabular-nums">
-                    ${loc.calcTotalCop.toLocaleString("es-CO")}
+                    {formatCop(loc.calcTotalCop)}
                   </td>
                   <td className="py-2 px-3 text-center border-b border-slate-100">
                     {hasAlert ? (
@@ -558,9 +559,9 @@ export function LiquidationMatrixView() {
           <div>
             Mostrando{" "}
             <strong className="font-mono text-[#1D3557]">
-              {(currentPage - 1) * pageSize + 1}–{Math.min(currentPage * pageSize, filtered.length)}
+              {formatInt((currentPage - 1) * pageSize + 1)}–{formatInt(Math.min(currentPage * pageSize, filtered.length))}
             </strong>{" "}
-            de <strong className="font-mono text-[#1D3557]">{filtered.length.toLocaleString("es-CO")}</strong> locales comerciales
+            de <strong className="font-mono text-[#1D3557]">{formatInt(filtered.length)}</strong> locales comerciales
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -572,7 +573,7 @@ export function LiquidationMatrixView() {
               <ChevronLeft className="w-4 h-4" />
             </button>
             <span className="font-mono font-semibold text-[#1D3557]">
-              Página {currentPage} / {totalPages}
+              Página {formatInt(currentPage)} / {formatInt(totalPages)}
             </span>
             <button
               type="button"

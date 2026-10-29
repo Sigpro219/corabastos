@@ -368,7 +368,7 @@ export default function CorabastosErpShellPage() {
           </p>
           <div className="flex items-center justify-center gap-1.5 text-[8px] text-[#f7931b]/90 font-mono tracking-tight mt-1 bg-white/5 px-2 py-0.5 rounded border border-white/5 w-full truncate">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0 animate-pulse" />
-            <span className="truncate">Corte: {receipts.nombrePeriodo} · SDD v1.5</span>
+            <span className="truncate">Corte: {receipts.nombrePeriodo} · SDD v1.8</span>
           </div>
         </div>
       </div>

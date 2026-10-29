@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { useCorabastos } from "@/context/CorabastosContext";
+import { formatCop as fmtCop, formatDec as fmtNum, formatInt } from "@/lib/formatters";
 import {
   BookOpen,
   Zap,
@@ -24,20 +25,6 @@ type MethodologyFilter =
   | "ACUEDUCTO"
   | "VIGILANCIA_POLICIA_ASEO"
   | "RESIDUOS_VERDES";
-
-function fmtCop(v: number, dec = 0): string {
-  return `$${v.toLocaleString("es-CO", {
-    minimumFractionDigits: dec,
-    maximumFractionDigits: dec,
-  })}`;
-}
-
-function fmtNum(v: number, dec = 2): string {
-  return v.toLocaleString("es-CO", {
-    minimumFractionDigits: dec,
-    maximumFractionDigits: dec,
-  });
-}
 
 export function LiquidationMethodologyView() {
   const { receipts, locales, energyCommunal, waterCommunal } = useCorabastos();
@@ -138,7 +125,7 @@ export function LiquidationMethodologyView() {
               {fmtCop(receipts.expensas.policia.cuotaFijaPorLocal, 2)}
             </span>
             <span className="text-[10px] text-slate-400 block mt-0.5">
-              Divisor: {receipts.expensas.policia.localesActivosDivisor} locales
+              Divisor: {formatInt(receipts.expensas.policia.localesActivosDivisor)} locales
             </span>
           </div>
 
@@ -216,7 +203,7 @@ export function LiquidationMethodologyView() {
               <div className="text-[11px] text-slate-600 flex items-start gap-1.5">
                 <Info className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
                 <span>
-                  <strong>Contadores en Cero ({zeroEnergyMeters} locales):</strong> Pagan el valor mínimo de{" "}
+                  <strong>Contadores en Cero ({formatInt(zeroEnergyMeters)} locales):</strong> Pagan el valor mínimo de{" "}
                   <strong>{fmtCop(receipts.energia.principal.topeMinimaCop)}</strong> más el Alumbrado Público por m² y el 20% CREG.
                 </span>
               </div>
@@ -253,7 +240,7 @@ export function LiquidationMethodologyView() {
               <div className="text-[11px] text-slate-600 flex items-start gap-1.5">
                 <GitBranch className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
                 <span>
-                  <strong>Contadores Compartidos ({sharedEnergyLocales} locales):</strong> Cuando N puestos comparten el mismo medidor y registran idéntica lectura, el consumo se divide exactamente entre N (<code>/2, /3, /4, /6, /8</code>).
+                  <strong>Contadores Compartidos ({formatInt(sharedEnergyLocales)} locales):</strong> Cuando N puestos comparten el mismo medidor y registran idéntica lectura, el consumo se divide exactamente entre N (<code>/2, /3, /4, /6, /8</code>).
                 </span>
               </div>
             </div>
@@ -454,7 +441,7 @@ export function LiquidationMethodologyView() {
             </p>
             <div className="p-3 rounded-lg bg-slate-50 border border-slate-200 font-mono text-[11px] space-y-1">
               <div>• Valor Total Factura (E5312): <strong>{fmtCop(receipts.expensas.policia.valorFactura)}</strong></div>
-              <div>• (÷) N° Locales Arrendados (E5314): <strong>{receipts.expensas.policia.localesActivosDivisor} locales</strong></div>
+              <div>• (÷) N° Locales Arrendados (E5314): <strong>{formatInt(receipts.expensas.policia.localesActivosDivisor)} locales</strong></div>
               <div className="text-indigo-700 font-bold pt-1">
                 • Cuota Fija por Local: $215.384.615 ÷ 5.300 = $40.638,61
               </div>

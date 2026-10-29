@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { useCorabastos } from "@/context/CorabastosContext";
+import { formatDec, formatInt } from "@/lib/formatters";
 import {
   GitBranch,
   Zap,
@@ -98,21 +99,21 @@ export function CommunalMacrometersAuditTable() {
                   </td>
                   <td className="py-2 px-3 text-slate-500">{m.contadorSerie}</td>
                   <td className="py-2 px-3 text-right tabular-nums">
-                    {m.lecturaAnterior.toLocaleString("es-CO")} → {m.lecturaActual.toLocaleString("es-CO")}
+                    {formatInt(m.lecturaAnterior)} → {formatInt(m.lecturaActual)}
                   </td>
                   <td className="py-2 px-3 text-right font-bold tabular-nums">
-                    {m.consumoBruto.toLocaleString("es-CO")}
+                    {formatDec(m.consumoBruto, 2)}
                   </td>
                   <td className="py-2 px-3 text-right text-rose-700 tabular-nums">
-                    -{m.consumoHijosDescontado.toLocaleString("es-CO")} ({m.hijosCount})
+                    -{formatDec(m.consumoHijosDescontado, 2)} ({formatInt(m.hijosCount)})
                   </td>
                   <td className="py-2 px-3 text-right font-black text-emerald-700 tabular-nums">
-                    {m.consumoNetoComunal.toLocaleString("es-CO")}
+                    {formatDec(m.consumoNetoComunal, 2)}
                   </td>
                   <td className="py-2 px-3 text-right tabular-nums">
-                    {m.areaComunalM2.toLocaleString("es-CO")}
+                    {formatDec(m.areaComunalM2, 2)}
                   </td>
-                  <td className="py-2 px-3 text-right tabular-nums">{m.factorPorM2.toFixed(4)}</td>
+                  <td className="py-2 px-3 text-right tabular-nums">{formatDec(m.factorPorM2, 4)}</td>
                   <td className="py-2 px-3 text-center">
                     {m.alertaDesviacion ? (
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-amber-100 text-amber-900 text-[10px] font-bold">
@@ -157,21 +158,21 @@ export function CommunalMacrometersAuditTable() {
                   <td className="py-2 px-3 text-slate-700">Bod {w.bodegaId}</td>
                   <td className="py-2 px-3 text-slate-500">{w.contadorSerie}</td>
                   <td className="py-2 px-3 text-right tabular-nums">
-                    {w.lecturaAnterior.toLocaleString("es-CO")} → {w.lecturaActual.toLocaleString("es-CO")}
+                    {formatInt(w.lecturaAnterior)} → {formatInt(w.lecturaActual)}
                   </td>
                   <td className="py-2 px-3 text-right font-bold tabular-nums">
-                    {w.consumoBruto.toLocaleString("es-CO")}
+                    {formatDec(w.consumoBruto, 2)}
                   </td>
                   <td className="py-2 px-3 text-right text-rose-700 tabular-nums">
-                    -{w.consumoHijosDescontado.toLocaleString("es-CO")} ({w.hijosCount})
+                    -{formatDec(w.consumoHijosDescontado, 2)} ({formatInt(w.hijosCount)})
                   </td>
                   <td className="py-2 px-3 text-right font-black text-sky-700 tabular-nums">
-                    {w.consumoNetoComunal.toLocaleString("es-CO")}
+                    {formatDec(w.consumoNetoComunal, 2)}
                   </td>
                   <td className="py-2 px-3 text-right tabular-nums">
-                    {w.areaComunalM2.toLocaleString("es-CO")}
+                    {formatDec(w.areaComunalM2, 2)}
                   </td>
-                  <td className="py-2 px-3 text-right tabular-nums">{w.factorPorM2.toFixed(4)}</td>
+                  <td className="py-2 px-3 text-right tabular-nums">{formatDec(w.factorPorM2, 4)}</td>
                   <td className="py-2 px-3 text-center">
                     {w.alertaDesviacion ? (
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-amber-100 text-amber-900 text-[10px] font-bold">

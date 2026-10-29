@@ -1,7 +1,9 @@
 import { ComputedLocalLiquidation } from "@/lib/liquidation-engine";
+import { formatDec, formatInt } from "@/lib/formatters";
 
 /**
  * Headless Accounting & Sabana Export Engine (Planos PL109, PL008, PL009, PL003, PL004, PL086, PL141, AMB403)
+ * Usa separador ';' de Excel Colombia y formato numérico es-CO (punto miles, coma decimal).
  */
 export function buildSabanaCsvContent(locales: ComputedLocalLiquidation[]): string {
   const headers = [
@@ -34,21 +36,21 @@ export function buildSabanaCsvContent(locales: ComputedLocalLiquidation[]): stri
       l.estadoOcupacion || "ACTIVO",
       l.modalidadGeneral,
       l.categoriaResiduos,
-      l.areaM2.toFixed(2),
-      l.calcEnergiaCop,
-      l.calcAcueductoCop,
-      l.calcAseoCop,
-      l.calcResiduosCop,
-      l.calcVigilanciaCop,
-      l.calcPoliciaCop,
-      l.calcTotalCop,
-      l.calcAssumedCorporationCop || 0,
+      formatDec(l.areaM2, 2),
+      formatInt(l.calcEnergiaCop),
+      formatInt(l.calcAcueductoCop),
+      formatInt(l.calcAseoCop),
+      formatInt(l.calcResiduosCop),
+      formatInt(l.calcVigilanciaCop),
+      formatInt(l.calcPoliciaCop),
+      formatInt(l.calcTotalCop),
+      formatInt(l.calcAssumedCorporationCop || 0),
       l.planos.ecsa,
       l.planos.agua,
       l.planos.energia,
       l.planos.vigilancia,
-    ].join(",")
+    ].join(";")
   );
 
-  return "\uFEFF" + [headers.join(","), ...rows].join("\n");
+  return "\uFEFF" + [headers.join(";"), ...rows].join("\n");
 }
