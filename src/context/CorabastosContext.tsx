@@ -1,7 +1,9 @@
 "use client";
 
 import React, { createContext, useContext, useState, useMemo, useEffect, useCallback } from "react";
+import { doc, setDoc } from "firebase/firestore";
 import rawSeedData from "@/data/corabastos-junio-2025.json";
+import { getFirebaseDb } from "@/lib/firebase";
 import {
   CommunalEnergyMeter,
   CommunalWaterMeter,
@@ -74,6 +76,17 @@ export function buildTaskKey(servicio: FieldServiceType, codigo: string): string
   return `${servicio}::${codigo}`;
 }
 
+function syncCloudCutoffState(docId: string, payload: Record<string, unknown>) {
+  const db = getFirebaseDb();
+  if (!db) return;
+  setDoc(doc(db, "corabastos_corte_2025_06", docId), {
+    ...payload,
+    updatedAt: new Date().toISOString(),
+  }, { merge: true }).catch((err) => {
+    console.warn("CorabastosContext: Firestore offline fallback active", err);
+  });
+}
+
 export function normalizeOccupancy(val?: string): OccupancyStatus {
   if (val === "VACIO_CON_CONTRATO" || val === "VACIO_SIN_CONTRATO_CORPORACION") {
     return val;
@@ -143,6 +156,7 @@ export function CorabastosProvider({ children }: { children: React.ReactNode }) 
     setReceipts(next);
     try {
       localStorage.setItem(STORAGE_KEY_RECEIPTS, JSON.stringify(next));
+      syncCloudCutoffState("master_receipts", { receipts: next });
     } catch (err) {
       console.warn("CorabastosContext: failed to persist receipts", err);
     }
@@ -302,6 +316,14 @@ export function CorabastosProvider({ children }: { children: React.ReactNode }) 
       ].slice(0, 100);
       try {
         localStorage.setItem(STORAGE_KEY_OVERRIDES, JSON.stringify(next));
+        syncCloudCutoffState(`reading_${update.servicio}_${update.codigo}`, {
+          codigo: update.codigo,
+          servicio: update.servicio,
+          lecturaActual: update.lecturaActual,
+          observacion: update.observacion,
+          taskState,
+          timestamp: update.timestamp,
+        });
       } catch (err) {
         console.warn("CorabastosContext: failed to persist recentFieldUpdates", err);
       }
