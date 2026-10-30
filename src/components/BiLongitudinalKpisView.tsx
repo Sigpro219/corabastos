@@ -33,21 +33,15 @@ export function BiLongitudinalKpisView({ onSelectLocalCode }: BiLongitudinalKpis
   );
 
   return (
-    <div className="max-w-[1600px] mx-auto px-4 py-5 space-y-5">
-      {/* CABECERA EJECUTIVA BI & SELECTOR DE ENFOQUE */}
-      <div className="bg-[#0B132B] text-white rounded-xl p-5 border border-white/10 shadow-lg">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-          <div>
-            <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-md bg-[#f7931b]/15 border border-[#f7931b]/30 text-[#f7931b] text-[11px] font-bold uppercase tracking-wider mb-2">
-              <BarChart3 className="w-3.5 h-3.5" strokeWidth={1.75} />
-              Sub-Módulo 1.5 · Inteligencia de Negocios (BI) & Auditoría Longitudinal
-            </div>
-            <h2 className="text-xl font-black tracking-tight">
-              Tablero Estratégico de los 6 KPIs Longitudinales Corte a Corte ({biReport.corteActivo})
+    <div className="max-w-[1600px] mx-auto space-y-5">
+      {/* BARRA DE ENFOQUE BI & CINTA DE LOS 6 KPIS ESTRATÉGICOS */}
+      <div className="bg-[#0B132B] text-white rounded-xl p-4 border border-white/10 shadow-lg">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <BarChart3 className="w-4 h-4 text-[#f7931b]" strokeWidth={1.75} />
+            <h2 className="text-sm sm:text-base font-bold tracking-tight">
+              6 Indicadores Estratégicos de Auditoría Longitudinal ({biReport.corteActivo})
             </h2>
-            <p className="text-xs text-slate-300 mt-1">
-              Vigilancia continua de pérdidas comunales Padre-Hijo, brecha de absorción corporativa, envejecimiento de los 1.835 medidores físicos, intensidad por m² y evolución multicorte.
-            </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-1.5">
@@ -58,7 +52,7 @@ export function BiLongitudinalKpisView({ onSelectLocalCode }: BiLongitudinalKpis
                 { id: "KPI2_ABSORCION", label: "KPI 2 · Brecha Finanzas" },
                 { id: "KPI3_METROLOGIA", label: "KPI 3 · Parque Medidores" },
                 { id: "KPI4_PARETO", label: "KPI 4 · Intensidad & Pareto" },
-                { id: "KPI5_6_EVOLUCION", label: "KPI 5 & 6 · Multicorte & SLA" },
+                { id: "KPI5_6_EVOLUCION", label: "KPI 5 & 6 · Mayo vs Junio & SLA" },
               ] as { id: KpiSectionFilter; label: string }[]
             ).map((btn) => (
               <button
@@ -77,7 +71,7 @@ export function BiLongitudinalKpisView({ onSelectLocalCode }: BiLongitudinalKpis
         </div>
 
         {/* CINTA RESUMEN DE LOS 6 KPIS LONGITUDINALES */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 mt-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 mt-4">
           <div className="bg-slate-900/90 border border-slate-800 rounded-lg p-3.5">
             <div className="flex items-center justify-between text-[11px] text-slate-400 font-semibold">
               <span>KPI 1 · Remanente Comunal</span>
@@ -167,7 +161,7 @@ export function BiLongitudinalKpisView({ onSelectLocalCode }: BiLongitudinalKpis
             <div className="flex items-center justify-between mb-4">
               <div>
                 <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                  KPI 5 · Comparativo Real Corte Anterior vs. Corte Actual (Cero Mocks)
+                  KPI 5 · Comparativo Longitudinal Corte Anterior vs. Corte Actual
                 </span>
                 <h3 className="text-base font-black text-slate-900 mt-1">
                   Facturación y Consumos Físicos Reales del Libro Oficial (Mayo 2025 → Junio 2025)

@@ -368,7 +368,7 @@ export default function CorabastosErpShellPage() {
           </p>
           <div className="flex items-center justify-center gap-1.5 text-[8px] text-[#f7931b]/90 font-mono tracking-tight mt-1 bg-white/5 px-2 py-0.5 rounded border border-white/5 w-full truncate">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0 animate-pulse" />
-            <span className="truncate">Corte: {receipts.nombrePeriodo} · SDD v2.0</span>
+            <span className="truncate">Corte Activo: {receipts.nombrePeriodo}</span>
           </div>
         </div>
       </div>
@@ -423,7 +423,7 @@ export default function CorabastosErpShellPage() {
               <span className="text-[#1E3A5F] dark:text-[#f7931b] font-bold truncate">
                 {activeErpModule === "MOD_1_SERVICIOS_EXPENSAS"
                   ? SUBTAB_BREADCRUMB_LABELS[activeSubTab]
-                  : `${activeModuleMeta.code} · Arquitectura Cables Pelados`}
+                  : `${activeModuleMeta.code} · ${activeModuleMeta.shortLabel}`}
               </span>
             </div>
           </div>
@@ -561,7 +561,10 @@ export default function CorabastosErpShellPage() {
               onSelectSubTab={(tab) => setActiveSubTab(tab)}
             />
           ) : (
-            <ErpRoadmapExpansionView />
+            <ErpRoadmapExpansionView
+              activeModuleId={activeErpModule}
+              onReturnToCore={() => setActiveErpModule("MOD_1_SERVICIOS_EXPENSAS")}
+            />
           )}
         </main>
       </div>

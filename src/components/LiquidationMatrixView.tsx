@@ -139,78 +139,42 @@ export function LiquidationMatrixView() {
 
   return (
     <div className="space-y-4">
-      {/* TARJETAS DE CONCILIACIÓN V/FINANZAS VS V/LIQUIDADO */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2.5">
-        <div className="bg-white rounded-xl border border-slate-200 p-3 shadow-2xs">
-          <span className="text-[10px] font-bold uppercase text-amber-700 block">
-            Energía (PL007/PL086)
-          </span>
-          <span className="text-sm sm:text-base font-mono font-bold text-[#1D3557] mt-0.5 block">
-            ${totals.energia.toLocaleString("es-CO")}
-          </span>
-          <span className="text-[10px] text-slate-400 font-mono">
-            {totals.energia > 0 ? "Codensa Liquidado" : "$0"}
-          </span>
+      {/* TARJETAS DE CONCILIACIÓN DE LOS 6 SERVICIOS Y GRAN TOTAL */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
+        <div className="bg-white rounded-xl border border-slate-200 p-2.5 shadow-2xs">
+          <span className="text-[10px] font-bold uppercase text-amber-700 block">1. Energía (PL007)</span>
+          <span className="text-sm font-mono font-bold text-[#1D3557] mt-0.5 block tabular-nums">{formatCop(totals.energia)}</span>
+          <span className="text-[10px] text-slate-400 font-mono">Enel Codensa</span>
         </div>
-
-        <div className="bg-white rounded-xl border border-slate-200 p-3 shadow-2xs">
-          <span className="text-[10px] font-bold uppercase text-sky-700 block">
-            Acueducto (PL008/PL009)
-          </span>
-          <span className="text-sm sm:text-base font-mono font-bold text-[#1D3557] mt-0.5 block">
-            ${totals.acueducto.toLocaleString("es-CO")}
-          </span>
-          <span className="text-[10px] text-slate-400 font-mono">
-            Acueducto Bogotá
-          </span>
+        <div className="bg-white rounded-xl border border-slate-200 p-2.5 shadow-2xs">
+          <span className="text-[10px] font-bold uppercase text-sky-700 block">2. Acueducto (PL008)</span>
+          <span className="text-sm font-mono font-bold text-[#1D3557] mt-0.5 block tabular-nums">{formatCop(totals.acueducto)}</span>
+          <span className="text-[10px] text-slate-400 font-mono">EAAB Bogotá</span>
         </div>
-
-        <div className="bg-white rounded-xl border border-slate-200 p-3 shadow-2xs">
-          <span className="text-[10px] font-bold uppercase text-rose-700 block">
-            Residuos (PL109/PL253)
-          </span>
-          <span className="text-sm sm:text-base font-mono font-bold text-[#1D3557] mt-0.5 block">
-            ${totals.residuos.toLocaleString("es-CO")}
-          </span>
-          <span className="text-[10px] text-slate-400 font-mono">
-            ECSA (NP/MP/P)
-          </span>
+        <div className="bg-white rounded-xl border border-slate-200 p-2.5 shadow-2xs">
+          <span className="text-[10px] font-bold uppercase text-emerald-700 block">3. Vigilancia (PL004)</span>
+          <span className="text-sm font-mono font-bold text-[#1D3557] mt-0.5 block tabular-nums">{formatCop(totals.vigilancia)}</span>
+          <span className="text-[10px] text-slate-400 font-mono">$13.785,9/m²</span>
         </div>
-
-        <div className="bg-white rounded-xl border border-slate-200 p-3 shadow-2xs">
-          <span className="text-[10px] font-bold uppercase text-teal-700 block">
-            Aseo (PL003)
-          </span>
-          <span className="text-sm sm:text-base font-mono font-bold text-[#1D3557] mt-0.5 block">
-            ${totals.aseo.toLocaleString("es-CO")}
-          </span>
-          <span className="text-[10px] text-slate-400 font-mono">
-            $1.631/m² Área
-          </span>
+        <div className="bg-white rounded-xl border border-slate-200 p-2.5 shadow-2xs">
+          <span className="text-[10px] font-bold uppercase text-rose-700 block">4. Residuos (PL109)</span>
+          <span className="text-sm font-mono font-bold text-[#1D3557] mt-0.5 block tabular-nums">{formatCop(totals.residuos)}</span>
+          <span className="text-[10px] text-slate-400 font-mono">ECSA NP/MP/P</span>
         </div>
-
-        <div className="bg-white rounded-xl border border-slate-200 p-3 shadow-2xs">
-          <span className="text-[10px] font-bold uppercase text-emerald-700 block">
-            Vigilancia (PL004)
-          </span>
-          <span className="text-sm sm:text-base font-mono font-bold text-[#1D3557] mt-0.5 block">
-            ${totals.vigilancia.toLocaleString("es-CO")}
-          </span>
-          <span className="text-[10px] text-slate-400 font-mono">
-            $13.785/m² Área
-          </span>
+        <div className="bg-white rounded-xl border border-slate-200 p-2.5 shadow-2xs">
+          <span className="text-[10px] font-bold uppercase text-teal-700 block">5. Barrido/Aseo (PL003)</span>
+          <span className="text-sm font-mono font-bold text-[#1D3557] mt-0.5 block tabular-nums">{formatCop(totals.aseo)}</span>
+          <span className="text-[10px] text-slate-400 font-mono">$1.631,1/m²</span>
         </div>
-
-        <div className="bg-[#1D3557] text-white rounded-xl p-3 shadow-2xs">
-          <span className="text-[10px] font-bold uppercase text-sky-200 block">
-            Gran Total 6 Servicios ({filtered.length})
-          </span>
-          <span className="text-sm sm:text-base font-mono font-bold text-emerald-400 mt-0.5 block">
-            ${totals.granTotal.toLocaleString("es-CO")}
-          </span>
-          <span className="text-[10px] text-amber-300 font-mono" title="En el Excel original col R se suma dos veces Acueducto (+$239,5M)">
-            Auditado (Sin dup. Acue +$239,5M)
-          </span>
+        <div className="bg-white rounded-xl border border-slate-200 p-2.5 shadow-2xs">
+          <span className="text-[10px] font-bold uppercase text-indigo-700 block">6. Policía (PL141)</span>
+          <span className="text-sm font-mono font-bold text-[#1D3557] mt-0.5 block tabular-nums">{formatCop(totals.policia)}</span>
+          <span className="text-[10px] text-slate-400 font-mono">$40.638,6/local</span>
+        </div>
+        <div className="bg-[#0B132B] text-white rounded-xl p-2.5 shadow-2xs col-span-2 sm:col-span-2 lg:col-span-1">
+          <span className="text-[10px] font-bold uppercase text-[#f7931b] block">Total Liquidado ({formatInt(filtered.length)})</span>
+          <span className="text-sm font-mono font-bold text-emerald-400 mt-0.5 block tabular-nums">{formatCop(totals.granTotal)}</span>
+          <span className="text-[10px] text-slate-300 font-mono">Área: {formatDec(totals.area, 1)} m²</span>
         </div>
       </div>
 

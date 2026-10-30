@@ -170,77 +170,55 @@ export function BodegasStatusView() {
   }, [locales, inspectingLocal]);
 
   return (
-    <div className="max-w-[1600px] mx-auto px-4 sm:px-6 space-y-5">
-      {/* BANNER EXPLICATIVO Y TARJETAS DE ESTADO DE LAS 68 BODEGAS */}
-      <div className="bg-[#010F22] text-white rounded-2xl p-5 border border-slate-800 shadow-lg space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <span className="text-[11px] font-mono uppercase tracking-wider text-emerald-400 block">
-              SUB-MÓDULO 1.2 · CATASTRO OPERATIVO DE LAS 68 BODEGAS & MOTOR DE VACANCIA
-            </span>
-            <h2 className="text-lg sm:text-xl font-bold tracking-tight mt-0.5">
-              Estado de las 68 Bodegas, Avance del Corte y Regla de Locales/Bodegas Vacías
-            </h2>
-          </div>
-
-          <div className="bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-right">
-            <span className="text-[10px] font-mono uppercase text-amber-300 block">
-              Bolsa Contable: Valor Asumido Corporación
-            </span>
-            <span className="text-lg font-mono font-black text-emerald-400 tabular-nums">
-              ${totalAsumidoDinamico.toLocaleString("es-CO")} COP
-            </span>
-          </div>
+    <div className="max-w-[1600px] mx-auto space-y-4">
+      {/* CINTA EJECUTIVA DE ESTADO DE LAS 68 BODEGAS Y VACANCIA */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+        <div className="bg-[#0B132B] text-white border border-slate-800 rounded-xl p-3.5 shadow-xs">
+          <span className="text-[10px] font-mono uppercase text-slate-400 block">
+            Total Bodegas Catastradas
+          </span>
+          <span className="text-lg font-mono font-black text-white mt-0.5 block">
+            {bodegasRows.length} Bodegas · {formatInt(locales.length)} Locales
+          </span>
+          <span className="text-[11px] text-slate-300 block mt-0.5">
+            Área comercial: 126.125,2 m²
+          </span>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-3 text-xs">
-          <div className="bg-slate-900/90 border border-white/10 rounded-xl p-3.5">
-            <span className="text-[10px] font-mono uppercase text-slate-400 block">
-              Total Bodegas Catastradas
-            </span>
-            <span className="text-xl font-mono font-black text-white">
-              {bodegasRows.length} Bodegas
-            </span>
-            <span className="text-[11px] text-slate-400 block mt-0.5">
-              5.318 unidades · 126.125,2 m²
-            </span>
-          </div>
+        <div className="bg-white border border-emerald-500/40 rounded-xl p-3.5 shadow-xs">
+          <span className="text-[10px] font-mono uppercase text-emerald-700 font-bold block">
+            1. Locales Activos en Operación
+          </span>
+          <span className="text-lg font-mono font-black text-emerald-700 mt-0.5 block">
+            {formatInt(locales.length - totalVaciosConContrato - totalVaciosSinContrato)} locales
+          </span>
+          <span className="text-[11px] text-slate-500 block mt-0.5">
+            Liquidan consumo + comunales + expensas Art. 46
+          </span>
+        </div>
 
-          <div className="bg-slate-900/90 border border-emerald-500/30 rounded-xl p-3.5">
-            <span className="text-[10px] font-mono uppercase text-emerald-300 block">
-              1. Locales Activos en Operación
-            </span>
-            <span className="text-xl font-mono font-black text-emerald-400">
-              {(locales.length - totalVaciosConContrato - totalVaciosSinContrato).toLocaleString("es-CO")}
-            </span>
-            <span className="text-[11px] text-slate-400 block mt-0.5">
-              Liquidan consumo + comunales + expensas Art. 46
-            </span>
-          </div>
+        <div className="bg-white border border-amber-500/40 rounded-xl p-3.5 shadow-xs">
+          <span className="text-[10px] font-mono uppercase text-amber-700 font-bold block">
+            2. Vacíos / Cerrados CON Contrato
+          </span>
+          <span className="text-lg font-mono font-black text-amber-700 mt-0.5 block">
+            {formatInt(totalVaciosConContrato)} locales
+          </span>
+          <span className="text-[11px] text-slate-500 block mt-0.5">
+            Consumo 0 → Pagan Mínima ($20.498) + Comunales + Expensas
+          </span>
+        </div>
 
-          <div className="bg-slate-900/90 border border-amber-500/30 rounded-xl p-3.5">
-            <span className="text-[10px] font-mono uppercase text-amber-300 block">
-              2. Vacíos / Cerrados CON Contrato
-            </span>
-            <span className="text-xl font-mono font-black text-amber-400">
-              {totalVaciosConContrato.toLocaleString("es-CO")} locales
-            </span>
-            <span className="text-[11px] text-slate-400 block mt-0.5">
-              Consumo 0 → Pagan Mínima ($20.498) + Comunales + Expensas
-            </span>
-          </div>
-
-          <div className="bg-slate-900/90 border border-sky-500/30 rounded-xl p-3.5">
-            <span className="text-[10px] font-mono uppercase text-sky-300 block">
-              3. Vacíos SIN Contrato (Corporación)
-            </span>
-            <span className="text-xl font-mono font-black text-sky-400">
-              {totalVaciosSinContrato.toLocaleString("es-CO")} unidades
-            </span>
-            <span className="text-[11px] text-slate-400 block mt-0.5">
-              No inflan $/m² a vecinos → Imputados a Valor Asumido Corp.
-            </span>
-          </div>
+        <div className="bg-white border border-sky-500/40 rounded-xl p-3.5 shadow-xs">
+          <span className="text-[10px] font-mono uppercase text-sky-700 font-bold block">
+            3. Vacíos SIN Contrato (Asumido Corp.)
+          </span>
+          <span className="text-lg font-mono font-black text-sky-700 mt-0.5 block tabular-nums">
+            {formatInt(totalVaciosSinContrato)} unid. · {formatCop(totalAsumidoDinamico)}
+          </span>
+          <span className="text-[11px] text-slate-500 block mt-0.5">
+            No inflan $/m² a vecinos → Bolsa Valor Asumido Corp.
+          </span>
         </div>
       </div>
 

@@ -49,33 +49,25 @@ export function MasterReceiptsSimulatorView() {
       : receipts.expensas.aseo.tarifaPorM2;
 
   return (
-    <div className="space-y-6">
-      {/* Cabecera de Control */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <span className="text-[11px] font-bold uppercase tracking-wider text-[#E73A46] block">
-            MOTOR PARAMÉTRICO DE FACTURAS GLOBALES (JUNIO 2025)
-          </span>
-          <h2 className="text-xl font-bold text-[#1D3557]">
-            Ingesta de Recibos Maestros (3 Energía · 3 Acueducto · 4 Expensas y Factores)
-          </h2>
-          <p className="text-xs text-[#4C607B] mt-0.5">
-            Cualquier ajuste en tarifas unitarias ($/kWh, $/m³), montos de facturas o factores (0,4 NP / 1,2 MP / Partes Iguales) recalcula en tiempo real los 5.318 locales.
-          </p>
-        </div>
+    <div className="space-y-5">
+      {/* Barra Compacta de Parámetros Maestros */}
+      <div className="bg-white rounded-xl border border-slate-200 px-4 py-3 shadow-2xs flex flex-wrap items-center justify-between gap-3">
+        <p className="text-xs text-slate-600">
+          Ajusta tarifas unitarias (<strong>$/kWh</strong>, <strong>$/m³</strong>), montos de facturas maestras o factores (<strong>0,4 NP / 1,2 MP / Partes Iguales</strong>) para simular o recalcular en vivo los 5.318 locales.
+        </p>
 
         <button
           type="button"
           onClick={resetToOfficialJune2025}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-[#1D3557] text-xs font-bold transition-colors cursor-pointer"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-[#1D3557] text-xs font-bold transition-colors cursor-pointer"
         >
-          <RotateCcw className="w-4 h-4" />
+          <RotateCcw className="w-3.5 h-3.5" />
           Restaurar Cifras Oficiales Junio 2025
         </button>
       </div>
 
       {/* FILA 1: 3 RECIBOS DE ENERGÍA + 3 BLOQUES DE ACUEDUCTO */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         {/* TARJETA 1: LOS 3 RECIBOS DE ENERGÍA */}
         <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-4">
           <div className="flex items-center justify-between border-b border-slate-100 pb-3">
@@ -85,10 +77,10 @@ export function MasterReceiptsSimulatorView() {
               </div>
               <div>
                 <h3 className="text-sm font-bold text-[#1D3557]">
-                  1. Los 3 Recibos Maestros de Energía Eléctrica
+                  1. Recibos Maestros de Energía Eléctrica (3)
                 </h3>
                 <p className="text-[11px] text-[#4C607B]">
-                  Corabastos Principal (`ENERGIA_`) · Bodega Popular (`ENERGIA BP`) · Red de Fríos
+                  Predio Matriz Principal · Bodega Popular · Red de Fríos
                 </p>
               </div>
             </div>
@@ -253,7 +245,7 @@ export function MasterReceiptsSimulatorView() {
               <span className="text-[10px] font-bold uppercase text-indigo-700 block">
                 REGLA: PARTES IGUALES (EQUITATIVO)
               </span>
-              <h3 className="text-sm font-bold text-[#1D3557]">3. Policía (`POLICIA`)</h3>
+              <h3 className="text-sm font-bold text-[#1D3557]">3. Convenio Policía Nacional</h3>
             </div>
           </div>
 
@@ -309,7 +301,7 @@ export function MasterReceiptsSimulatorView() {
                 REGLA: 100% PROPORCIONAL AL ÁREA (M²)
               </span>
               <h3 className="text-sm font-bold text-[#1D3557]">
-                4. Vigilancia & Aseo (`VIGILANCIA` / `ASEO_`)
+                4. Vigilancia Privada & Barrido Aseo
               </h3>
             </div>
           </div>
@@ -396,7 +388,7 @@ export function MasterReceiptsSimulatorView() {
                 FACTOR PONDERADO POR VOLUMEN + ÁREA
               </span>
               <h3 className="text-sm font-bold text-[#1D3557]">
-                5. Residuos Sólidos ECSA (`NP / MP / P`)
+                5. Residuos Sólidos ECSA (NP / MP / P)
               </h3>
             </div>
           </div>

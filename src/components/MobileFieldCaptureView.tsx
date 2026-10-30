@@ -56,25 +56,22 @@ export function MobileFieldCaptureView() {
   const totalCompleted = allTasks.length - totalPending;
 
   return (
-    <div className="space-y-5">
-      {/* CABECERA MONITOR GERENCIAL DEL CORTE */}
-      <div className="bg-[#010F22] text-white rounded-2xl p-5 border border-slate-800 flex flex-wrap items-center justify-between gap-4">
+    <div className="space-y-4">
+      {/* BARRA EJECUTIVA DE AVANCE DEL CORTE EN TERRENO */}
+      <div className="bg-[#0B132B] text-white rounded-xl px-5 py-3.5 border border-slate-800 flex flex-wrap items-center justify-between gap-4">
         <div>
-          <span className="text-[11px] font-mono uppercase tracking-wider text-emerald-400 block">
-            SUB-MÓDULO 1.4 · MONITOR EJECUTIVO DE LA COLA DE TAREAS DEL CORTE
-          </span>
-          <h2 className="text-lg sm:text-xl font-bold mt-0.5">
-            Avance de Lectura de Medidores por Zonas Operativas ({allTasks.length.toLocaleString("es-CO")} Medidores Físicos)
+          <h2 className="text-sm sm:text-base font-bold">
+            Avance Operativo de Lectura por Zonas ({allTasks.length.toLocaleString("es-CO")} Medidores Físicos)
           </h2>
-          <p className="text-xs text-slate-400 mt-1">
-            En el celular del operador (/captura) solo se muestran las tareas en estado PENDIENTE de cada zona y bodega.
+          <p className="text-xs text-slate-300 mt-0.5">
+            Sincronización en vivo con la cola de tareas pendientes de los operadores en terreno.
           </p>
         </div>
 
         <div className="flex items-center gap-3">
-          <div className="text-right bg-white/5 px-4 py-2 rounded-xl border border-white/10 font-mono">
+          <div className="text-right bg-white/5 px-3.5 py-1.5 rounded-lg border border-white/10 font-mono">
             <span className="text-[10px] uppercase text-slate-400 block">Pendientes / Total</span>
-            <span className="text-base font-black text-amber-400">
+            <span className="text-sm font-black text-amber-400">
               {totalPending.toLocaleString("es-CO")}
             </span>{" "}
             <span className="text-xs text-slate-400">/ {allTasks.length.toLocaleString("es-CO")}</span>
@@ -83,10 +80,10 @@ export function MobileFieldCaptureView() {
           <Link
             href="/captura"
             target="_blank"
-            className="px-4 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs inline-flex items-center gap-2 shadow-lg cursor-pointer"
+            className="px-3.5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs inline-flex items-center gap-2 shadow-sm cursor-pointer"
           >
             <Smartphone className="w-4 h-4" />
-            <span>Simular Celular Operador (/captura)</span>
+            <span>Abrir Terminal Operador (/captura)</span>
             <ExternalLink className="w-3.5 h-3.5" />
           </Link>
         </div>

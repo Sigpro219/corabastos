@@ -19,17 +19,7 @@ import {
 } from "@/lib/liquidation-engine";
 import { buildCutoffReadingTasks, ZONE_META } from "@/lib/reading-tasks-engine";
 
-export function formatCop(value: number): string {
-  return `$${Math.round(value).toLocaleString("es-CO")}`;
-}
-
-export function formatNum(value: number, decimals = 1): string {
-  const targetDec = decimals > 0 ? 1 : 0;
-  return value.toLocaleString("es-CO", {
-    minimumFractionDigits: targetDec,
-    maximumFractionDigits: targetDec,
-  });
-}
+export { formatCop, formatDec as formatNum } from "@/lib/formatters";
 
 /**
  * Motor Headless de Inteligencia de Negocios (BI) & 6 KPIs Longitudinales Corte a Corte.
@@ -56,21 +46,19 @@ export function computeBiLongitudinalReport(
 
   const macroRiskList: BiMacrometerLeakKpiItem[] = [];
 
-  for (const m of energyCommunal) {
-    kpi1TotalBrutoEnergiaKw += m.consumoBruto;
-    kpi1TotalHijosEnergiaKw += m.consumoHijosDescontado;
-    kpi1RemanenteComunalEnergiaKw += m.consumoNetoComunal;
-
+  const pushMacroItem = (
+    m: CommunalHierarchyBreakdown,
+    servicio: "ENERGIA" | "ACUEDUCTO",
+    unidad: "kWh" | "m³"
+  ) => {
     const pctComunal = m.consumoBruto > 0 ? (m.consumoNetoComunal / m.consumoBruto) * 100 : 0;
     const varPct =
       m.consumoAnterior > 0
         ? ((m.consumoNetoComunal - m.consumoAnterior) / m.consumoAnterior) * 100
         : 0;
-    const alertaFugaActiva = varPct > 20 || m.alertaDesviacion;
-
     macroRiskList.push({
       id: m.id,
-      servicio: "ENERGIA",
+      servicio,
       bodegaId: m.bodegaId,
       nombre: `${m.codigo} (${m.tipo})`,
       medidorSerie: m.contadorSerie,
@@ -80,38 +68,23 @@ export function computeBiLongitudinalReport(
       consumoAnteriorComunal: m.consumoAnterior,
       porcentajeComunalSobreBruto: pctComunal,
       variacionIntermensualPct: varPct,
-      alertaFugaActiva,
-      unidad: "kWh",
+      alertaFugaActiva: varPct > 20 || m.alertaDesviacion,
+      unidad,
     });
+  };
+
+  for (const m of energyCommunal) {
+    kpi1TotalBrutoEnergiaKw += m.consumoBruto;
+    kpi1TotalHijosEnergiaKw += m.consumoHijosDescontado;
+    kpi1RemanenteComunalEnergiaKw += m.consumoNetoComunal;
+    pushMacroItem(m, "ENERGIA", "kWh");
   }
 
   for (const w of waterCommunal) {
     kpi1TotalBrutoAguaM3 += w.consumoBruto;
     kpi1TotalHijosAguaM3 += w.consumoHijosDescontado;
     kpi1RemanenteComunalAguaM3 += w.consumoNetoComunal;
-
-    const pctComunal = w.consumoBruto > 0 ? (w.consumoNetoComunal / w.consumoBruto) * 100 : 0;
-    const varPct =
-      w.consumoAnterior > 0
-        ? ((w.consumoNetoComunal - w.consumoAnterior) / w.consumoAnterior) * 100
-        : 0;
-    const alertaFugaActiva = varPct > 20 || w.alertaDesviacion;
-
-    macroRiskList.push({
-      id: w.id,
-      servicio: "ACUEDUCTO",
-      bodegaId: w.bodegaId,
-      nombre: `${w.codigo} (${w.tipo})`,
-      medidorSerie: w.contadorSerie,
-      consumoBruto: w.consumoBruto,
-      descuentoHijos: w.consumoHijosDescontado,
-      consumoNetoComunal: w.consumoNetoComunal,
-      consumoAnteriorComunal: w.consumoAnterior,
-      porcentajeComunalSobreBruto: pctComunal,
-      variacionIntermensualPct: varPct,
-      alertaFugaActiva,
-      unidad: "m³",
-    });
+    pushMacroItem(w, "ACUEDUCTO", "m³");
   }
 
   const kpi1IndiceComunalEnergiaPct =
@@ -263,86 +236,45 @@ export function computeBiLongitudinalReport(
     localMap.set(l.codigo, l);
   }
 
-  const healthBuckets: Record<
-    BiMetrologicalHealthItem["categoria"],
-    BiMetrologicalHealthItem
-  > = {
-    OPERATIVO: {
-      causal: "Medidores Operativos Normal (Verificado / Sin Novedad)",
-      categoria: "OPERATIVO",
-      cantidadEnergia: 0,
-      cantidadAcueducto: 0,
-      totalMedidores: 0,
-      areaAfectadaM2: 0,
-      facturacionMigradaProrrateoCop: 0,
-    },
-    DETENIDO: {
-      causal: "Contador / Medidor Detenido (C, DETENIDO / M, DETENIDO)",
-      categoria: "DETENIDO",
-      cantidadEnergia: 0,
-      cantidadAcueducto: 0,
-      totalMedidores: 0,
-      areaAfectadaM2: 0,
-      facturacionMigradaProrrateoCop: 0,
-    },
-    TAPADO: {
-      causal: "Contador / Medidor Tapado u Obstruido (C, TAPADO / M, TAPADO)",
-      categoria: "TAPADO",
-      cantidadEnergia: 0,
-      cantidadAcueducto: 0,
-      totalMedidores: 0,
-      areaAfectadaM2: 0,
-      facturacionMigradaProrrateoCop: 0,
-    },
-    RETIRADO_REVISAR: {
-      causal: "Medidor Retirado / En Revisión Técnica (RETIRADO / REVISAR)",
-      categoria: "RETIRADO_REVISAR",
-      cantidadEnergia: 0,
-      cantidadAcueducto: 0,
-      totalMedidores: 0,
-      areaAfectadaM2: 0,
-      facturacionMigradaProrrateoCop: 0,
-    },
-    CERRADO_VACIO: {
-      causal: "Local Cerrado / Vacío sin Acceso al Medidor (L, CERRADO / L, VACIO)",
-      categoria: "CERRADO_VACIO",
-      cantidadEnergia: 0,
-      cantidadAcueducto: 0,
-      totalMedidores: 0,
-      areaAfectadaM2: 0,
-      facturacionMigradaProrrateoCop: 0,
-    },
+  const createBucket = (
+    categoria: BiMetrologicalHealthItem["categoria"],
+    causal: string
+  ): BiMetrologicalHealthItem => ({
+    causal,
+    categoria,
+    cantidadEnergia: 0,
+    cantidadAcueducto: 0,
+    totalMedidores: 0,
+    areaAfectadaM2: 0,
+    facturacionMigradaProrrateoCop: 0,
+  });
+
+  const healthBuckets: Record<BiMetrologicalHealthItem["categoria"], BiMetrologicalHealthItem> = {
+    OPERATIVO: createBucket("OPERATIVO", "Medidores Operativos Normal (Verificado / Sin Novedad)"),
+    DETENIDO: createBucket("DETENIDO", "Contador / Medidor Detenido (C, DETENIDO / M, DETENIDO)"),
+    TAPADO: createBucket("TAPADO", "Contador / Medidor Tapado u Obstruido (C, TAPADO / M, TAPADO)"),
+    RETIRADO_REVISAR: createBucket("RETIRADO_REVISAR", "Medidor Retirado / En Revisión Técnica (RETIRADO / REVISAR)"),
+    CERRADO_VACIO: createBucket("CERRADO_VACIO", "Local Cerrado / Vacío sin Acceso al Medidor (L, CERRADO / L, VACIO)"),
   };
 
   for (const task of allTasks) {
     const obs = (task.observacionActual || "").toUpperCase();
     let cat: BiMetrologicalHealthItem["categoria"] = "OPERATIVO";
-    if (obs.includes("DETENIDO")) {
-      cat = "DETENIDO";
-    } else if (obs.includes("TAPADO") || obs.includes("ALMACENAMIENTO")) {
-      cat = "TAPADO";
-    } else if (obs.includes("RETIRADO") || obs.includes("REVISAR") || obs.includes("SUSPENDIDO")) {
-      cat = "RETIRADO_REVISAR";
-    } else if (obs.includes("CERRADO") || obs.includes("VACIO") || obs.includes("NO PERMITIO")) {
-      cat = "CERRADO_VACIO";
-    }
+    if (obs.includes("DETENIDO")) cat = "DETENIDO";
+    else if (obs.includes("TAPADO") || obs.includes("ALMACENAMIENTO")) cat = "TAPADO";
+    else if (obs.includes("RETIRADO") || obs.includes("REVISAR") || obs.includes("SUSPENDIDO")) cat = "RETIRADO_REVISAR";
+    else if (obs.includes("CERRADO") || obs.includes("VACIO") || obs.includes("NO PERMITIO")) cat = "CERRADO_VACIO";
 
     const bucket = healthBuckets[cat];
-    const isEnergia =
-      task.servicio === "ENERGIA" || task.servicio === "MACRO_ENERGIA";
-    if (isEnergia) {
-      bucket.cantidadEnergia += 1;
-    } else {
-      bucket.cantidadAcueducto += 1;
-    }
+    const isEnergia = task.servicio === "ENERGIA" || task.servicio === "MACRO_ENERGIA";
+    if (isEnergia) bucket.cantidadEnergia += 1;
+    else bucket.cantidadAcueducto += 1;
     bucket.totalMedidores += 1;
     bucket.areaAfectadaM2 += task.areaM2;
 
     const loc = localMap.get(task.codigo);
     if (loc && cat !== "OPERATIVO") {
-      bucket.facturacionMigradaProrrateoCop += isEnergia
-        ? loc.calcEnergiaCop
-        : loc.calcAcueductoCop;
+      bucket.facturacionMigradaProrrateoCop += isEnergia ? loc.calcEnergiaCop : loc.calcAcueductoCop;
     }
   }
 

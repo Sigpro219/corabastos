@@ -43,21 +43,14 @@ export function LiquidationMethodologyView() {
 
   return (
     <div className="max-w-[1600px] mx-auto space-y-5">
-      {/* CABECERA EJECUTIVA DE LA MEMORIA DE CÁLCULO */}
-      <div className="bg-[#0B132B] text-white rounded-xl p-5 border border-white/10 shadow-lg">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+      {/* BARRA DE FILTRO DE REGLAS Y NOTA DE CONCILIACIÓN HISTÓRICA */}
+      <div className="bg-[#0B132B] text-white rounded-xl p-4 border border-white/10 shadow-lg space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-md bg-[#f7931b]/15 border border-[#f7931b]/30 text-[#f7931b] text-[11px] font-bold uppercase tracking-wider mb-2">
-              <BookOpen className="w-3.5 h-3.5" strokeWidth={1.75} />
-              Sub-Módulo 1.6 · Memoria de Cálculo & Reglas Oficiales de Liquidación
-            </div>
-            <h2 className="text-xl font-black tracking-tight">
-              Explicación Paso a Paso de Cómo se Liquidó el Corte ({receipts.nombrePeriodo})
+            <h2 className="text-sm sm:text-base font-bold tracking-tight flex items-center gap-2">
+              <BookOpen className="w-4 h-4 text-[#f7931b]" strokeWidth={1.75} />
+              <span>Memoria de Cálculo y Reglas de Liquidación ({receipts.nombrePeriodo} · Directiva 033-06, Art. 42–47)</span>
             </h2>
-            <p className="text-xs text-slate-300 mt-1 max-w-4xl">
-              Documentación transparente y auditable de las reglas operativas del cliente y las fórmulas exactas del libro{" "}
-              <span className="font-mono text-amber-300">06. LIQUIDACION JUNIO 2025.xlsm</span> (Directiva de Gerencia No. 033-06, Art. 42 al 47). Cero datos simulados.
-            </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-1.5">
@@ -87,67 +80,13 @@ export function LiquidationMethodologyView() {
           </div>
         </div>
 
-        {/* CINTA RESUMEN DE PARÁMETROS MAESTROS DEL CORTE */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mt-5">
-          <div className="bg-slate-900/90 border border-slate-800 rounded-lg p-3">
-            <span className="text-[10px] font-mono uppercase text-slate-400 block">Tarifa Energía</span>
-            <span className="text-base font-mono font-black text-amber-400">
-              {fmtCop(receipts.energia.tarifaKwh, 2)} / kWh
-            </span>
-            <span className="text-[10px] text-slate-400 block mt-0.5">
-              Alumbrado: {fmtCop(receipts.energia.alumbradoGeneral.tarifaPorM2, 2)}/m²
-            </span>
-          </div>
-
-          <div className="bg-slate-900/90 border border-slate-800 rounded-lg p-3">
-            <span className="text-[10px] font-mono uppercase text-slate-400 block">Tarifa Acueducto</span>
-            <span className="text-base font-mono font-black text-sky-400">
-              {fmtCop(receipts.acueducto.tarifaM3, 2)} / m³
-            </span>
-            <span className="text-[10px] text-slate-400 block mt-0.5">
-              Comunal Gral: $198,2/m²
-            </span>
-          </div>
-
-          <div className="bg-slate-900/90 border border-slate-800 rounded-lg p-3">
-            <span className="text-[10px] font-mono uppercase text-slate-400 block">Vigilancia / m²</span>
-            <span className="text-base font-mono font-black text-emerald-400">
-              {fmtCop(receipts.expensas.vigilancia.tarifaPorM2, 2)} / m²
-            </span>
-            <span className="text-[10px] text-slate-400 block mt-0.5">
-              Área: {fmtNum(receipts.expensas.vigilancia.areaTotalM2, 1)} m²
-            </span>
-          </div>
-
-          <div className="bg-slate-900/90 border border-slate-800 rounded-lg p-3">
-            <span className="text-[10px] font-mono uppercase text-slate-400 block">Policía / Local</span>
-            <span className="text-base font-mono font-black text-indigo-300">
-              {fmtCop(receipts.expensas.policia.cuotaFijaPorLocal, 2)}
-            </span>
-            <span className="text-[10px] text-slate-400 block mt-0.5">
-              Divisor: {formatInt(receipts.expensas.policia.localesActivosDivisor)} locales
-            </span>
-          </div>
-
-          <div className="bg-slate-900/90 border border-slate-800 rounded-lg p-3">
-            <span className="text-[10px] font-mono uppercase text-slate-400 block">Barrido (Aseo) / m²</span>
-            <span className="text-base font-mono font-black text-teal-300">
-              {fmtCop(receipts.expensas.aseo.tarifaPorM2, 2)} / m²
-            </span>
-            <span className="text-[10px] text-slate-400 block mt-0.5">
-              Área: {fmtNum(receipts.expensas.aseo.areaTotalM2, 1)} m²
-            </span>
-          </div>
-
-          <div className="bg-slate-900/90 border border-slate-800 rounded-lg p-3">
-            <span className="text-[10px] font-mono uppercase text-slate-400 block">Residuos (NP / MP / P)</span>
-            <span className="text-xs font-mono font-black text-rose-300 block mt-0.5">
-              NP: {fmtCop(resCfg.tarifaEfectivaNpM2, 0)} · MP: {fmtCop(resCfg.tarifaEfectivaMpM2, 0)}
-            </span>
-            <span className="text-xs font-mono font-black text-amber-300 block">
-              P: {fmtCop(resCfg.tarifaEfectivaPM2, 0)} / m²
-            </span>
-          </div>
+        <div className="p-2.5 rounded-lg bg-white/5 border border-white/10 text-[11px] text-slate-300 flex flex-wrap items-center justify-between gap-2 font-mono">
+          <span>
+            <strong>Nota de Conciliación Forense:</strong> El total real de los 6 servicios en Junio 2025 es <strong className="text-emerald-400">$3.621.551.838 COP</strong>.
+          </span>
+          <span className="text-amber-300">
+            En la hoja RESUMEN TOTAL del Excel original (Col. R) figura $3.861.030.410 porque sumó dos veces Acueducto (+$239.478.572).
+          </span>
         </div>
       </div>
 

@@ -55,8 +55,8 @@ export function LocalAccountModal({ local, onClose }: LocalAccountModalProps) {
     (local.calcAcueductoCop >= local.aguaPromMin && local.calcAcueductoCop <= local.aguaPromMax);
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-5xl w-full max-h-[92vh] flex flex-col overflow-hidden">
+    <div className="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 overflow-y-auto print:static print:bg-white print:p-0">
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-5xl w-full max-h-[92vh] flex flex-col overflow-hidden print:max-w-none print:max-h-none print:overflow-visible print:shadow-none print:border-0">
         {/* ENCABEZADO EXPEDIENTE INDIVIDUAL 360° */}
         <div className="bg-[#010F22] text-white px-6 py-4 flex flex-wrap items-center justify-between gap-3 border-b border-white/10">
           <div className="flex items-center gap-3">
@@ -78,7 +78,7 @@ export function LocalAccountModal({ local, onClose }: LocalAccountModalProps) {
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 no-print">
             <button
               type="button"
               onClick={() => window.print()}
@@ -99,7 +99,7 @@ export function LocalAccountModal({ local, onClose }: LocalAccountModalProps) {
         </div>
 
         {/* CUERPO DEL EXPEDIENTE */}
-        <div className="p-6 overflow-y-auto space-y-6">
+        <div className="p-6 overflow-y-auto space-y-6 print:overflow-visible print:p-4">
           {/* 1. FICHA TÉCNICA CATASTRAL Y ESTADO DE OCUPACIÓN / VACANCIA */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             <div className="lg:col-span-2 bg-slate-50 rounded-xl p-4 border border-slate-200 grid grid-cols-2 sm:grid-cols-4 gap-3">
