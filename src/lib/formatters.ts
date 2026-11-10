@@ -1,48 +1,58 @@
 /**
  * Utilidades Canónicas de Formato Numérico Colombiano (es-CO).
- * Ley Marcial SDD #8 (disenador-web):
- * - Separador de miles: punto (.) -> ej. 1.457.589
- * - Separador de decimales: coma (,) con 1 solo decimal -> ej. 165,7
- * - Prohibido el uso directo de .toFixed() en strings de UI.
+ * Contrato SPEC.md v3.1.0 §2.5:
+ * - Separador de miles: punto (.) -> ej. 3.621.554.642
+ * - Separador de decimales: coma (,) -> ej. 165,68 / 0,5411 / $720,48
+ * - Prohibido invocar .toFixed() o .toLocaleString() fuera de este módulo.
  */
 
-export function formatCop(value: number, decimals = 0): string {
-  const safe = Number.isFinite(value) ? value : 0;
-  const targetDec = decimals > 0 ? 1 : 0;
-  const formatted = (targetDec === 0 ? Math.round(safe) : safe).toLocaleString("es-CO", {
-    minimumFractionDigits: targetDec,
-    maximumFractionDigits: targetDec,
+export function formatCop(val: number, decimals = 0): string {
+  const safe = Number.isFinite(val) ? val : 0;
+  const d = Math.max(0, Math.min(6, Math.trunc(decimals)));
+  const normalized = d === 0 ? Math.round(safe) || 0 : safe || 0;
+  const formatted = normalized.toLocaleString("es-CO", {
+    minimumFractionDigits: d,
+    maximumFractionDigits: d,
   });
   return `$${formatted}`;
 }
 
-export function formatDec(value: number, minDecimals = 1, maxDecimals = 1): string {
-  const safe = Number.isFinite(value) ? value : 0;
-  const minD = minDecimals > 0 ? 1 : 0;
-  const maxD = maxDecimals > 0 ? 1 : 0;
-  return safe.toLocaleString("es-CO", {
-    minimumFractionDigits: minD,
-    maximumFractionDigits: Math.max(minD, maxD),
-  });
-}
-
-export function formatInt(value: number): string {
-  const safe = Number.isFinite(value) ? Math.round(value) : 0;
+export function formatInt(val: number): string {
+  const safe = Number.isFinite(val) ? Math.round(val) || 0 : 0;
   return safe.toLocaleString("es-CO", {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   });
 }
 
-export function formatPct(value: number, decimals = 1, includePlusSign = false): string {
-  const safe = Number.isFinite(value) ? value : 0;
+export function formatDec(
+  val: number,
+  minDecimals = 1,
+  maxDecimals = minDecimals
+): string {
+  const safe = Number.isFinite(val) ? val || 0 : 0;
+  const minD = Math.max(0, Math.min(10, Math.trunc(minDecimals)));
+  const maxD = Math.max(minD, Math.min(10, Math.trunc(maxDecimals)));
+  return safe.toLocaleString("es-CO", {
+    minimumFractionDigits: minD,
+    maximumFractionDigits: maxD,
+  });
+}
+
+export function formatPct(
+  val: number,
+  decimals = 1,
+  includePlusSign = false
+): string {
+  const safe = Number.isFinite(val) ? val || 0 : 0;
+  const d = Math.max(0, Math.min(6, Math.trunc(decimals)));
   const prefix = includePlusSign && safe > 0 ? "+" : "";
-  return `${prefix}${formatDec(safe, decimals > 0 ? 1 : 0)}%`;
+  return `${prefix}${formatDec(safe, d, d)}%`;
 }
 
 /**
  * Normaliza entradas de teclado con coma o punto decimal y purga ceros a la izquierda
- * conforme a REF-INPUT-NUMERICO-SIN-CERO-Y-COMA-DECIMAL.md.
+ * conforme a PrecisionDecimalInput (<input type="text" inputMode="decimal">).
  */
 export function sanitizeDecimalInputString(rawInput: string): {
   displayRaw: string;

@@ -1,101 +1,156 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { useCorabastos } from "@/context/CorabastosContext";
-import { ComputedLocalLiquidation } from "@/lib/liquidation-engine";
+import { isRedFriosModality } from "@/contracts/domain-contracts";
+import { ComputedLocalLiquidation, hasLocalServiceAlert } from "@/lib/liquidation-engine";
 import { buildSabanaCsvContent } from "@/lib/accounting-export";
 import { formatCop, formatDec, formatInt } from "@/lib/formatters";
-import { LocalAccountModal } from "@/components/LocalAccountModal";
+import { SabanaSummaryCards } from "@/components/SabanaSummaryCards";
 import {
-  Search,
+  AlertTriangle,
+  CheckCircle2,
   ChevronLeft,
   ChevronRight,
-  FileSpreadsheet,
-  CheckCircle2,
-  AlertTriangle,
-  X,
-  Receipt,
-  Zap,
   Droplets,
+  FileSpreadsheet,
+  Receipt,
+  Search,
+  X,
+  Zap,
 } from "lucide-react";
 
-export function LiquidationMatrixView() {
-  const { locales, bodegasList, receipts } = useCorabastos();
+interface LiquidationMatrixViewProps {
+  onSelectLocalCode: (codigo: string) => void;
+}
+
+function normalizePhonetic(val: string): string {
+  return val
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/ce/g, "se")
+    .replace(/ci/g, "si")
+    .replace(/z/g, "s");
+}
+
+function matchesModalitySelection(
+  loc: ComputedLocalLiquidation,
+  selectedModality: string
+): boolean {
+  if (selectedModality === "ALL") return true;
+  if (selectedModality === "RED_FRIOS") {
+    return (
+      isRedFriosModality(loc.modalidadEnergia) ||
+      isRedFriosModality(loc.modalidadAcueducto) ||
+      isRedFriosModality(loc.modalidadGeneral)
+    );
+  }
+  if (selectedModality === "BODEGA_POPULAR") {
+    return (
+      loc.bloqueEnergia === "BODEGA_POPULAR" ||
+      loc.modalidadGeneral.toUpperCase().startsWith("BP ")
+    );
+  }
+  return (
+    loc.modalidadEnergia === selectedModality ||
+    loc.modalidadAcueducto === selectedModality ||
+    loc.modalidadGeneral === selectedModality
+  );
+}
+
+export function matchesSabanaSegmentPill(
+  loc: Pick<ComputedLocalLiquidation, "modalidadEnergia" | "modalidadAcueducto" | "energiaEstado" | "aguaEstado">,
+  pill: "ALL" | "CONTADOR" | "COMUNAL" | "ALERTAS"
+): boolean {
+  if (pill === "ALL") return true;
+  if (pill === "CONTADOR") {
+    return loc.modalidadEnergia === "CONTADOR" || loc.modalidadAcueducto === "CONTADOR";
+  }
+  if (pill === "COMUNAL") {
+    return !(loc.modalidadEnergia === "CONTADOR" || loc.modalidadAcueducto === "CONTADOR");
+  }
+  return hasLocalServiceAlert(loc);
+}
+
+export function LiquidationMatrixView({ onSelectLocalCode }: LiquidationMatrixViewProps) {
+  const { locales, bodegasList, receipts, liveBagsSummary } = useCorabastos();
 
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [selectedBodega, setSelectedBodega] = useState<string>("ALL");
   const [selectedModality, setSelectedModality] = useState<string>("ALL");
   const [selectedWasteCat, setSelectedWasteCat] = useState<string>("ALL");
-  const [activeSegmentPill, setActiveSegmentPill] = useState<"ALL" | "CONTADOR" | "COMUNAL" | "ALERTAS">("ALL");
+  const [activeSegmentPill, setActiveSegmentPill] = useState<
+    "ALL" | "CONTADOR" | "COMUNAL" | "ALERTAS"
+  >("ALL");
   const [page, setPage] = useState<number>(1);
-  const [inspectedLocal, setInspectedLocal] = useState<ComputedLocalLiquidation | null>(null);
 
   const pageSize = 50;
 
-  // Superbuscador Omnibox Universal Multi-Criterio (AND espaciado, #ID, @tag)
   const filtered = useMemo(() => {
-    const rawQ = searchQuery.trim().toLowerCase();
-    const terms = rawQ.split(/\s+/).filter(Boolean);
+    const rawQ = searchQuery.trim();
+    const terms = rawQ
+      .split(/\s+/)
+      .filter(Boolean)
+      .map((t) => t.toLowerCase());
 
     return locales.filter((loc) => {
-      // 1. Omnibox search (busca sobre el universo completo de 5.318 locales en memoria)
       if (terms.length > 0) {
-        const searchableText = `${loc.codigo} bod${loc.bodegaId} ${loc.bodegaId} ${loc.tipoBodega} ${loc.bloqueEnergia} ${loc.modalidadGeneral} ${loc.modalidadEnergia} ${loc.modalidadAcueducto} ${loc.categoriaResiduos} ${loc.energiaObs} ${loc.aguaObs} ${loc.energiaEstado} ${loc.aguaEstado} ${loc.estadoOcupacion || "ACTIVO"} ${loc.planos.energia} ${loc.planos.agua}`.toLowerCase();
+        const rawTarget = `${loc.codigo} bod${loc.bodegaId} ${loc.bodegaId} ${loc.tipoBodega} ${loc.bloqueEnergia} ${loc.modalidadGeneral} ${loc.modalidadEnergia} ${loc.modalidadAcueducto} ${loc.categoriaResiduos} ${loc.energiaObs} ${loc.aguaObs} ${loc.energiaEstado} ${loc.aguaEstado} ${loc.effectiveOccupancy} ${loc.planos.energia} ${loc.planos.agua}`;
+        const normTarget = normalizePhonetic(rawTarget);
 
         const matchesAll = terms.every((term) => {
           if (term.startsWith("#")) {
-            const cleanId = term.slice(1);
-            return loc.codigo.toLowerCase().includes(cleanId);
+            return loc.codigo.toLowerCase().includes(term.slice(1));
           }
           if (term.startsWith("@")) {
             const tag = term.slice(1);
             if (tag === "alerta" || tag === "revisar") {
-              return loc.energiaEstado === "REVISAR" || loc.aguaEstado === "REVISAR";
+              return hasLocalServiceAlert(loc);
             }
             if (tag === "ok" || tag === "normal") {
-              return loc.energiaEstado === "OK" && loc.aguaEstado === "OK";
+              return !hasLocalServiceAlert(loc);
             }
-            return (
-              loc.modalidadGeneral.toLowerCase().includes(tag) ||
-              loc.categoriaResiduos.toLowerCase().includes(tag)
-            );
+            if (tag === "vacio" || tag === "corp") {
+              return loc.effectiveOccupancy !== "ACTIVO";
+            }
+            return normTarget.includes(normalizePhonetic(tag));
           }
-          return searchableText.includes(term);
+          return normTarget.includes(normalizePhonetic(term));
         });
 
         if (!matchesAll) return false;
       }
 
-      // 2. Píldoras de Segmentación Telemétrica
-      if (activeSegmentPill === "CONTADOR" && loc.modalidadEnergia !== "CONTADOR" && loc.modalidadAcueducto !== "CONTADOR") {
-        return false;
-      }
-      if (activeSegmentPill === "COMUNAL" && loc.modalidadEnergia === "CONTADOR" && loc.modalidadAcueducto === "CONTADOR") {
-        return false;
-      }
-      if (activeSegmentPill === "ALERTAS" && loc.energiaEstado !== "REVISAR" && loc.aguaEstado !== "REVISAR") {
-        return false;
-      }
+      if (!matchesSabanaSegmentPill(loc, activeSegmentPill)) return false;
 
-      // 3. Dropdowns
       if (selectedBodega !== "ALL" && loc.bodegaId !== selectedBodega) return false;
-      if (selectedModality !== "ALL" && loc.modalidadGeneral !== selectedModality) return false;
+      if (!matchesModalitySelection(loc, selectedModality)) return false;
       if (selectedWasteCat !== "ALL" && loc.categoriaResiduos !== selectedWasteCat) return false;
 
       return true;
     });
-  }, [locales, searchQuery, activeSegmentPill, selectedBodega, selectedModality, selectedWasteCat]);
+  }, [
+    locales,
+    searchQuery,
+    activeSegmentPill,
+    selectedBodega,
+    selectedModality,
+    selectedWasteCat,
+  ]);
 
-  // Telemetría en tiempo real
   const totalLocalesCount = locales.length;
   const filteredLocalesCount = filtered.length;
   const countContador = useMemo(
-    () => locales.filter((l) => l.modalidadEnergia === "CONTADOR" || l.modalidadAcueducto === "CONTADOR").length,
+    () =>
+      locales.filter(
+        (l) => l.modalidadEnergia === "CONTADOR" || l.modalidadAcueducto === "CONTADOR"
+      ).length,
     [locales]
   );
   const countComunal = totalLocalesCount - countContador;
   const countAlerts = useMemo(
-    () => locales.filter((l) => l.energiaEstado === "REVISAR" || l.aguaEstado === "REVISAR").length,
+    () => locales.filter(hasLocalServiceAlert).length,
     [locales]
   );
 
@@ -108,18 +163,23 @@ export function LiquidationMatrixView() {
     let vigilancia = 0;
     let policia = 0;
     let granTotal = 0;
+    let asumidoCorp = 0;
 
     for (const l of filtered) {
+      if (l.effectiveOccupancy === "VACIO_SIN_CONTRATO_CORPORACION") {
+        asumidoCorp += l.calcAssumedCorporationCop;
+      } else {
+        energia += l.calcEnergiaCop;
+        acueducto += l.calcAcueductoCop;
+        aseo += l.calcAseoCop;
+        residuos += l.calcResiduosCop;
+        vigilancia += l.calcVigilanciaCop;
+        policia += l.calcPoliciaCop;
+        granTotal += l.calcTotalCop;
+      }
       area += l.areaM2;
-      energia += l.calcEnergiaCop;
-      acueducto += l.calcAcueductoCop;
-      aseo += l.calcAseoCop;
-      residuos += l.calcResiduosCop;
-      vigilancia += l.calcVigilanciaCop;
-      policia += l.calcPoliciaCop;
-      granTotal += l.calcTotalCop;
     }
-    return { area, energia, acueducto, aseo, residuos, vigilancia, policia, granTotal };
+    return { area, energia, acueducto, aseo, residuos, vigilancia, policia, granTotal, asumidoCorp };
   }, [filtered]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
@@ -138,67 +198,30 @@ export function LiquidationMatrixView() {
   };
 
   return (
-    <div className="space-y-4">
-      {/* TARJETAS DE CONCILIACIÓN DE LOS 6 SERVICIOS Y GRAN TOTAL */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
-        <div className="bg-white rounded-xl border border-slate-200 p-2.5 shadow-2xs">
-          <span className="text-[10px] font-bold uppercase text-amber-700 block">1. Energía (PL007)</span>
-          <span className="text-sm font-mono font-bold text-[#1D3557] mt-0.5 block tabular-nums">{formatCop(totals.energia)}</span>
-          <span className="text-[10px] text-slate-400 font-mono">Enel Codensa</span>
-        </div>
-        <div className="bg-white rounded-xl border border-slate-200 p-2.5 shadow-2xs">
-          <span className="text-[10px] font-bold uppercase text-sky-700 block">2. Acueducto (PL008)</span>
-          <span className="text-sm font-mono font-bold text-[#1D3557] mt-0.5 block tabular-nums">{formatCop(totals.acueducto)}</span>
-          <span className="text-[10px] text-slate-400 font-mono">EAAB Bogotá</span>
-        </div>
-        <div className="bg-white rounded-xl border border-slate-200 p-2.5 shadow-2xs">
-          <span className="text-[10px] font-bold uppercase text-emerald-700 block">3. Vigilancia (PL004)</span>
-          <span className="text-sm font-mono font-bold text-[#1D3557] mt-0.5 block tabular-nums">{formatCop(totals.vigilancia)}</span>
-          <span className="text-[10px] text-slate-400 font-mono">$13.785,9/m²</span>
-        </div>
-        <div className="bg-white rounded-xl border border-slate-200 p-2.5 shadow-2xs">
-          <span className="text-[10px] font-bold uppercase text-rose-700 block">4. Residuos (PL109)</span>
-          <span className="text-sm font-mono font-bold text-[#1D3557] mt-0.5 block tabular-nums">{formatCop(totals.residuos)}</span>
-          <span className="text-[10px] text-slate-400 font-mono">ECSA NP/MP/P</span>
-        </div>
-        <div className="bg-white rounded-xl border border-slate-200 p-2.5 shadow-2xs">
-          <span className="text-[10px] font-bold uppercase text-teal-700 block">5. Barrido/Aseo (PL003)</span>
-          <span className="text-sm font-mono font-bold text-[#1D3557] mt-0.5 block tabular-nums">{formatCop(totals.aseo)}</span>
-          <span className="text-[10px] text-slate-400 font-mono">$1.631,1/m²</span>
-        </div>
-        <div className="bg-white rounded-xl border border-slate-200 p-2.5 shadow-2xs">
-          <span className="text-[10px] font-bold uppercase text-indigo-700 block">6. Policía (PL141)</span>
-          <span className="text-sm font-mono font-bold text-[#1D3557] mt-0.5 block tabular-nums">{formatCop(totals.policia)}</span>
-          <span className="text-[10px] text-slate-400 font-mono">$40.638,6/local</span>
-        </div>
-        <div className="bg-[#0B132B] text-white rounded-xl p-2.5 shadow-2xs col-span-2 sm:col-span-2 lg:col-span-1">
-          <span className="text-[10px] font-bold uppercase text-[#f7931b] block">Total Liquidado ({formatInt(filtered.length)})</span>
-          <span className="text-sm font-mono font-bold text-emerald-400 mt-0.5 block tabular-nums">{formatCop(totals.granTotal)}</span>
-          <span className="text-[10px] text-slate-300 font-mono">Área: {formatDec(totals.area, 1)} m²</span>
-        </div>
-      </div>
+    <div className="space-y-3">
+      <SabanaSummaryCards filteredCount={filtered.length} receipts={receipts} liveBagsSummary={liveBagsSummary} totals={totals} />
 
-      {/* ========================================================================= */}
-      {/* CAPA 1 Y 2: PROTOCOLO STICKY DOCKED DE 3 NIVELES (SWISS INDUSTRIAL UI)  */}
-      {/* Anclado con tolerancia cero justo debajo del header de 56px (top-14)    */}
-      {/* ========================================================================= */}
-      <div className="sticky top-14 z-30 bg-[#F8F9FA]/95 backdrop-blur-md pt-2 pb-2 space-y-2 -mx-4 lg:-mx-8 px-4 lg:px-8 border-b border-slate-200/90 shadow-2xs">
-        {/* LÍNEA 1: PÍLDORAS DE SEGMENTACIÓN CON TELEMETRÍA DINÁMICA */}
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200/70 pb-2">
-          <div className="flex flex-wrap items-center gap-1.5 bg-slate-200/70 p-0.5 rounded-xl text-xs font-mono">
+      {/* BARRA STICKY DE 2 FILAS (ALTURA EXACTA 92PX EN DESKTOP: 56 + 92 = 148PX) */}
+      <div className="lg:sticky lg:top-14 z-30 bg-[var(--background)] lg:h-[92px] py-1.5 border-b border-[var(--outline-color)] flex flex-col justify-between gap-1.5">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex flex-wrap items-center gap-1 bg-[var(--surface-alt)] p-0.5 rounded-xl border border-[var(--outline-color)] text-[11px] font-mono">
             <button
               type="button"
               onClick={() => {
                 setActiveSegmentPill("ALL");
                 setPage(1);
               }}
-              className={`px-3 py-1 rounded-lg font-bold transition-all cursor-pointer ${
+              className={`px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer ${
                 activeSegmentPill === "ALL"
-                  ? "bg-white text-[#1D3557] shadow-xs"
-                  : "text-slate-600 hover:text-slate-900"
+                  ? "bg-[var(--surface)] text-[var(--text-main)] shadow-2xs"
+                  : "text-[var(--text-muted)] hover:text-[var(--text-main)]"
               }`}
             >
-              Todos ({filteredLocalesCount !== totalLocalesCount ? `${formatInt(filteredLocalesCount)}/${formatInt(totalLocalesCount)}` : formatInt(totalLocalesCount)})
+              Todos (
+              {filteredLocalesCount !== totalLocalesCount
+                ? `${formatInt(filteredLocalesCount)}/${formatInt(totalLocalesCount)}`
+                : formatInt(totalLocalesCount)}
+              )
             </button>
 
             <button
@@ -207,14 +230,14 @@ export function LiquidationMatrixView() {
                 setActiveSegmentPill("CONTADOR");
                 setPage(1);
               }}
-              className={`px-3 py-1 rounded-lg font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+              className={`px-2.5 py-1 rounded-lg font-bold transition-all flex items-center gap-1 cursor-pointer ${
                 activeSegmentPill === "CONTADOR"
-                  ? "bg-amber-500 text-slate-950 shadow-xs font-extrabold"
-                  : "text-amber-800 hover:bg-amber-500/10"
+                  ? "bg-amber-500 text-slate-950 shadow-2xs"
+                  : "text-amber-700 dark:text-amber-300 hover:bg-amber-500/10"
               }`}
             >
-              <Zap className="w-3.5 h-3.5" />
-              <span>Con Contador ({countContador.toLocaleString("es-CO")})</span>
+              <Zap className="w-3 h-3" strokeWidth={1.75} />
+              <span>Contador ({formatInt(countContador)})</span>
             </button>
 
             <button
@@ -223,14 +246,14 @@ export function LiquidationMatrixView() {
                 setActiveSegmentPill("COMUNAL");
                 setPage(1);
               }}
-              className={`px-3 py-1 rounded-lg font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+              className={`px-2.5 py-1 rounded-lg font-bold transition-all flex items-center gap-1 cursor-pointer ${
                 activeSegmentPill === "COMUNAL"
-                  ? "bg-[#1D3557] text-white shadow-xs"
-                  : "text-slate-700 hover:bg-slate-300/60"
+                  ? "bg-[#1E3A5F] text-white shadow-2xs"
+                  : "text-[var(--text-muted)] hover:text-[var(--text-main)]"
               }`}
             >
-              <Droplets className="w-3.5 h-3.5 text-sky-400" />
-              <span>Comunal / Prorrateo ({countComunal.toLocaleString("es-CO")})</span>
+              <Droplets className="w-3 h-3 text-sky-500" strokeWidth={1.75} />
+              <span>Comunal / Prorrateo ({formatInt(countComunal)})</span>
             </button>
 
             <button
@@ -239,51 +262,51 @@ export function LiquidationMatrixView() {
                 setActiveSegmentPill("ALERTAS");
                 setPage(1);
               }}
-              className={`px-3 py-1 rounded-lg font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+              className={`px-2.5 py-1 rounded-lg font-bold transition-all flex items-center gap-1 cursor-pointer ${
                 activeSegmentPill === "ALERTAS"
-                  ? "bg-rose-600 text-white shadow-xs"
-                  : "text-rose-700 hover:bg-rose-500/10"
+                  ? "bg-rose-600 text-white shadow-2xs"
+                  : "text-rose-600 dark:text-rose-400 hover:bg-rose-500/10"
               }`}
             >
-              <AlertTriangle className="w-3.5 h-3.5" />
-              <span>Novedades / Alertas ({countAlerts})</span>
+              <AlertTriangle className="w-3 h-3" strokeWidth={1.75} />
+              <span>Alertas ({formatInt(countAlerts)})</span>
             </button>
           </div>
 
-          {/* TELEMETRÍA DE FILTRADO Y PAGINACIÓN COMPACTA EN TOOLBAR */}
           <div className="flex items-center gap-2 text-xs">
-            <span className="text-slate-500 font-medium hidden sm:inline">
-              Página <strong className="font-mono text-[#1D3557]">{formatInt(currentPage)}</strong> de{" "}
-              <strong className="font-mono text-[#1D3557]">{formatInt(totalPages)}</strong> ({formatInt(filteredLocalesCount)} de {formatInt(totalLocalesCount)} locales)
+            <span className="text-[var(--text-muted)] font-medium hidden md:inline">
+              Página <strong className="font-mono text-[var(--text-main)]">{formatInt(currentPage)}</strong> de{" "}
+              <strong className="font-mono text-[var(--text-main)]">{formatInt(totalPages)}</strong>
             </span>
             <div className="flex items-center gap-1">
               <button
                 type="button"
                 disabled={currentPage <= 1}
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
-                className="p-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                className="p-1 rounded-lg border border-[var(--outline-color)] bg-[var(--surface)] text-[var(--text-main)] hover:bg-[var(--surface-alt)] disabled:opacity-30 cursor-pointer"
                 title="Página Anterior"
               >
-                <ChevronLeft className="w-3.5 h-3.5" />
+                <ChevronLeft className="w-3.5 h-3.5" strokeWidth={1.75} />
               </button>
               <button
                 type="button"
                 disabled={currentPage >= totalPages}
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                className="p-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                className="p-1 rounded-lg border border-[var(--outline-color)] bg-[var(--surface)] text-[var(--text-main)] hover:bg-[var(--surface-alt)] disabled:opacity-30 cursor-pointer"
                 title="Página Siguiente"
               >
-                <ChevronRight className="w-3.5 h-3.5" />
+                <ChevronRight className="w-3.5 h-3.5" strokeWidth={1.75} />
               </button>
             </div>
           </div>
         </div>
 
-        {/* LÍNEA 2: SUPERBUSCADOR OMNIBOX UNIVERSAL + DROPDOWNS + BOTÓN SOLO-ÍCONO EXCEL */}
-        <div className="bg-white/95 p-1.5 px-3 rounded-xl border border-slate-200 shadow-xs flex flex-col md:flex-row items-center justify-between gap-2.5">
-          {/* SUPERBUSCADOR OMNIBOX */}
+        <div className="bg-[var(--surface)] px-2.5 py-1 rounded-xl border border-[var(--outline-color)] flex flex-col md:flex-row items-center justify-between gap-2">
           <div className="relative flex-1 w-full">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <Search
+              className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)]"
+              strokeWidth={1.75}
+            />
             <input
               type="text"
               value={searchQuery}
@@ -291,8 +314,8 @@ export function LiquidationMatrixView() {
                 setSearchQuery(e.target.value);
                 setPage(1);
               }}
-              placeholder="Superbuscador universal: código (010001, #840003), bodega, tipo, modalidad, @alerta, @ok..."
-              className="w-full pl-9 pr-8 py-1.5 text-xs border rounded-lg outline-none bg-slate-50 border-slate-200 text-[#1D3557] focus:border-[#1D3557] focus:bg-white transition-all placeholder:text-slate-400 font-medium"
+              placeholder="Superbuscador: código (010001, #810077), bodega, modalidad, @alerta, @vacio..."
+              className="w-full h-7 pl-8 pr-7 text-xs border rounded-lg outline-none bg-[var(--surface-alt)] border-[var(--outline-color)] text-[var(--text-main)] focus:border-[#f7931b] transition-all placeholder:text-[var(--text-muted)] font-medium"
             />
             {searchQuery && (
               <button
@@ -301,26 +324,24 @@ export function LiquidationMatrixView() {
                   setSearchQuery("");
                   setPage(1);
                 }}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 text-slate-400 hover:text-slate-600 rounded-full cursor-pointer transition-colors"
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 text-[var(--text-muted)] hover:text-[var(--text-main)] cursor-pointer"
                 title="Limpiar búsqueda"
               >
-                <X className="w-3.5 h-3.5" />
+                <X className="w-3.5 h-3.5" strokeWidth={1.75} />
               </button>
             )}
           </div>
 
-          {/* TOOLBAR COMPACTA: FILTROS DROPDOWN & BOTÓN SOLO-ÍCONO */}
-          <div className="flex items-center gap-2 w-full md:w-auto justify-end shrink-0">
-            {/* Bodega Dropdown */}
+          <div className="flex items-center gap-1.5 w-full md:w-auto justify-end shrink-0">
             <select
               value={selectedBodega}
               onChange={(e) => {
                 setSelectedBodega(e.target.value);
                 setPage(1);
               }}
-              className="bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-[#1D3557] outline-none"
+              className="h-7 bg-[var(--surface-alt)] border border-[var(--outline-color)] rounded-lg px-2 text-xs font-semibold text-[var(--text-main)] outline-none"
             >
-              <option value="ALL">Todas las Bodegas ({bodegasList.length})</option>
+              <option value="ALL">Bodegas ({formatInt(bodegasList.length)})</option>
               {bodegasList.map((b) => (
                 <option key={b} value={b}>
                   Bodega {b}
@@ -328,187 +349,173 @@ export function LiquidationMatrixView() {
               ))}
             </select>
 
-            {/* Modalidad Dropdown */}
             <select
               value={selectedModality}
               onChange={(e) => {
                 setSelectedModality(e.target.value);
                 setPage(1);
               }}
-              className="bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-[#1D3557] outline-none hidden sm:block"
+              className="h-7 bg-[var(--surface-alt)] border border-[var(--outline-color)] rounded-lg px-2 text-xs font-semibold text-[var(--text-main)] outline-none hidden sm:block"
             >
               <option value="ALL">Modalidades: Todas</option>
-              <option value="CONTADOR">CONTADOR (Individual)</option>
+              <option value="CONTADOR">CONTADOR (Principal + BP)</option>
               <option value="COMUNAL">COMUNAL (Macromedidor)</option>
-              <option value="PRORRATEO">PRORRATEO (Por m²)</option>
-              <option value="RED FRIOS">RED DE FRÍOS</option>
+              <option value="PRORRATEO">PRORRATEO (Principal + BP)</option>
+              <option value="RED_FRIOS">RED DE FRÍOS (Bod. 55 / 98)</option>
+              <option value="BODEGA_POPULAR">BLOQUE BODEGA POPULAR</option>
             </select>
 
-            {/* Residuos Dropdown */}
             <select
               value={selectedWasteCat}
               onChange={(e) => {
                 setSelectedWasteCat(e.target.value);
                 setPage(1);
               }}
-              className="bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-[#1D3557] outline-none hidden md:block"
+              className="h-7 bg-[var(--surface-alt)] border border-[var(--outline-color)] rounded-lg px-2 text-xs font-semibold text-[var(--text-main)] outline-none hidden lg:block"
             >
               <option value="ALL">Residuos: Todos</option>
-              <option value="NP">NP — No Productor (0.4)</option>
-              <option value="MP">MP — Mediano Productor (1.2)</option>
-              <option value="P">P — Gran Productor (Saldo)</option>
+              <option value="NP">NP — No Productor (0,4)</option>
+              <option value="MP">MP — Mediano Prod. (1,2)</option>
+              <option value="P">P — Gran Productor</option>
               <option value="BASICOS">BÁSICOS</option>
             </select>
 
-            {/* BOTÓN SOLO-ÍCONO EXPORTAR EXCEL (ESMERALDA SUISSO PRECISION) */}
             <button
               type="button"
               onClick={handleExportCsv}
-              title="Descargar Sábana Oficial a Excel (.csv UTF-8 con Planos ERP)"
-              aria-label="Descargar a Excel"
-              className="p-2 bg-emerald-500/10 text-emerald-700 border border-emerald-500/30 hover:bg-emerald-500/20 rounded-lg transition-all flex items-center justify-center shadow-2xs cursor-pointer hover:scale-105 active:scale-95 shrink-0"
+              title="Exportar Sábana Contable CSV (UTF-8 con Planos ERP)"
+              aria-label="Exportar CSV"
+              className="h-7 px-2.5 bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/25 rounded-lg transition-all inline-flex items-center gap-1 text-[11px] font-bold cursor-pointer shrink-0"
             >
-              <FileSpreadsheet className="w-4 h-4 stroke-[2.2]" />
+              <FileSpreadsheet className="w-3.5 h-3.5" strokeWidth={1.75} />
+              <span className="hidden xl:inline">CSV</span>
             </button>
           </div>
         </div>
       </div>
 
-      {/* ========================================================================= */}
-      {/* CAPA 3: TABLA DE ALTA DENSIDAD CON SCROLL NATURAL Y THEAD STICKY SÓLIDO  */}
-      {/* Zero clipping box (overflow: visible), thead th sticky con fondo 100%    */}
-      {/* ========================================================================= */}
-      <div className="bg-white border border-slate-200 rounded-2xl shadow-xs overflow-visible">
-        <table className="w-full text-left border-separate border-spacing-0 text-xs">
-          <thead className="sticky top-[148px] z-20">
-            <tr className="bg-[#010F22] text-white font-mono uppercase text-[10px] tracking-wider shadow-xs">
-              <th className="sticky top-[148px] z-20 py-2.5 px-3 font-semibold border-b border-white/10 first:rounded-tl-2xl bg-[#010F22]">
-                Bod
-              </th>
-              <th className="sticky top-[148px] z-20 py-2.5 px-3 font-semibold border-b border-white/10 bg-[#010F22]">
-                Código Local
-              </th>
-              <th className="sticky top-[148px] z-20 py-2.5 px-3 font-semibold border-b border-white/10 bg-[#010F22]">
-                Modalidad
-              </th>
-              <th className="sticky top-[148px] z-20 py-2.5 px-3 font-semibold border-b border-white/10 text-center bg-[#010F22]">
-                Res.
-              </th>
-              <th className="sticky top-[148px] z-20 py-2.5 px-3 font-semibold border-b border-white/10 text-right bg-[#010F22]">
-                Área m²
-              </th>
-              <th className="sticky top-[148px] z-20 py-2.5 px-3 font-semibold border-b border-white/10 text-right bg-[#010F22]">
-                Energía ($)
-              </th>
-              <th className="sticky top-[148px] z-20 py-2.5 px-3 font-semibold border-b border-white/10 text-right bg-[#010F22]">
-                Acueducto ($)
-              </th>
-              <th className="sticky top-[148px] z-20 py-2.5 px-3 font-semibold border-b border-white/10 text-right bg-[#010F22]">
-                Aseo ($)
-              </th>
-              <th className="sticky top-[148px] z-20 py-2.5 px-3 font-semibold border-b border-white/10 text-right bg-[#010F22]">
-                Residuos ($)
-              </th>
-              <th className="sticky top-[148px] z-20 py-2.5 px-3 font-semibold border-b border-white/10 text-right bg-[#010F22]">
-                Vigilancia ($)
-              </th>
-              <th className="sticky top-[148px] z-20 py-2.5 px-3 font-semibold border-b border-white/10 text-right bg-[#010F22]">
-                Policía ($)
-              </th>
-              <th className="sticky top-[148px] z-20 py-2.5 px-3 font-semibold border-b border-white/10 text-right bg-[#1D3557] text-emerald-300">
-                Total Mes ($)
-              </th>
-              <th className="sticky top-[148px] z-20 py-2.5 px-3 font-semibold border-b border-white/10 text-center bg-[#010F22]">
-                Estado
-              </th>
-              <th className="sticky top-[148px] z-20 py-2.5 px-3 font-semibold border-b border-white/10 text-center last:rounded-tr-2xl bg-[#010F22]">
-                Ficha PDF
-              </th>
+      {/* TABLA STICKY DOCKED SIN DESBORDE HORIZONTAL EN DESKTOP */}
+      <div className="bg-[var(--surface)] border border-[var(--outline-color)] rounded-2xl shadow-xs max-lg:overflow-x-auto lg:overflow-visible">
+        <table
+          style={{ borderCollapse: "separate", borderSpacing: 0 }}
+          className="w-full text-left text-[11.5px]"
+        >
+          <thead>
+            <tr className="text-white font-mono uppercase text-[10px] tracking-wider">
+              <th className="lg:sticky lg:top-[148px] z-20 py-2.5 px-2 font-semibold border-b border-white/10 first:rounded-tl-2xl bg-[#0B132B]">Bod</th>
+              <th className="lg:sticky lg:top-[148px] z-20 py-2.5 px-2 font-semibold border-b border-white/10 bg-[#0B132B]">Local</th>
+              <th className="lg:sticky lg:top-[148px] z-20 py-2.5 px-2 font-semibold border-b border-white/10 bg-[#0B132B]">Modalidad E / A</th>
+              <th className="lg:sticky lg:top-[148px] z-20 py-2.5 px-1.5 font-semibold border-b border-white/10 text-center bg-[#0B132B]">Res.</th>
+              <th className="lg:sticky lg:top-[148px] z-20 py-2.5 px-2 font-semibold border-b border-white/10 text-right bg-[#0B132B]">Área m²</th>
+              <th className="lg:sticky lg:top-[148px] z-20 py-2.5 px-2 font-semibold border-b border-white/10 text-right bg-[#0B132B]">Energía</th>
+              <th className="lg:sticky lg:top-[148px] z-20 py-2.5 px-2 font-semibold border-b border-white/10 text-right bg-[#0B132B]">Acueducto</th>
+              <th className="lg:sticky lg:top-[148px] z-20 py-2.5 px-2 font-semibold border-b border-white/10 text-right bg-[#0B132B]">Aseo</th>
+              <th className="lg:sticky lg:top-[148px] z-20 py-2.5 px-2 font-semibold border-b border-white/10 text-right bg-[#0B132B]">Residuos</th>
+              <th className="lg:sticky lg:top-[148px] z-20 py-2.5 px-2 font-semibold border-b border-white/10 text-right bg-[#0B132B]">Vigilancia</th>
+              <th className="lg:sticky lg:top-[148px] z-20 py-2.5 px-2 font-semibold border-b border-white/10 text-right bg-[#0B132B]">Policía</th>
+              <th className="lg:sticky lg:top-[148px] z-20 py-2.5 px-2 font-semibold border-b border-white/10 text-right bg-[#1E3A5F] text-emerald-300">Total Mes</th>
+              <th className="lg:sticky lg:top-[148px] z-20 py-2.5 px-2 font-semibold border-b border-white/10 text-center bg-[#0B132B]">Estado</th>
+              <th className="lg:sticky lg:top-[148px] z-20 py-2.5 px-2 font-semibold border-b border-white/10 text-center last:rounded-tr-2xl bg-[#0B132B]">360°</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100">
+          <tbody>
             {pageItems.map((loc) => {
-              const hasAlert = loc.energiaEstado === "REVISAR" || loc.aguaEstado === "REVISAR";
+              const hasAlert = hasLocalServiceAlert(loc);
+              const isCorp = loc.effectiveOccupancy === "VACIO_SIN_CONTRATO_CORPORACION";
+              const isVacCon = loc.effectiveOccupancy === "VACIO_CON_CONTRATO";
               return (
                 <tr
                   key={loc.codigo}
-                  onClick={() => setInspectedLocal(loc)}
-                  className="hover:bg-sky-50/70 transition-colors cursor-pointer group"
+                  onClick={() => onSelectLocalCode(loc.codigo)}
+                  className="hover:bg-sky-500/10 transition-colors cursor-pointer group"
                 >
-                  <td className="py-2 px-3 font-mono text-slate-500 font-semibold border-b border-slate-100">
+                  <td className="py-2 px-2 font-mono text-[var(--text-muted)] font-semibold border-b border-[var(--outline-color)]">
                     {loc.bodegaId}
                   </td>
-                  <td className="py-2 px-3 font-mono font-bold text-[#1D3557] border-b border-slate-100">
+                  <td className="py-2 px-2 font-mono font-bold text-[var(--text-main)] border-b border-[var(--outline-color)]">
                     {loc.codigo}
-                    <span className="block text-[10px] font-sans font-normal text-slate-400 truncate max-w-[130px]">
+                    <span className="block text-[9.5px] font-sans font-normal text-[var(--text-muted)] truncate max-w-[115px]">
                       {loc.tipoBodega}
                     </span>
                   </td>
-                  <td className="py-2 px-3 border-b border-slate-100">
-                    <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-mono text-[10px] font-semibold">
-                      {loc.modalidadGeneral}
+                  <td className="py-2 px-2 border-b border-[var(--outline-color)]">
+                    <span className="px-1.5 py-0.5 rounded bg-[var(--surface-alt)] text-[var(--text-main)] font-mono text-[9.5px] font-semibold block w-fit">
+                      E:{loc.modalidadEnergia} · A:{loc.modalidadAcueducto}
                     </span>
                   </td>
-                  <td className="py-2 px-3 text-center border-b border-slate-100">
+                  <td className="py-2 px-1.5 text-center border-b border-[var(--outline-color)]">
                     <span
-                      className={`px-2 py-0.5 rounded font-mono text-[10px] font-bold ${
+                      className={`px-1.5 py-0.5 rounded font-mono text-[10px] font-bold ${
                         loc.categoriaResiduos === "P"
-                          ? "bg-red-100 text-red-800"
+                          ? "bg-rose-500/15 text-rose-700 dark:text-rose-300"
                           : loc.categoriaResiduos === "MP"
-                          ? "bg-amber-100 text-amber-800"
-                          : "bg-emerald-100 text-emerald-800"
+                          ? "bg-amber-500/15 text-amber-700 dark:text-amber-300"
+                          : "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300"
                       }`}
                     >
                       {loc.categoriaResiduos}
                     </span>
                   </td>
-                  <td className="py-2 px-3 font-mono text-right font-semibold text-slate-700 border-b border-slate-100 tabular-nums">
+                  <td className="py-2 px-2 font-mono text-right font-semibold text-[var(--text-main)] border-b border-[var(--outline-color)] tabular-nums">
                     {formatDec(loc.areaM2, 2)}
                   </td>
-                  <td className="py-2 px-3 font-mono text-right text-slate-800 border-b border-slate-100 tabular-nums">
+                  <td className="py-2 px-2 font-mono text-right text-[var(--text-main)] border-b border-[var(--outline-color)] tabular-nums">
                     {formatCop(loc.calcEnergiaCop)}
                   </td>
-                  <td className="py-2 px-3 font-mono text-right text-slate-800 border-b border-slate-100 tabular-nums">
+                  <td className="py-2 px-2 font-mono text-right text-[var(--text-main)] border-b border-[var(--outline-color)] tabular-nums">
                     {formatCop(loc.calcAcueductoCop)}
                   </td>
-                  <td className="py-2 px-3 font-mono text-right text-slate-700 border-b border-slate-100 tabular-nums">
+                  <td className="py-2 px-2 font-mono text-right text-[var(--text-muted)] border-b border-[var(--outline-color)] tabular-nums">
                     {formatCop(loc.calcAseoCop)}
                   </td>
-                  <td className="py-2 px-3 font-mono text-right text-slate-800 font-medium border-b border-slate-100 tabular-nums">
+                  <td className="py-2 px-2 font-mono text-right text-[var(--text-main)] border-b border-[var(--outline-color)] tabular-nums">
                     {formatCop(loc.calcResiduosCop)}
                   </td>
-                  <td className="py-2 px-3 font-mono text-right text-slate-800 border-b border-slate-100 tabular-nums">
+                  <td className="py-2 px-2 font-mono text-right text-[var(--text-main)] border-b border-[var(--outline-color)] tabular-nums">
                     {formatCop(loc.calcVigilanciaCop)}
                   </td>
-                  <td className="py-2 px-3 font-mono text-right text-slate-600 border-b border-slate-100 tabular-nums">
+                  <td className="py-2 px-2 font-mono text-right text-[var(--text-muted)] border-b border-[var(--outline-color)] tabular-nums">
                     {formatCop(loc.calcPoliciaCop)}
                   </td>
-                  <td className="py-2 px-3 font-mono text-right font-bold text-[#1D3557] bg-slate-50/80 group-hover:bg-sky-100/70 border-b border-slate-100 tabular-nums">
+                  <td className="py-2 px-2 font-mono text-right font-bold text-[var(--text-main)] bg-[var(--surface-alt)] group-hover:bg-sky-500/15 border-b border-[var(--outline-color)] tabular-nums">
                     {formatCop(loc.calcTotalCop)}
+                    {isCorp && (
+                      <span className="block text-[9px] text-sky-600 dark:text-sky-400">
+                        Corp: {formatCop(loc.calcAssumedCorporationCop)}
+                      </span>
+                    )}
                   </td>
-                  <td className="py-2 px-3 text-center border-b border-slate-100">
-                    {hasAlert ? (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[10px] font-semibold">
-                        <AlertTriangle className="w-3 h-3" />
-                        REVISAR
+                  <td className="py-2 px-2 text-center border-b border-[var(--outline-color)]">
+                    {isCorp ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-sky-500/15 text-sky-700 dark:text-sky-300 text-[9.5px] font-bold">
+                        CORP
+                      </span>
+                    ) : isVacCon ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-300 text-[9.5px] font-bold">
+                        VACÍO
+                      </span>
+                    ) : hasAlert ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-300 text-[9.5px] font-semibold">
+                        <AlertTriangle className="w-3 h-3" strokeWidth={1.75} />
+                        REV
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-semibold">
-                        <CheckCircle2 className="w-3 h-3" />
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 text-[9.5px] font-semibold">
+                        <CheckCircle2 className="w-3 h-3" strokeWidth={1.75} />
                         OK
                       </span>
                     )}
                   </td>
-                  <td className="py-2 px-3 text-center border-b border-slate-100">
+                  <td className="py-2 px-2 text-center border-b border-[var(--outline-color)]">
                     <button
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
-                        setInspectedLocal(loc);
+                        onSelectLocalCode(loc.codigo);
                       }}
-                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#1D3557] text-white text-[10px] font-semibold hover:bg-[#010F22] cursor-pointer shadow-2xs"
+                      className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-[#1E3A5F] text-white text-[10px] font-semibold hover:bg-[#0B132B] cursor-pointer"
                     >
-                      <Receipt className="w-3 h-3" />
+                      <Receipt className="w-3 h-3" strokeWidth={1.75} />
                       Ficha
                     </button>
                   </td>
@@ -518,44 +525,39 @@ export function LiquidationMatrixView() {
           </tbody>
         </table>
 
-        {/* FOOTER DE TABLA: RESUMEN DE PÁGINA & PAGINADOR */}
-        <div className="px-4 py-3 bg-slate-50 border-t border-slate-200 flex flex-wrap items-center justify-between text-xs text-slate-600 rounded-b-2xl">
+        <div className="px-4 py-3 bg-[var(--surface-alt)] border-t border-[var(--outline-color)] flex flex-wrap items-center justify-between text-xs text-[var(--text-muted)] rounded-b-2xl">
           <div>
             Mostrando{" "}
-            <strong className="font-mono text-[#1D3557]">
-              {formatInt((currentPage - 1) * pageSize + 1)}–{formatInt(Math.min(currentPage * pageSize, filtered.length))}
+            <strong className="font-mono text-[var(--text-main)]">
+              {filtered.length === 0 ? "0" : formatInt((currentPage - 1) * pageSize + 1)}–
+              {formatInt(Math.min(currentPage * pageSize, filtered.length))}
             </strong>{" "}
-            de <strong className="font-mono text-[#1D3557]">{formatInt(filtered.length)}</strong> locales comerciales
+            de <strong className="font-mono text-[var(--text-main)]">{formatInt(filtered.length)}</strong>{" "}
+            locales comerciales
           </div>
           <div className="flex items-center gap-2">
             <button
               type="button"
               disabled={currentPage <= 1}
               onClick={() => setPage((p) => Math.max(1, p - 1))}
-              className="p-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-100 disabled:opacity-40 cursor-pointer"
+              className="p-1.5 rounded-lg border border-[var(--outline-color)] bg-[var(--surface)] text-[var(--text-main)] hover:bg-[var(--surface-alt)] disabled:opacity-40 cursor-pointer"
             >
-              <ChevronLeft className="w-4 h-4" />
+              <ChevronLeft className="w-4 h-4" strokeWidth={1.75} />
             </button>
-            <span className="font-mono font-semibold text-[#1D3557]">
+            <span className="font-mono font-semibold text-[var(--text-main)]">
               Página {formatInt(currentPage)} / {formatInt(totalPages)}
             </span>
             <button
               type="button"
               disabled={currentPage >= totalPages}
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              className="p-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-100 disabled:opacity-40 cursor-pointer"
+              className="p-1.5 rounded-lg border border-[var(--outline-color)] bg-[var(--surface)] text-[var(--text-main)] hover:bg-[var(--surface-alt)] disabled:opacity-40 cursor-pointer"
             >
-              <ChevronRight className="w-4 h-4" />
+              <ChevronRight className="w-4 h-4" strokeWidth={1.75} />
             </button>
           </div>
         </div>
       </div>
-
-      {/* EXPEDIENTE MODAL: CUENTA INDIVIDUAL 360° Y RENDICIÓN DE CUENTAS POR LOCAL */}
-      <LocalAccountModal
-        local={inspectedLocal}
-        onClose={() => setInspectedLocal(null)}
-      />
     </div>
   );
 }

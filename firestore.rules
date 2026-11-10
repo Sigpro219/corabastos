@@ -1,9 +1,487 @@
 rules_version = '2';
+
+// ===============================================================
+// Assumed Data Model — Corabastos OS (mjm-sistema-2026-aee19)
+// ===============================================================
+//
+// This security rules file assumes and enforces the following
+// Zero-Trust data structures:
+//
+// 1. Collection: /corabastos_corte_2025_06/{docId}
+//    Active June 2025 cutoff operational state & field audit trail.
+//    Document deletions are strictly prohibited (state resets use
+//    controlled updates). No PII (email/phone/address) is permitted.
+//
+//    Allowed Document IDs:
+//
+//    - Document ID: "field_overrides"
+//      Read/Write Role: LECTURISTA or AUDITOR_ADMIN (or unassigned role claim)
+//      Fields (<= 10 keys):
+//        * overrides: map (<= 2500 keys) or list (<= 500 items) - field readings
+//        * completedTaskIds: map (optional, <= 2500 keys) - ReadingTaskState map
+//        * tasks: map (optional, <= 2500 keys) - task state map alias
+//        * recentFieldUpdates: list (optional, <= 200 items) - recent capture log
+//        * updatedAt: string (required, ISO 8601, 19..40 chars)
+//        * periodo: string (optional, 1..30 chars)
+//        * updatedBy: string (optional, <= 128 chars, must match auth.uid)
+//
+//    - Document ID: "occupancy_state"
+//      Read/Write Role: AUDITOR_ADMIN only when 'role' claim exists (LECTURISTA denied)
+//      Fields (<= 10 keys):
+//        * occupancyMap: map (required, <= 6000 keys; local code -> OccupancyStatus)
+//        * updatedAt: string (required, ISO 8601, 19..40 chars)
+//        * periodo: string (optional, 1..30 chars)
+//        * updatedBy: string (optional, <= 128 chars, must match auth.uid)
+//
+//    - Document ID: "master_receipts"
+//      Read/Write Role: AUDITOR_ADMIN only when 'role' claim exists (LECTURISTA denied)
+//      Fields (<= 10 keys):
+//        * receipts: map (required, MasterReceiptsConfig: periodo, nombrePeriodo,
+//          energia, acueducto, expensas, conciliacionFinanzas)
+//        * updatedAt: string (required, ISO 8601, 19..40 chars)
+//        * periodo: string (optional, 1..30 chars)
+//        * updatedBy: string (optional, <= 128 chars, must match auth.uid)
+//
+//    - Document ID: "audit_log"
+//      Read/Write Role: LECTURISTA or AUDITOR_ADMIN (or unassigned role claim)
+//      Fields (<= 10 keys):
+//        * updatedAt: string (required, ISO 8601, 19..40 chars)
+//        * entries: list (optional, <= 500 items)
+//        * events: list (optional, <= 500 items)
+//        * lastAction: string (optional, 1..200 chars)
+//        * actorUid: string (optional, <= 128 chars, must match auth.uid)
+//        * periodo: string (optional, 1..30 chars)
+//        * updatedBy: string (optional, <= 128 chars, must match auth.uid)
+//
+//    - Document ID: "reading_{taskId}" (^reading_[A-Za-z0-9_ :()-]{1,72}$)
+//      Unitary meter reading log from Mobile PWA (/captura).
+//      Read/Write Role: LECTURISTA or AUDITOR_ADMIN (or unassigned role claim)
+//      Fields (<= 10 keys):
+//        * codigo: string (required, 1..40 chars, immutable on update)
+//        * servicio: string (required, enum, immutable on update)
+//        * lecturaActual: number (required, 0..100000000)
+//        * observacion: string (required, 0..500 chars)
+//        * updatedAt: string (required, ISO 8601, 19..40 chars)
+//        * fotoCapturada: bool (optional)
+//        * fotoUrl: string (optional, http/https URL <= 1024 chars)
+//        * taskState: string (optional, ReadingTaskState enum)
+//        * timestamp: string (optional, 1..64 chars)
+//        * updatedBy: string (optional, <= 128 chars, must match auth.uid)
+//
+// 2. Collection: /corabastos_cortes/{periodo}/{subcol}/{docId}
+//    Multi-period partitioned cutoff collections where:
+//      * periodo matches ^20\d{2}[_-](0[1-9]|1[0-2])$ (e.g., "2025_06")
+//      * subcol in ['estado', 'lecturas', 'recibos', 'auditoria']
+//    Applies identical RBAC, Validator Function Pattern, and delete lock.
+//
+// ===============================================================
+
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Reglas de Acceso para Corabastos OS
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+
+    // Check if the user is authenticated via Firebase Auth
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Check if user owns the resource (for user-scoped documents)
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Check if user is owner based on document's uid field
+    function isDocOwner() {
+      return isAuthenticated() &&
+             'uid' in resource.data &&
+             request.auth.uid == resource.data.uid;
+    }
+
+    // Verify UID hasn't been tampered with on create
+    function uidUnchanged() {
+      return !('uid' in request.resource.data) ||
+             request.resource.data.uid == request.auth.uid;
+    }
+
+    // Ensure uid field is not modified on update
+    function uidNotModified() {
+      return !('uid' in request.resource.data) ||
+             ('uid' in resource.data && request.resource.data.uid == resource.data.uid);
+    }
+
+    // Role check for administrative/auditor mutations ('master_receipts', 'occupancy_state').
+    // Strictly rejects 'LECTURISTA' or any unrecognized custom role claim.
+    function isAuditorAdmin() {
+      return isAuthenticated() &&
+             (!('role' in request.auth.token) ||
+              request.auth.token.role == 'AUDITOR_ADMIN');
+    }
+
+    // Role check for field capture & operational logs ('field_overrides', 'audit_log', 'reading_*').
+    function canWriteFieldCapture() {
+      return isAuthenticated() &&
+             (!('role' in request.auth.token) ||
+              request.auth.token.role in ['LECTURISTA', 'AUDITOR_ADMIN']);
+    }
+
+    // Validate required fields exist on the resulting document
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+
+    // Validate that the document contains only explicitly whitelisted fields
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    // Enforce maximum top-level field count (DoS & schema bloat protection)
+    function hasMaxKeyCount(maxKeys) {
+      return request.resource.data.keys().size() <= maxKeys;
+    }
+
+    // Validate that immutable fields have not changed during an update
+    function areImmutableFieldsUnchanged(fields) {
+      return !request.resource.data.diff(resource.data).affectedKeys().hasAny(fields);
+    }
+
+    // Validate required string field length bounds
+    function validStringLength(field, minLen, maxLen) {
+      return request.resource.data[field] is string &&
+             request.resource.data[field].size() >= minLen &&
+             request.resource.data[field].size() <= maxLen;
+    }
+
+    // Validate optional string field (if present, must be string within bounds)
+    function isValidOptionalString(field, minLen, maxLen) {
+      return !(field in request.resource.data) ||
+             (request.resource.data[field] is string &&
+              request.resource.data[field].size() >= minLen &&
+              request.resource.data[field].size() <= maxLen);
+    }
+
+    // Validate URL format (https:// or http://) and bounded length
+    function isValidUrl(url) {
+      return url is string &&
+             url.size() >= 8 &&
+             url.size() <= 1024 &&
+             (url.matches("^https://.*") || url.matches("^http://.*"));
+    }
+
+    // Validate ISO 8601 date string format (YYYY-MM-DDTHH:MM:SS...) with bounded size
+    function isValidDateString(dateStr) {
+      return dateStr is string &&
+             dateStr.size() >= 19 &&
+             dateStr.size() <= 40 &&
+             dateStr.matches("^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.*Z?$");
+    }
+
+    // Validate actor attribution fields on create (prevents UID spoofing)
+    function isValidActorOnCreate(data) {
+      return (!('updatedBy' in data) ||
+              (data.updatedBy is string &&
+               data.updatedBy.size() <= 128 &&
+               data.updatedBy == request.auth.uid)) &&
+             (!('actorUid' in data) ||
+              (data.actorUid is string &&
+               data.actorUid.size() <= 128 &&
+               data.actorUid == request.auth.uid));
+    }
+
+    // Validate actor attribution fields on update (supports merge:true while preventing UID spoofing)
+    function isValidActorOnUpdate(data, prevData) {
+      return (!('updatedBy' in data) ||
+              (data.updatedBy is string &&
+               data.updatedBy.size() <= 128 &&
+               (data.updatedBy == request.auth.uid ||
+                ('updatedBy' in prevData && data.updatedBy == prevData.updatedBy)))) &&
+             (!('actorUid' in data) ||
+              (data.actorUid is string &&
+               data.actorUid.size() <= 128 &&
+               (data.actorUid == request.auth.uid ||
+                ('actorUid' in prevData && data.actorUid == prevData.actorUid))));
+    }
+
+    // Validate unitary reading document ID pattern (e.g., "reading_ENERGIA_010001")
+    function isReadingDocId(docId) {
+      return docId is string &&
+             docId.size() >= 9 &&
+             docId.size() <= 80 &&
+             docId.matches("^reading_[A-Za-z0-9_ :()-]{1,72}$");
+    }
+
+    // Validate cutoff period identifier (e.g., "2025_06" or "2025-06")
+    function isValidPeriodoId(periodo) {
+      return periodo is string &&
+             periodo.size() == 7 &&
+             periodo.matches("^20\\d{2}[_-](0[1-9]|1[0-2])$");
+    }
+
+    // ===============================================================
+    // Domain Validators (Used in BOTH create and update)
+    // ===============================================================
+
+    // 1. Validator for "field_overrides"
+    function isValidFieldOverridesDoc(data) {
+      return hasMaxKeyCount(10) &&
+             hasRequiredFields(['updatedAt']) &&
+             ('overrides' in data ||
+              'completedTaskIds' in data ||
+              'tasks' in data ||
+              'recentFieldUpdates' in data) &&
+             hasOnlyAllowedFields([
+               'overrides',
+               'completedTaskIds',
+               'tasks',
+               'recentFieldUpdates',
+               'updatedAt',
+               'updatedBy',
+               'periodo'
+             ]) &&
+             isValidDateString(data.updatedAt) &&
+             (!('overrides' in data) ||
+              (data.overrides is map && data.overrides.size() <= 2500) ||
+              (data.overrides is list && data.overrides.size() <= 500)) &&
+             (!('completedTaskIds' in data) ||
+              (data.completedTaskIds is map && data.completedTaskIds.size() <= 2500)) &&
+             (!('tasks' in data) ||
+              (data.tasks is map && data.tasks.size() <= 2500)) &&
+             (!('recentFieldUpdates' in data) ||
+              (data.recentFieldUpdates is list && data.recentFieldUpdates.size() <= 200)) &&
+             isValidOptionalString('periodo', 1, 30);
+    }
+
+    // 2. Validator for "occupancy_state"
+    function isValidOccupancyStateDoc(data) {
+      return hasMaxKeyCount(10) &&
+             hasRequiredFields(['occupancyMap', 'updatedAt']) &&
+             hasOnlyAllowedFields([
+               'occupancyMap',
+               'updatedAt',
+               'updatedBy',
+               'periodo'
+             ]) &&
+             isValidDateString(data.updatedAt) &&
+             data.occupancyMap is map &&
+             data.occupancyMap.size() <= 6000 &&
+             isValidOptionalString('periodo', 1, 30);
+    }
+
+    // 3. Validator for "master_receipts"
+    function isValidMasterReceiptsDoc(data) {
+      return hasMaxKeyCount(10) &&
+             hasRequiredFields(['receipts', 'updatedAt']) &&
+             hasOnlyAllowedFields([
+               'receipts',
+               'updatedAt',
+               'updatedBy',
+               'periodo'
+             ]) &&
+             isValidDateString(data.updatedAt) &&
+             data.receipts is map &&
+             data.receipts.keys().hasAll([
+               'periodo',
+               'nombrePeriodo',
+               'energia',
+               'acueducto',
+               'expensas',
+               'conciliacionFinanzas'
+             ]) &&
+             data.receipts.keys().hasOnly([
+               'periodo',
+               'nombrePeriodo',
+               'energia',
+               'acueducto',
+               'expensas',
+               'conciliacionFinanzas'
+             ]) &&
+             data.receipts.periodo is string &&
+             data.receipts.periodo.size() >= 1 &&
+             data.receipts.periodo.size() <= 30 &&
+             data.receipts.nombrePeriodo is string &&
+             data.receipts.nombrePeriodo.size() >= 1 &&
+             data.receipts.nombrePeriodo.size() <= 100 &&
+             data.receipts.energia is map &&
+             data.receipts.energia.keys().size() <= 15 &&
+             data.receipts.acueducto is map &&
+             data.receipts.acueducto.keys().size() <= 20 &&
+             data.receipts.expensas is map &&
+             data.receipts.expensas.keys().size() <= 15 &&
+             data.receipts.conciliacionFinanzas is map &&
+             data.receipts.conciliacionFinanzas.keys().size() <= 20 &&
+             isValidOptionalString('periodo', 1, 30);
+    }
+
+    // 4. Validator for "audit_log"
+    function isValidAuditLogDoc(data) {
+      return hasMaxKeyCount(10) &&
+             hasRequiredFields(['updatedAt']) &&
+             hasOnlyAllowedFields([
+               'entries',
+               'events',
+               'lastAction',
+               'actorUid',
+               'periodo',
+               'updatedAt',
+               'updatedBy'
+             ]) &&
+             isValidDateString(data.updatedAt) &&
+             (!('entries' in data) ||
+              (data.entries is list && data.entries.size() <= 500)) &&
+             (!('events' in data) ||
+              (data.events is list && data.events.size() <= 500)) &&
+             isValidOptionalString('lastAction', 1, 200) &&
+             isValidOptionalString('periodo', 1, 30);
+    }
+
+    // 5. Validator for unitary field reading documents ("reading_{taskId}")
+    function isValidReadingLogDoc(data) {
+      return hasMaxKeyCount(10) &&
+             hasRequiredFields([
+               'codigo',
+               'servicio',
+               'lecturaActual',
+               'observacion',
+               'updatedAt'
+             ]) &&
+             hasOnlyAllowedFields([
+               'codigo',
+               'servicio',
+               'lecturaActual',
+               'observacion',
+               'fotoCapturada',
+               'fotoUrl',
+               'taskState',
+               'timestamp',
+               'updatedAt',
+               'updatedBy'
+             ]) &&
+             validStringLength('codigo', 1, 40) &&
+             data.servicio in [
+               'ENERGIA',
+               'AGUA',
+               'MACRO_ENERGIA',
+               'MACRO_AGUA',
+               'BANO_PUBLICO'
+             ] &&
+             data.lecturaActual is number &&
+             data.lecturaActual >= 0 &&
+             data.lecturaActual <= 100000000 &&
+             validStringLength('observacion', 0, 500) &&
+             (!('fotoCapturada' in data) || data.fotoCapturada is bool) &&
+             (!('fotoUrl' in data) || isValidUrl(data.fotoUrl)) &&
+             (!('taskState' in data) ||
+              data.taskState in [
+                'PENDIENTE',
+                'COMPLETADA',
+                'NOVEDAD_TECNICA',
+                'CERRADO_SIN_ACCESO'
+              ]) &&
+             isValidOptionalString('timestamp', 1, 64) &&
+             isValidDateString(data.updatedAt);
+    }
+
+    // Unified authorization + schema dispatch for cutoff collection documents
+    function isAuthorizedAndValidCutoffDoc(docId, data) {
+      return (docId == 'field_overrides' &&
+              canWriteFieldCapture() &&
+              isValidFieldOverridesDoc(data)) ||
+             (docId == 'occupancy_state' &&
+              isAuditorAdmin() &&
+              isValidOccupancyStateDoc(data)) ||
+             (docId == 'master_receipts' &&
+              isAuditorAdmin() &&
+              isValidMasterReceiptsDoc(data)) ||
+             (docId == 'audit_log' &&
+              canWriteFieldCapture() &&
+              isValidAuditLogDoc(data)) ||
+             (isReadingDocId(docId) &&
+              canWriteFieldCapture() &&
+              isValidReadingLogDoc(data));
+    }
+
+    // Role-scoped read authorization for active cutoff documents.
+    // Restricts financial/administrative state ('master_receipts', 'occupancy_state')
+    // to AUDITOR_ADMIN (denying 'LECTURISTA'), while granting read access on field
+    // capture/log documents ('field_overrides', 'audit_log', 'reading_*') via canWriteFieldCapture().
+    function canReadActiveCutoffDoc(docId) {
+      return (docId in ['master_receipts', 'occupancy_state'] && isAuditorAdmin()) ||
+             ((docId in ['field_overrides', 'audit_log'] || isReadingDocId(docId)) &&
+              canWriteFieldCapture());
+    }
+
+    // Role-scoped read authorization for partitioned multi-period cutoff documents.
+    // Requires isAuditorAdmin() when subcol == 'recibos' or docId in ['master_receipts', 'occupancy_state'],
+    // and canWriteFieldCapture() for non-restricted operational subcollections.
+    function canReadPartitionedCutoffDoc(periodo, subcol, docId) {
+      return isValidPeriodoId(periodo) &&
+             subcol in ['estado', 'lecturas', 'recibos', 'auditoria'] &&
+             (((subcol == 'recibos' || docId in ['master_receipts', 'occupancy_state']) &&
+               isAuditorAdmin()) ||
+              (subcol in ['lecturas', 'auditoria', 'estado'] &&
+               !(docId in ['master_receipts', 'occupancy_state']) &&
+               canWriteFieldCapture()));
+    }
+
+    // Enforce immutable identity fields on unitary reading updates
+    function hasValidCutoffUpdateInvariants(docId) {
+      return !isReadingDocId(docId) ||
+             areImmutableFieldsUnchanged(['codigo', 'servicio']);
+    }
+
+    // ===============================================================
+    // Active Cutoff Collection: /corabastos_corte_2025_06/{docId}
+    // ===============================================================
+    match /corabastos_corte_2025_06/{docId} {
+      allow read: if canReadActiveCutoffDoc(docId);
+
+      allow create: if isAuthenticated() &&
+                       uidUnchanged() &&
+                       isValidActorOnCreate(request.resource.data) &&
+                       isAuthorizedAndValidCutoffDoc(docId, request.resource.data);
+
+      allow update: if isAuthenticated() &&
+                       uidNotModified() &&
+                       isValidActorOnUpdate(request.resource.data, resource.data) &&
+                       hasValidCutoffUpdateInvariants(docId) &&
+                       isAuthorizedAndValidCutoffDoc(docId, request.resource.data);
+
+      allow delete: if false;
+    }
+
+    // ===============================================================
+    // Partitioned Multi-Period Cutoffs: /corabastos_cortes/{periodo}/{subcol}/{docId}
+    // ===============================================================
+    match /corabastos_cortes/{periodo}/{subcol}/{docId} {
+      allow read: if canReadPartitionedCutoffDoc(periodo, subcol, docId);
+
+      allow create: if isAuthenticated() &&
+                       isValidPeriodoId(periodo) &&
+                       subcol in ['estado', 'lecturas', 'recibos', 'auditoria'] &&
+                       (subcol != 'recibos' || isAuditorAdmin()) &&
+                       uidUnchanged() &&
+                       isValidActorOnCreate(request.resource.data) &&
+                       isAuthorizedAndValidCutoffDoc(docId, request.resource.data);
+
+      allow update: if isAuthenticated() &&
+                       isValidPeriodoId(periodo) &&
+                       subcol in ['estado', 'lecturas', 'recibos', 'auditoria'] &&
+                       (subcol != 'recibos' || isAuditorAdmin()) &&
+                       uidNotModified() &&
+                       isValidActorOnUpdate(request.resource.data, resource.data) &&
+                       hasValidCutoffUpdateInvariants(docId) &&
+                       isAuthorizedAndValidCutoffDoc(docId, request.resource.data);
+
+      allow delete: if false;
+    }
+
+    // ===============================================================
+    // Root Default Deny Catch-All (Zero-Trust Standard)
+    // ===============================================================
     match /{document=**} {
-      allow read, write: if true; // Modo desarrollo / pruebas iniciales
+      allow read, write: if false;
     }
   }
 }

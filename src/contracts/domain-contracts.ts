@@ -1,23 +1,228 @@
 import { z } from "zod";
 
-export const BillingModalitySchema = z.enum(["CONTADOR", "COMUNAL", "PRORRATEO", "RED DE FRIOS", "RED FRIOS", "BASICOS"]);
+export const BillingModalitySchema = z.enum([
+  "CONTADOR",
+  "COMUNAL",
+  "PRORRATEO",
+  "RED DE FRIOS",
+  "RED FRIOS",
+  "RED_FRIOS",
+  "BASICOS",
+]);
 export type BillingModality = z.infer<typeof BillingModalitySchema>;
 
 export const WasteVolumeCategorySchema = z.enum(["NP", "MP", "P", "BASICOS"]);
 export type WasteVolumeCategory = z.infer<typeof WasteVolumeCategorySchema>;
 
 export const MeterObservationCodeSchema = z.enum([
-  "VERIFICADO POR IMAGEN", "C, DETENIDO", "M, DETENIDO", "C, TAPADO", "M, TAPADO",
-  "C, RETIRADO", "M, RETIRADO", "C, SUSPENDIDO", "M, SUSPENDIDO", "L, VACIO",
-  "L, CERRADO", "NO PERMITIO INGRESO", "ALMACENAMIENTO DE PRODUCTOS", "REVISAR MEDIDOR", "NUEVO", "SIN NOVEDAD",
+  "VERIFICADO POR IMAGEN",
+  "C, DETENIDO",
+  "M, DETENIDO",
+  "C, TAPADO",
+  "M, TAPADO",
+  "C, RETIRADO",
+  "M, RETIRADO",
+  "C, SUSPENDIDO",
+  "M, SUSPENDIDO",
+  "L, VACIO",
+  "L, CERRADO",
+  "NO PERMITIO INGRESO",
+  "ALMACENAMIENTO DE PRODUCTOS",
+  "REVISAR MEDIDOR",
+  "NUEVO",
+  "SIN NOVEDAD",
 ]);
 export type MeterObservationCode = z.infer<typeof MeterObservationCodeSchema>;
 
-export const OccupancyStatusSchema = z.enum(["ACTIVO", "VACIO_CON_CONTRATO", "VACIO_SIN_CONTRATO_CORPORACION"]);
+export const ExecutiveViewIdSchema = z.enum([
+  "SABANA_360",
+  "BODEGAS_68",
+  "RECIBOS_MACROS",
+  "AUDITORIA_BI",
+]);
+export type ExecutiveViewId = z.infer<typeof ExecutiveViewIdSchema>;
+
+export const UserRoleSchema = z.enum(["AUDITOR_ADMIN", "LECTURISTA"]);
+export type UserRole = z.infer<typeof UserRoleSchema>;
+
+export const OccupancyStatusSchema = z.enum([
+  "ACTIVO",
+  "VACIO_CON_CONTRATO",
+  "VACIO_SIN_CONTRATO_CORPORACION",
+]);
 export type OccupancyStatus = z.infer<typeof OccupancyStatusSchema>;
 
-export type ReadingZoneId = "ZONA_1_MACROMEDIDORES" | "ZONA_2_BANOS_PUBLICOS" | "ZONA_3_COMERCIANTES_PRINCIPAL" | "ZONA_4_BODEGA_POPULAR" | "ZONA_5_RED_FRIOS";
-export type ReadingTaskState = "PENDIENTE" | "COMPLETADA" | "NOVEDAD_TECNICA" | "CERRADO_SIN_ACCESO";
+export const FieldServiceTypeSchema = z.enum([
+  "ENERGIA",
+  "AGUA",
+  "MACRO_ENERGIA",
+  "MACRO_AGUA",
+  "BANO_PUBLICO",
+]);
+export type FieldServiceType = z.infer<typeof FieldServiceTypeSchema>;
+
+export const ReadingTaskStateSchema = z.enum([
+  "PENDIENTE",
+  "COMPLETADA",
+  "NOVEDAD_TECNICA",
+  "CERRADO_SIN_ACCESO",
+]);
+export type ReadingTaskState = z.infer<typeof ReadingTaskStateSchema>;
+
+export type ReadingZoneId =
+  | "ZONA_1_MACROMEDIDORES"
+  | "ZONA_2_BANOS_PUBLICOS"
+  | "ZONA_3_COMERCIANTES_PRINCIPAL"
+  | "ZONA_4_BODEGA_POPULAR"
+  | "ZONA_5_RED_FRIOS";
+
+const noBase64Guard = (val: string): boolean => !val.toLowerCase().includes("data:image/");
+
+export const FieldReadingUpdateSchema = z
+  .object({
+    codigo: z.string().min(1).max(40).refine(noBase64Guard, "Base64 prohibido"),
+    servicio: FieldServiceTypeSchema,
+    lecturaActual: z.number().finite().min(0).max(100_000_000),
+    observacion: z.string().max(500).refine(noBase64Guard, "Base64 prohibido en observacion"),
+    hasPhotoEvidence: z.boolean().optional(),
+    fotoCapturada: z.boolean().optional(),
+    photoLocalKey: z
+      .string()
+      .min(1)
+      .max(200)
+      .refine(noBase64Guard, "Base64 prohibido en photoLocalKey")
+      .optional(),
+    photoStorageUrl: z
+      .string()
+      .url()
+      .max(1024)
+      .refine(noBase64Guard, "Base64 prohibido en photoStorageUrl")
+      .optional(),
+    photoCapturedAt: z.string().min(10).max(40).optional(),
+    taskState: ReadingTaskStateSchema.optional(),
+    timestamp: z.string().min(1).max(64).refine(noBase64Guard, "Base64 prohibido"),
+  })
+  .strict();
+
+export type FieldReadingUpdate = z.infer<typeof FieldReadingUpdateSchema>;
+
+const finiteNum = z.number().finite();
+const nonNegNum = z.number().finite().min(0);
+
+export const MasterReceiptsConfigSchema = z
+  .object({
+    periodo: z.string().min(1).max(30),
+    nombrePeriodo: z.string().min(1).max(100),
+    energia: z.object({
+      tarifaKwh: nonNegNum,
+      principal: z.object({
+        valorConsumoFactura: nonNegNum,
+        alumbradoFactura20Pct: nonNegNum,
+        cregFactura20Pct: nonNegNum,
+        totalFactura: nonNegNum,
+        asumidoCorporacion: nonNegNum,
+        asumidoCovial: nonNegNum,
+        valorNetoServicio: nonNegNum,
+        bolsaProrrateo: nonNegNum,
+        areaProrrateoM2: nonNegNum,
+        topeMinimaCop: nonNegNum,
+      }),
+      redFrios: z.object({
+        valorFacturaTotal: nonNegNum,
+        valorNetoServicio: nonNegNum,
+        creg20Pct: nonNegNum,
+      }),
+      bodegaPopular: z.object({
+        valorConsumoFactura: nonNegNum,
+        consumoComunal20Pct: nonNegNum,
+        valorFacturaNeto: nonNegNum,
+        cregFactura: nonNegNum,
+        tasaCregPct: nonNegNum,
+        totalFactura: nonNegNum,
+        areaTotalM2: nonNegNum,
+        areaProrrateoM2: nonNegNum,
+        bolsaProrrateo: nonNegNum,
+        topeMinimaCop: nonNegNum,
+      }),
+      alumbradoGeneral: z.object({
+        bolsaTotal: nonNegNum,
+        areaTotalM2: nonNegNum,
+        tarifaPorM2: nonNegNum,
+      }),
+    }),
+    acueducto: z.object({
+      tarifaM3: nonNegNum,
+      consumoTotalM3: nonNegNum,
+      valorFacturaGeneral: nonNegNum,
+      valorFacturaRedFrios: nonNegNum,
+      areaRedFriosM2: nonNegNum,
+      asumidoCorporacion: nonNegNum,
+      asumidoCovial: nonNegNum,
+      notasCredito: finiteNum,
+      bolsaProrrateo: nonNegNum,
+      areaProrrateoM2: nonNegNum,
+      bolsaAguaComunalGeneral: nonNegNum,
+      areaComunalGeneralM2: nonNegNum,
+      topeMinimaCop: nonNegNum,
+    }),
+    expensas: z.object({
+      policia: z.object({
+        valorFactura: nonNegNum,
+        localesActivosDivisor: nonNegNum,
+        cuotaFijaPorLocal: nonNegNum,
+        regla: z.string().min(1),
+      }),
+      vigilancia: z.object({
+        valorFacturaBruto: nonNegNum,
+        notasDebito: finiteNum,
+        valorNetoDistribuir: nonNegNum,
+        areaTotalM2: nonNegNum,
+        tarifaPorM2: nonNegNum,
+        regla: z.string().min(1),
+      }),
+      aseo: z.object({
+        valorFacturaOperacionTotal: nonNegNum,
+        porcentajeComerciantes: nonNegNum,
+        valorNetoDistribuir: nonNegNum,
+        areaTotalM2: nonNegNum,
+        tarifaPorM2: nonNegNum,
+        regla: z.string().min(1),
+      }),
+      residuosEcsa: z.object({
+        valorFacturaBruto: nonNegNum,
+        valorBasicos: nonNegNum,
+        notasDebito: finiteNum,
+        valorNetoProrratear: nonNegNum,
+        areaTotalProrrateoM2: nonNegNum,
+        areaNpM2: nonNegNum,
+        areaMpM2: nonNegNum,
+        areaPM2: nonNegNum,
+        factorNP: nonNegNum,
+        factorMP: nonNegNum,
+        tarifaBaseM2: nonNegNum,
+        tarifaEfectivaNpM2: nonNegNum,
+        tarifaEfectivaMpM2: nonNegNum,
+        tarifaEfectivaPM2: nonNegNum,
+        regla: z.string().min(1),
+      }),
+    }),
+    conciliacionFinanzas: z.object({
+      energiaFinanzas: nonNegNum,
+      energiaLiquidado: nonNegNum,
+      acueductoFinanzas: nonNegNum,
+      acueductoLiquidado: nonNegNum,
+      aseoResiduosFinanzas: nonNegNum,
+      aseoResiduosLiquidado: nonNegNum,
+      vigilanciaFinanzas: nonNegNum,
+      vigilanciaLiquidado: nonNegNum,
+      policiaFinanzas: nonNegNum,
+      policiaLiquidado: nonNegNum,
+      granTotalLiquidado: nonNegNum,
+    }),
+  })
+  .strict();
+
+export type MasterReceiptsConfig = z.infer<typeof MasterReceiptsConfigSchema>;
 
 export interface CommunalEnergyMeter {
   id: string;
@@ -120,129 +325,232 @@ export interface LocalUnitRecord {
   };
 }
 
-export interface MasterReceiptsConfig {
-  periodo: string;
-  nombrePeriodo: string;
-  energia: {
-    tarifaKwh: number;
-    principal: {
-      valorConsumoFactura: number;
-      alumbradoFactura20Pct: number;
-      cregFactura20Pct: number;
-      totalFactura: number;
-      asumidoCorporacion: number;
-      asumidoCovial: number;
-      valorNetoServicio: number;
-      bolsaProrrateo: number;
-      areaProrrateoM2: number;
-      topeMinimaCop: number;
-    };
-    redFrios: {
-      valorFacturaTotal: number;
-      valorNetoServicio: number;
-      creg20Pct: number;
-    };
-    bodegaPopular: {
-      valorConsumoFactura: number;
-      consumoComunal20Pct: number;
-      valorFacturaNeto: number;
-      cregFactura: number;
-      tasaCregPct: number;
-      totalFactura: number;
-      areaTotalM2: number;
-      areaProrrateoM2: number;
-      bolsaProrrateo: number;
-      topeMinimaCop: number;
-    };
-    alumbradoGeneral: {
-      bolsaTotal: number;
-      areaTotalM2: number;
-      tarifaPorM2: number;
-    };
-  };
-  acueducto: {
-    tarifaM3: number;
-    consumoTotalM3: number;
-    valorFacturaGeneral: number;
-    valorFacturaRedFrios: number;
-    areaRedFriosM2: number;
-    asumidoCorporacion: number;
-    asumidoCovial: number;
-    notasCredito: number;
-    bolsaProrrateo: number;
-    areaProrrateoM2: number;
-    bolsaAguaComunalGeneral: number;
-    areaComunalGeneralM2: number;
-    topeMinimaCop: number;
-  };
-  expensas: {
-    policia: {
-      valorFactura: number;
-      localesActivosDivisor: number;
-      cuotaFijaPorLocal: number;
-      regla: string;
-    };
-    vigilancia: {
-      valorFacturaBruto: number;
-      notasDebito: number;
-      valorNetoDistribuir: number;
-      areaTotalM2: number;
-      tarifaPorM2: number;
-      regla: string;
-    };
-    aseo: {
-      valorFacturaOperacionTotal: number;
-      porcentajeComerciantes: number;
-      valorNetoDistribuir: number;
-      areaTotalM2: number;
-      tarifaPorM2: number;
-      regla: string;
-    };
-    residuosEcsa: {
-      valorFacturaBruto: number;
-      valorBasicos: number;
-      notasDebito: number;
-      valorNetoProrratear: number;
-      areaTotalProrrateoM2: number;
-      areaNpM2: number;
-      areaMpM2: number;
-      areaPM2: number;
-      factorNP: number;
-      factorMP: number;
-      tarifaBaseM2: number;
-      tarifaEfectivaNpM2: number;
-      tarifaEfectivaMpM2: number;
-      tarifaEfectivaPM2: number;
-      regla: string;
-    };
-  };
-  conciliacionFinanzas: {
-    energiaFinanzas: number;
-    energiaLiquidado: number;
-    acueductoFinanzas: number;
-    acueductoLiquidado: number;
-    aseoResiduosFinanzas: number;
-    aseoResiduosLiquidado: number;
-    vigilanciaFinanzas: number;
-    vigilanciaLiquidado: number;
-    policiaFinanzas: number;
-    policiaLiquidado: number;
-    granTotalLiquidado: number;
-  };
+/**
+ * Unifica todas las variantes históricas de modalidad Red de Fríos en el censo Junio 2025:
+ * 'RED FRIOS', 'RED DE FRIOS', 'RED_FRIOS', 'RED DE FRÍOS'.
+ */
+export function isRedFriosModality(val?: string): boolean {
+  if (!val) return false;
+  const norm = val
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toUpperCase()
+    .replace(/_/g, " ")
+    .replace(/\s+/g, " ");
+  return norm === "RED FRIOS" || norm === "RED DE FRIOS";
 }
 
+/**
+ * Total oficial certificado de Mayo 2025 por local (SPEC.md §3.1.2).
+ * Prohibido leer loc.totalAnteriorCop crudo.
+ */
+export function computeOfficialMayTotalCop(
+  loc: Pick<
+    LocalUnitRecord,
+    | "energiaAnteriorCop"
+    | "acueductoAnteriorCop"
+    | "aseoAnteriorCop"
+    | "residuosAnteriorCop"
+    | "vigilanciaAnteriorCop"
+    | "policiaAnteriorCop"
+  >
+): number {
+  return (
+    (loc.energiaAnteriorCop ?? 0) +
+    (loc.acueductoAnteriorCop ?? 0) +
+    (loc.aseoAnteriorCop ?? 0) +
+    (loc.residuosAnteriorCop ?? 0) +
+    (loc.vigilanciaAnteriorCop ?? 0) +
+    (loc.policiaAnteriorCop ?? 0)
+  );
+}
+
+export const JUNE_2025_REFERENCE_RECEIPTS: MasterReceiptsConfig = {
+  periodo: "2025-06",
+  nombrePeriodo: "JUNIO 2025",
+  energia: {
+    tarifaKwh: 720.48,
+    principal: {
+      valorConsumoFactura: 587263333, alumbradoFactura20Pct: 117452666.6, cregFactura20Pct: 117452666.6,
+      totalFactura: 704715999.6, asumidoCorporacion: 12795333, asumidoCovial: 2011504,
+      valorNetoServicio: 459939441.73, bolsaProrrateo: 141922039.69, areaProrrateoM2: 13454.029, topeMinimaCop: 20498,
+    },
+    redFrios: { valorFacturaTotal: 1514224, valorNetoServicio: 1455033, creg20Pct: 291006.6 },
+    bodegaPopular: {
+      valorConsumoFactura: 142655060, consumoComunal20Pct: 28531012, valorFacturaNeto: 114124048,
+      cregFactura: 22397270, tasaCregPct: 0.157, totalFactura: 165052330,
+      areaTotalM2: 13991.2249, areaProrrateoM2: 11399.2633, bolsaProrrateo: 80267972.32, topeMinimaCop: 20489,
+    },
+    alumbradoGeneral: { bolsaTotal: 116439893.43, areaTotalM2: 125276.3364, tarifaPorM2: 929.4644 },
+  },
+  acueducto: {
+    tarifaM3: 10921.4494, consumoTotalM3: 21437, valorFacturaGeneral: 234123110, valorFacturaRedFrios: 7489970,
+    areaRedFriosM2: 10574.625, asumidoCorporacion: 4484842, asumidoCovial: 522807, notasCredito: -14031650,
+    bolsaProrrateo: 51378880.56, areaProrrateoM2: 41121.4089, bolsaAguaComunalGeneral: 22691941,
+    areaComunalGeneralM2: 114487.5914, topeMinimaCop: 10921.45,
+  },
+  expensas: {
+    policia: { valorFactura: 215384615, localesActivosDivisor: 5300, cuotaFijaPorLocal: 40638.6066, regla: "PARTES_IGUALES" },
+    vigilancia: {
+      valorFacturaBruto: 1457589006, notasDebito: 11488020, valorNetoDistribuir: 1446100986,
+      areaTotalM2: 104897.0094, tarifaPorM2: 13785.9124, regla: "FACTOR_AREA_M2",
+    },
+    aseo: {
+      valorFacturaOperacionTotal: 704322962, porcentajeComerciantes: 0.2, valorNetoDistribuir: 171562768.5,
+      areaTotalM2: 105179.4364, tarifaPorM2: 1631.1436, regla: "FACTOR_AREA_M2",
+    },
+    residuosEcsa: {
+      valorFacturaBruto: 680905800.76, valorBasicos: 10393187.35, notasDebito: 8830910, valorNetoProrratear: 661681703.41,
+      areaTotalProrrateoM2: 105047.4204, areaNpM2: 46929.53, areaMpM2: 15235.5545, areaPM2: 42882.3359,
+      factorNP: 0.4, factorMP: 1.2, tarifaBaseM2: 6298.8858, tarifaEfectivaNpM2: 2519.5543,
+      tarifaEfectivaMpM2: 7558.663, tarifaEfectivaPM2: 9987.324, regla: "PONDERADO_VOLUMEN_NP_MP_P",
+    },
+  },
+  conciliacionFinanzas: {
+    energiaFinanzas: 907096455, energiaLiquidado: 856707533.92, acueductoFinanzas: 241541501, acueductoLiquidado: 239477572.8,
+    aseoResiduosFinanzas: 852443714, aseoResiduosLiquidado: 852443678.2, vigilanciaFinanzas: 1457589006, vigilanciaLiquidado: 1457539436.92,
+    policiaFinanzas: 215384615, policiaLiquidado: 215384615, granTotalLiquidado: 3861030409.65,
+  },
+};
+
 // ============================================================================
-// CABLES PELADOS (CLEAN BOUNDARY HARNESS) PARA EXPANSIÓN ERP CORABASTOS
+// CONTRATOS DE INTELIGENCIA BI & 6 KPIS LONGITUDINALES (AUDITORIA_BI)
 // ============================================================================
-export interface ErpModuleExpansionRing {
-  anillo: number;
+
+export interface BiMacrometerLeakKpiItem {
   id: string;
-  titulo: string;
-  subtitulo: string;
-  estado: "ACTIVO_MVP" | "CABLE_PELADO_LISTO" | "PROXIMA_FASE";
-  origenArsenal: string;
-  dolorQueResuelve: string;
-  entregablesClave: string[];
-  impactoFinancieroEstimado: string;
-  payloadPuenteEjemplo: Record<string, string | number>;
+  servicio: "ENERGIA" | "ACUEDUCTO";
+  bodegaId: string;
+  nombre: string;
+  medidorSerie: string;
+  consumoBruto: number;
+  descuentoHijos: number;
+  consumoNetoComunal: number;
+  consumoAnteriorComunal: number;
+  porcentajeComunalSobreBruto: number;
+  variacionIntermensualPct: number;
+  alertaFugaActiva: boolean;
+  unidad: "kWh" | "m³";
+}
+
+export interface BiFinancialAbsorptionItem {
+  servicio: string;
+  vFinanzasCop: number;
+  vLiquidadoComerciantesCop: number;
+  asumidoCorporacionFijoCop: number;
+  asumidoVacanciaSinContratoCop: number;
+  brechaNetaCop: number;
+  porcentajeRecuperacionPct: number;
+}
+
+export interface BiMetrologicalHealthItem {
+  causal: string;
+  categoria: "OPERATIVO" | "DETENIDO" | "TAPADO" | "RETIRADO_REVISAR" | "CERRADO_VACIO";
+  cantidadEnergia: number;
+  cantidadAcueducto: number;
+  totalMedidores: number;
+  areaAfectadaM2: number;
+  facturacionMigradaProrrateoCop: number;
+}
+
+export interface BiBodegaIntensityBenchmark {
+  bodegaId: string;
+  tipoPrincipal: string;
+  totalLocales: number;
+  areaTotalM2: number;
+  kwhPorM2: number;
+  m3PorM2: number;
+  copPorM2Actual: number;
+  copPorM2Anterior: number;
+  variacionCopPct: number;
+  totalActualCop: number;
+  totalAnteriorCop: number;
+}
+
+export interface BiParetoLocalItem {
+  codigoLocal: string;
+  bodegaId: string;
+  tipoLocal: string;
+  areaM2: number;
+  kwhActual: number;
+  kwhAnterior: number;
+  m3Actual: number;
+  m3Anterior: number;
+  totalActualCop: number;
+  totalAnteriorCop: number;
+  promedioMaxCop: number;
+  saltoMensualCop: number;
+  saltoMensualPct: number;
+  excedeBandaPromedioMax: boolean;
+}
+
+export interface BiLongitudinalCutoffPoint {
+  corteId: string;
+  etiqueta: string;
+  totalFacturadoRealCop: number;
+  energiaTotalCop: number;
+  acueductoTotalCop: number;
+  expensasTotalCop: number;
+  vigilanciaTotalCop: number;
+  residuosTotalCop: number;
+  aseoTotalCop: number;
+  policiaTotalCop: number;
+  consumoFisicoEnergiaKwh: number;
+  consumoFisicoAguaM3: number;
+  tarifaKwhPrincipalCop: number;
+  tarifaM3AguaCop: number;
+  tarifaM2VigilanciaCop: number;
+  tarifaM2ResiduosP: number;
+  indicePerdidaComunalPct: number;
+  saludMetrologicaPct: number;
+}
+
+export interface BiZoneSlaSummary {
+  zonaId: string;
+  etiqueta: string;
+  totalTareas: number;
+  completadas: number;
+  pendientes: number;
+  novedadesTecnicas: number;
+  cerradosSinAcceso: number;
+  avancePct: number;
+}
+
+export interface BiLongitudinalReport {
+  corteActivo: string;
+  kpi1TotalBrutoEnergiaKw: number;
+  kpi1TotalHijosEnergiaKw: number;
+  kpi1RemanenteComunalEnergiaKw: number;
+  kpi1IndiceComunalEnergiaPct: number;
+  kpi1TotalBrutoAguaM3: number;
+  kpi1TotalHijosAguaM3: number;
+  kpi1RemanenteComunalAguaM3: number;
+  kpi1IndiceComunalAguaPct: number;
+  kpi1AlertasFugaCount: number;
+  kpi1TopMacromedidoresRiesgo: BiMacrometerLeakKpiItem[];
+  kpi2TotalFinanzasCop: number;
+  kpi2TotalLiquidadoComerciantesCop: number;
+  kpi2TotalAsumidoCorporacionCop: number;
+  kpi2TasaRecuperacionGlobalPct: number;
+  kpi2ServiciosAbsorcion: BiFinancialAbsorptionItem[];
+  kpi3TotalMedidoresFisicos: number;
+  kpi3MedidoresOperativosOk: number;
+  kpi3MedidoresAnomalos: number;
+  kpi3SaludMetrologicaPct: number;
+  kpi3AreaForzadaProrrateoM2: number;
+  kpi3CopForzadoProrrateo: number;
+  kpi3DesgloseSalud: BiMetrologicalHealthItem[];
+  kpi4PromedioKwhM2Global: number;
+  kpi4PromedioM3M2Global: number;
+  kpi4PromedioCopM2Global: number;
+  kpi4TopBodegasIntensidad: BiBodegaIntensityBenchmark[];
+  kpi4TopParetoLocales: BiParetoLocalItem[];
+  kpi5SerieLongitudinal: BiLongitudinalCutoffPoint[];
+  kpi5VariacionMayoJunioPct: number;
+  kpi6TotalTareasCorte: number;
+  kpi6TareasEvacuadas: number;
+  kpi6SlaTerrenoPct: number;
+  kpi6TasaCerradosPct: number;
+  kpi6ZonasSla: BiZoneSlaSummary[];
 }

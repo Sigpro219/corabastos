@@ -2,8 +2,11 @@ import { ComputedLocalLiquidation } from "@/lib/liquidation-engine";
 import { formatDec, formatInt } from "@/lib/formatters";
 
 /**
- * Headless Accounting & Sabana Export Engine (Planos PL109, PL008, PL009, PL003, PL004, PL086, PL141, AMB403)
- * Usa separador ';' de Excel Colombia y formato numérico es-CO (punto miles, coma decimal).
+ * Headless Accounting & Sabana Export Engine (Planos PL109, PL008, PL009, PL003, PL004, PL007, PL141).
+ * Cumple SPEC.md v3.1.0 §2.5 y §3.3:
+ * - Separador ';' de Excel Colombia y formato es-CO (punto miles, coma decimal).
+ * - AREA_M2 con 2 decimales exactos (formatDec(l.areaM2, 2, 2)).
+ * - Exporta TOTAL_FACTURABLE_COP (calcTotalCop) y ASUMIDO_CORPORACION_COP (calcAssumedCorporationCop).
  */
 export function buildSabanaCsvContent(locales: ComputedLocalLiquidation[]): string {
   const headers = [
@@ -20,7 +23,7 @@ export function buildSabanaCsvContent(locales: ComputedLocalLiquidation[]): stri
     "RESIDUOS_ECSA_COP",
     "VIGILANCIA_COP",
     "POLICIA_COP",
-    "TOTAL_LIQUIDADO_COP",
+    "TOTAL_FACTURABLE_COP",
     "ASUMIDO_CORPORACION_COP",
     "PLANO_ECSA",
     "PLANO_AGUA",
@@ -33,10 +36,10 @@ export function buildSabanaCsvContent(locales: ComputedLocalLiquidation[]): stri
       l.bodegaId,
       l.codigo,
       `"${l.tipoBodega}"`,
-      l.estadoOcupacion || "ACTIVO",
+      l.effectiveOccupancy,
       l.modalidadGeneral,
       l.categoriaResiduos,
-      formatDec(l.areaM2, 2),
+      formatDec(l.areaM2, 2, 2),
       formatInt(l.calcEnergiaCop),
       formatInt(l.calcAcueductoCop),
       formatInt(l.calcAseoCop),
@@ -44,7 +47,7 @@ export function buildSabanaCsvContent(locales: ComputedLocalLiquidation[]): stri
       formatInt(l.calcVigilanciaCop),
       formatInt(l.calcPoliciaCop),
       formatInt(l.calcTotalCop),
-      formatInt(l.calcAssumedCorporationCop || 0),
+      formatInt(l.calcAssumedCorporationCop),
       l.planos.ecsa,
       l.planos.agua,
       l.planos.energia,

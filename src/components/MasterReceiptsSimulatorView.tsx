@@ -6,95 +6,71 @@ import { CommunalMacrometersAuditTable } from "@/components/CommunalMacrometersA
 import { PrecisionDecimalInput } from "@/components/PrecisionDecimalInput";
 import { formatCop, formatDec, formatInt } from "@/lib/formatters";
 import {
-  Zap,
   Droplets,
-  ShieldCheck,
-  Trash2,
-  Sparkles,
-  Scale,
   RotateCcw,
-  Users,
   Ruler,
+  Scale,
+  ShieldCheck,
+  Sparkles,
+  Trash2,
+  Users,
+  Zap,
 } from "lucide-react";
 
 export function MasterReceiptsSimulatorView() {
-  const { receipts, updateReceipts, resetToOfficialJune2025 } = useCorabastos();
-
+  const { receipts, liveBagsSummary, updateReceipts, resetToOfficialJune2025 } = useCorabastos();
   const resCfg = receipts.expensas.residuosEcsa;
-  const tarifaBaseResM2 =
-    resCfg.areaTotalProrrateoM2 > 0
-      ? resCfg.valorNetoProrratear / resCfg.areaTotalProrrateoM2
-      : resCfg.tarifaBaseM2;
-  const tarifaNp = tarifaBaseResM2 * resCfg.factorNP;
-  const tarifaMp = tarifaBaseResM2 * resCfg.factorMP;
-  const bolsaP = Math.max(
-    0,
-    resCfg.valorNetoProrratear - resCfg.areaNpM2 * tarifaNp - resCfg.areaMpM2 * tarifaMp
-  );
-  const tarifaP = resCfg.areaPM2 > 0 ? bolsaP / resCfg.areaPM2 : resCfg.tarifaEfectivaPM2;
 
-  const cuotaPolicia =
-    receipts.expensas.policia.localesActivosDivisor > 0
-      ? receipts.expensas.policia.valorFactura / receipts.expensas.policia.localesActivosDivisor
-      : receipts.expensas.policia.cuotaFijaPorLocal;
-
-  const tarifaVigilancia =
-    receipts.expensas.vigilancia.areaTotalM2 > 0
-      ? receipts.expensas.vigilancia.valorNetoDistribuir / receipts.expensas.vigilancia.areaTotalM2
-      : receipts.expensas.vigilancia.tarifaPorM2;
-
-  const tarifaAseo =
-    receipts.expensas.aseo.areaTotalM2 > 0
-      ? receipts.expensas.aseo.valorNetoDistribuir / receipts.expensas.aseo.areaTotalM2
-      : receipts.expensas.aseo.tarifaPorM2;
+  const inputClass =
+    "w-full bg-[var(--surface)] border border-[var(--outline-color)] focus:border-[#f7931b] outline-none rounded-lg px-2.5 py-1.5 font-mono font-bold text-right text-[var(--text-main)]";
 
   return (
     <div className="space-y-5">
-      {/* Barra Compacta de Parámetros Maestros */}
-      <div className="bg-white rounded-xl border border-slate-200 px-4 py-3 shadow-2xs flex flex-wrap items-center justify-between gap-3">
-        <p className="text-xs text-slate-600">
-          Ajusta tarifas unitarias (<strong>$/kWh</strong>, <strong>$/m³</strong>), montos de facturas maestras o factores (<strong>0,4 NP / 1,2 MP / Partes Iguales</strong>) para simular o recalcular en vivo los 5.318 locales.
+      <div className="bg-[var(--surface)] rounded-xl border border-[var(--outline-color)] px-4 py-3 shadow-2xs flex flex-wrap items-center justify-between gap-3">
+        <p className="text-xs text-[var(--text-muted)]">
+          Edita tarifas unitarias (<strong className="text-[var(--text-main)]">$/kWh, $/m³</strong>), montos netos de las{" "}
+          <strong className="text-[var(--text-main)]">5 Bolsas de Servicios</strong> o las{" "}
+          <strong className="text-[var(--text-main)]">4 Expensas Comunes</strong> para recalcular en vivo los 5.318 locales.
         </p>
 
         <button
           type="button"
           onClick={resetToOfficialJune2025}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-[#1D3557] text-xs font-bold transition-colors cursor-pointer"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--surface-alt)] hover:bg-slate-200 dark:hover:bg-slate-800 text-[var(--text-main)] border border-[var(--outline-color)] text-xs font-bold transition-colors cursor-pointer"
         >
-          <RotateCcw className="w-3.5 h-3.5" />
+          <RotateCcw className="w-3.5 h-3.5" strokeWidth={1.75} />
           Restaurar Cifras Oficiales Junio 2025
         </button>
       </div>
 
-      {/* FILA 1: 3 RECIBOS DE ENERGÍA + 3 BLOQUES DE ACUEDUCTO */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        {/* TARJETA 1: LOS 3 RECIBOS DE ENERGÍA */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+        {/* ENERGÍA: TARIFA + 3 BOLSAS NETAS EDITABLES */}
+        <div className="bg-[var(--surface)] rounded-2xl border border-[var(--outline-color)] p-5 shadow-xs space-y-4">
+          <div className="flex items-center justify-between border-b border-[var(--outline-color)] pb-3">
             <div className="flex items-center gap-2.5">
-              <div className="p-2.5 rounded-xl bg-amber-50 text-amber-600 border border-amber-200">
-                <Zap className="w-5 h-5" />
+              <div className="p-2.5 rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30">
+                <Zap className="w-5 h-5" strokeWidth={1.75} />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-[#1D3557]">
-                  1. Recibos Maestros de Energía Eléctrica (3)
+                <h3 className="text-sm font-bold text-[var(--text-main)]">
+                  1. Recibos Maestros de Energía Eléctrica (3 Bolsas)
                 </h3>
-                <p className="text-[11px] text-[#4C607B]">
+                <p className="text-[11px] text-[var(--text-muted)]">
                   Predio Matriz Principal · Bodega Popular · Red de Fríos
                 </p>
               </div>
             </div>
             <div className="text-right">
-              <span className="text-[10px] uppercase text-slate-400 block">Tarifa kWh Activa</span>
-              <span className="text-base font-mono font-bold text-[#1D3557]">
-                ${formatDec(receipts.energia.tarifaKwh, 2)} / kWh
+              <span className="text-[10px] uppercase text-[var(--text-muted)] block">Tarifa Activa</span>
+              <span className="text-base font-mono font-bold text-[var(--text-main)]">
+                {formatCop(receipts.energia.tarifaKwh, 2)} / kWh
               </span>
             </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-            <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
-              <label className="text-[10px] uppercase font-bold text-slate-500 block mb-1">
+            <div className="p-3 rounded-xl bg-[var(--surface-alt)] border border-[var(--outline-color)]">
+              <label className="text-[10px] uppercase font-bold text-[var(--text-muted)] block mb-1">
                 Tarifa Unitaria ($ / kWh)
               </label>
               <PrecisionDecimalInput
@@ -108,76 +84,121 @@ export function MasterReceiptsSimulatorView() {
                     energia: { ...receipts.energia, tarifaKwh: val },
                   })
                 }
-                className="w-full bg-white border border-slate-300 rounded-lg px-3 py-1.5 font-mono font-bold text-right text-[#1D3557]"
+                className={inputClass}
               />
-            </div>
-
-            <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
-              <label className="text-[10px] uppercase font-bold text-slate-500 block mb-1">
-                Recibo 1: Consumo Principal ($)
-              </label>
-              <div className="font-mono font-bold text-right text-sm text-[#1D3557] py-1">
-                {formatCop(receipts.energia.principal.valorConsumoFactura)}
-              </div>
-              <span className="text-[10px] text-slate-500 block text-right">
-                +20% CREG/Alumbrado · Tope Mín: {formatCop(receipts.energia.principal.topeMinimaCop)}
+              <span className="text-[10px] text-[var(--text-muted)] block text-right mt-1 font-mono">
+                Tope Mín: {formatCop(receipts.energia.principal.topeMinimaCop)}
               </span>
             </div>
 
-            <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
-              <label className="text-[10px] uppercase font-bold text-slate-500 block mb-1">
-                Recibo 2: Bodega Popular ($)
+            <div className="p-3 rounded-xl bg-[var(--surface-alt)] border border-[var(--outline-color)]">
+              <label className="text-[10px] uppercase font-bold text-[var(--text-muted)] block mb-1">
+                Bolsa 1 · Neto Servicio Matriz ($)
               </label>
-              <div className="font-mono font-bold text-right text-sm text-[#1D3557]">
-                {formatCop(receipts.energia.bodegaPopular.totalFactura)}
-              </div>
-              <span className="text-[10px] text-slate-500 block text-right">
-                Consumo: {formatCop(receipts.energia.bodegaPopular.valorConsumoFactura)} · CREG: 15,7%
+              <PrecisionDecimalInput
+                ariaLabel="Valor Neto Servicio Energia Principal"
+                value={receipts.energia.principal.valorNetoServicio}
+                minDecimals={0}
+                maxDecimals={2}
+                onChange={(val) =>
+                  updateReceipts({
+                    ...receipts,
+                    energia: {
+                      ...receipts.energia,
+                      principal: { ...receipts.energia.principal, valorNetoServicio: val },
+                    },
+                  })
+                }
+                className={inputClass}
+              />
+              <span className="text-[10px] text-amber-600 dark:text-amber-400 block text-right mt-1 font-mono">
+                Prorrateo: {formatCop(liveBagsSummary.bolsaProrrateoPrincipalCop)} ({formatCop(liveBagsSummary.tarifaProrrateoPrincipalM2, 1)}/m²)
               </span>
             </div>
 
-            <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
-              <label className="text-[10px] uppercase font-bold text-slate-500 block mb-1">
-                Recibo 3: Red de Fríos + Alumbrado Gral
+            <div className="p-3 rounded-xl bg-[var(--surface-alt)] border border-[var(--outline-color)]">
+              <label className="text-[10px] uppercase font-bold text-[var(--text-muted)] block mb-1">
+                Bolsa 2 · Factura Neta Bodega Popular ($)
               </label>
-              <div className="font-mono font-bold text-right text-sm text-[#1D3557]">
-                {formatCop(receipts.energia.redFrios.valorFacturaTotal)}
-              </div>
-              <span className="text-[10px] text-slate-500 block text-right">
-                Alumbrado Gral: ${formatDec(receipts.energia.alumbradoGeneral.tarifaPorM2, 2)} / m²
+              <PrecisionDecimalInput
+                ariaLabel="Valor Factura Neto Bodega Popular"
+                value={receipts.energia.bodegaPopular.valorFacturaNeto}
+                minDecimals={0}
+                maxDecimals={2}
+                onChange={(val) =>
+                  updateReceipts({
+                    ...receipts,
+                    energia: {
+                      ...receipts.energia,
+                      bodegaPopular: {
+                        ...receipts.energia.bodegaPopular,
+                        valorFacturaNeto: val,
+                      },
+                    },
+                  })
+                }
+                className={inputClass}
+              />
+              <span className="text-[10px] text-amber-600 dark:text-amber-400 block text-right mt-1 font-mono">
+                Prorrateo BP: {formatCop(liveBagsSummary.bolsaProrrateoBpCop)} ({formatCop(liveBagsSummary.tarifaProrrateoBpM2, 1)}/m²)
+              </span>
+            </div>
+
+            <div className="p-3 rounded-xl bg-[var(--surface-alt)] border border-[var(--outline-color)]">
+              <label className="text-[10px] uppercase font-bold text-[var(--text-muted)] block mb-1">
+                Bolsa 3 · Neto Energía Red de Fríos ($)
+              </label>
+              <PrecisionDecimalInput
+                ariaLabel="Valor Neto Energia Red de Frios"
+                value={receipts.energia.redFrios.valorNetoServicio}
+                minDecimals={0}
+                maxDecimals={2}
+                onChange={(val) =>
+                  updateReceipts({
+                    ...receipts,
+                    energia: {
+                      ...receipts.energia,
+                      redFrios: { ...receipts.energia.redFrios, valorNetoServicio: val },
+                    },
+                  })
+                }
+                className={inputClass}
+              />
+              <span className="text-[10px] text-[var(--text-muted)] block text-right mt-1 font-mono">
+                Alumbrado Gral: {formatCop(liveBagsSummary.tarifaAlumbradoGeneralM2, 2)}/m²
               </span>
             </div>
           </div>
         </div>
 
-        {/* TARJETA 2: LOS 3 BLOQUES DE ACUEDUCTO Y ALCANTARILLADO */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+        {/* ACUEDUCTO: TARIFA + 2 BOLSAS EDITABLES */}
+        <div className="bg-[var(--surface)] rounded-2xl border border-[var(--outline-color)] p-5 shadow-xs space-y-4">
+          <div className="flex items-center justify-between border-b border-[var(--outline-color)] pb-3">
             <div className="flex items-center gap-2.5">
-              <div className="p-2.5 rounded-xl bg-sky-50 text-sky-600 border border-sky-200">
-                <Droplets className="w-5 h-5" />
+              <div className="p-2.5 rounded-xl bg-sky-500/15 text-sky-600 dark:text-sky-400 border border-sky-500/30">
+                <Droplets className="w-5 h-5" strokeWidth={1.75} />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-[#1D3557]">
-                  2. Los 3 Recibos / Bloques de Acueducto y Alcantarillado
+                <h3 className="text-sm font-bold text-[var(--text-main)]">
+                  2. Recibos Maestros de Acueducto y Alcantarillado (2 Bolsas)
                 </h3>
-                <p className="text-[11px] text-[#4C607B]">
-                  Factura General (21.437 m³) · Factura Red de Fríos · 16 Medidores de Baños Públicos
+                <p className="text-[11px] text-[var(--text-muted)]">
+                  Factura General ({formatInt(receipts.acueducto.consumoTotalM3)} m³) · Red de Fríos · 16 Baños Públicos
                 </p>
               </div>
             </div>
             <div className="text-right">
-              <span className="text-[10px] uppercase text-slate-400 block">Tarifa m³ Activa</span>
-              <span className="text-base font-mono font-bold text-[#1D3557]">
-                ${formatDec(receipts.acueducto.tarifaM3, 2)} / m³
+              <span className="text-[10px] uppercase text-[var(--text-muted)] block">Tarifa m³ Activa</span>
+              <span className="text-base font-mono font-bold text-[var(--text-main)]">
+                {formatCop(receipts.acueducto.tarifaM3, 2)} / m³
               </span>
             </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-            <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
-              <label className="text-[10px] uppercase font-bold text-slate-500 block mb-1">
-                Tarifa Unitaria ($ / m³ = Mínima 1 m³)
+            <div className="p-3 rounded-xl bg-[var(--surface-alt)] border border-[var(--outline-color)]">
+              <label className="text-[10px] uppercase font-bold text-[var(--text-muted)] block mb-1">
+                Tarifa Unitaria ($ / m³ = Mín. 1 m³)
               </label>
               <PrecisionDecimalInput
                 ariaLabel="Tarifa Unitaria Acueducto m3"
@@ -187,71 +208,97 @@ export function MasterReceiptsSimulatorView() {
                 onChange={(val) =>
                   updateReceipts({
                     ...receipts,
-                    acueducto: { ...receipts.acueducto, tarifaM3: val },
+                    acueducto: {
+                      ...receipts.acueducto,
+                      tarifaM3: val,
+                      topeMinimaCop: val,
+                    },
                   })
                 }
-                className="w-full bg-white border border-slate-300 rounded-lg px-3 py-1.5 font-mono font-bold text-right text-[#1D3557]"
+                className={inputClass}
               />
-            </div>
-
-            <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
-              <label className="text-[10px] uppercase font-bold text-slate-500 block mb-1">
-                Recibo 1: Factura General Acueducto
-              </label>
-              <div className="font-mono font-bold text-right text-sm text-[#1D3557] py-1">
-                {formatCop(receipts.acueducto.valorFacturaGeneral)}
-              </div>
-              <span className="text-[10px] text-slate-500 block text-right">
-                Prorrateo: ${formatDec(receipts.acueducto.bolsaProrrateo / receipts.acueducto.areaProrrateoM2, 2)} / m²
+              <span className="text-[10px] text-[var(--text-muted)] block text-right mt-1 font-mono">
+                Tope Mínimo 1 m³ sincronizado
               </span>
             </div>
 
-            <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
-              <label className="text-[10px] uppercase font-bold text-slate-500 block mb-1">
-                Recibo 2: Acueducto Red de Fríos
+            <div className="p-3 rounded-xl bg-[var(--surface-alt)] border border-[var(--outline-color)]">
+              <label className="text-[10px] uppercase font-bold text-[var(--text-muted)] block mb-1">
+                Bolsa 4 · Factura General EAAB ($)
               </label>
-              <div className="font-mono font-bold text-right text-sm text-[#1D3557]">
-                {formatCop(receipts.acueducto.valorFacturaRedFrios)}
-              </div>
-              <span className="text-[10px] text-slate-500 block text-right">
-                Área Red Fríos: {formatDec(receipts.acueducto.areaRedFriosM2, 1)} m² ($708,3/m²)
+              <PrecisionDecimalInput
+                ariaLabel="Factura General Acueducto"
+                value={receipts.acueducto.valorFacturaGeneral}
+                minDecimals={0}
+                maxDecimals={2}
+                onChange={(val) =>
+                  updateReceipts({
+                    ...receipts,
+                    acueducto: { ...receipts.acueducto, valorFacturaGeneral: val },
+                  })
+                }
+                className={inputClass}
+              />
+              <span className="text-[10px] text-sky-600 dark:text-sky-400 block text-right mt-1 font-mono">
+                Prorrateo Agua: {formatCop(liveBagsSummary.bolsaProrrateoAguaCop)} ({formatCop(liveBagsSummary.tarifaProrrateoAguaM2, 1)}/m²)
               </span>
             </div>
 
-            <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
-              <label className="text-[10px] uppercase font-bold text-slate-500 block mb-1">
+            <div className="p-3 rounded-xl bg-[var(--surface-alt)] border border-[var(--outline-color)]">
+              <label className="text-[10px] uppercase font-bold text-[var(--text-muted)] block mb-1">
+                Bolsa 5 · Factura Agua Red de Fríos ($)
+              </label>
+              <PrecisionDecimalInput
+                ariaLabel="Factura Acueducto Red de Frios"
+                value={receipts.acueducto.valorFacturaRedFrios}
+                minDecimals={0}
+                maxDecimals={2}
+                onChange={(val) =>
+                  updateReceipts({
+                    ...receipts,
+                    acueducto: { ...receipts.acueducto, valorFacturaRedFrios: val },
+                  })
+                }
+                className={inputClass}
+              />
+              <span className="text-[10px] text-sky-600 dark:text-sky-400 block text-right mt-1 font-mono">
+                Factor: {formatCop(liveBagsSummary.tarifaRedFriosAguaM2, 2)}/m²
+              </span>
+            </div>
+
+            <div className="p-3 rounded-xl bg-[var(--surface-alt)] border border-[var(--outline-color)] flex flex-col justify-between">
+              <label className="text-[10px] uppercase font-bold text-[var(--text-muted)] block mb-1">
                 Cargo Agua Comunal General (10%)
               </label>
-              <div className="font-mono font-bold text-right text-sm text-[#1D3557]">
+              <div className="font-mono font-bold text-right text-sm text-[var(--text-main)] py-1">
                 {formatCop(receipts.acueducto.bolsaAguaComunalGeneral)}
               </div>
-              <span className="text-[10px] text-slate-500 block text-right">
-                Factor Área: $198,2 / m² · Baños: 1.565 m³
+              <span className="text-[10px] text-[var(--text-muted)] block text-right font-mono">
+                Área: {formatDec(receipts.acueducto.areaComunalGeneralM2, 1)} m² ({formatCop(liveBagsSummary.tarifaAguaComunalGeneralM2, 2)}/m²)
               </span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* FILA 2: LOS FACTORES DE DISTRIBUCIÓN DE EXPENSAS (POLICÍA, VIGILANCIA, ASEO, RESIDUOS NP/MP/P) */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* POLICÍA: PARTES IGUALES */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-3">
-          <div className="flex items-center gap-2.5 border-b border-slate-100 pb-3">
-            <div className="p-2.5 rounded-xl bg-indigo-50 text-indigo-700 border border-indigo-200">
-              <Users className="w-5 h-5" />
+      {/* 4 EXPENSAS REGLAMENTARIAS */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        <div className="bg-[var(--surface)] rounded-2xl border border-[var(--outline-color)] p-5 shadow-xs space-y-3">
+          <div className="flex items-center gap-2.5 border-b border-[var(--outline-color)] pb-3">
+            <div className="p-2.5 rounded-xl bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border border-indigo-500/30">
+              <Users className="w-5 h-5" strokeWidth={1.75} />
             </div>
             <div>
-              <span className="text-[10px] font-bold uppercase text-indigo-700 block">
-                REGLA: PARTES IGUALES (EQUITATIVO)
+              <span className="text-[10px] font-bold uppercase text-indigo-600 dark:text-indigo-400 block">
+                PARTES IGUALES (SOLIDARIO)
               </span>
-              <h3 className="text-sm font-bold text-[#1D3557]">3. Convenio Policía Nacional</h3>
+              <h3 className="text-sm font-bold text-[var(--text-main)]">3. Convenio Policía Nacional</h3>
             </div>
           </div>
 
           <div className="space-y-2 text-xs">
             <div>
-              <label className="text-[10px] uppercase font-bold text-slate-500 block mb-1">
+              <label className="text-[10px] uppercase font-bold text-[var(--text-muted)] block mb-1">
                 Valor Total Factura Policía ($)
               </label>
               <PrecisionDecimalInput
@@ -264,53 +311,49 @@ export function MasterReceiptsSimulatorView() {
                     ...receipts,
                     expensas: {
                       ...receipts.expensas,
-                      policia: {
-                        ...receipts.expensas.policia,
-                        valorFactura: val,
-                      },
+                      policia: { ...receipts.expensas.policia, valorFactura: val },
                     },
                   })
                 }
-                className="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-1.5 font-mono font-bold text-right text-[#1D3557]"
+                className={inputClass}
               />
             </div>
 
-            <div className="flex items-center justify-between pt-2 border-t border-slate-100">
-              <span className="text-slate-600">Divisor Locales Activos:</span>
-              <span className="font-mono font-bold text-[#1D3557]">
+            <div className="flex items-center justify-between pt-2 border-t border-[var(--outline-color)]">
+              <span className="text-[var(--text-muted)]">Divisor Locales Arrendados:</span>
+              <span className="font-mono font-bold text-[var(--text-main)]">
                 {formatInt(receipts.expensas.policia.localesActivosDivisor)} locales
               </span>
             </div>
-            <div className="p-2.5 rounded-xl bg-indigo-50/70 border border-indigo-200 flex items-center justify-between">
-              <span className="font-semibold text-[#1D3557]">Cuota Fija por Local:</span>
-              <span className="font-mono font-bold text-sm text-indigo-900">
-                ${formatDec(cuotaPolicia, 2)}
+            <div className="p-2.5 rounded-xl bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-between">
+              <span className="font-semibold text-[var(--text-main)]">Cuota Fija por Local:</span>
+              <span className="font-mono font-bold text-sm text-indigo-700 dark:text-indigo-300">
+                {formatCop(liveBagsSummary.cuotaPoliciaPorLocal, 2)}
               </span>
             </div>
           </div>
         </div>
 
-        {/* VIGILANCIA Y ASEO: 100% FACTOR POR ÁREA (M2) */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-3">
-          <div className="flex items-center gap-2.5 border-b border-slate-100 pb-3">
-            <div className="p-2.5 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200">
-              <Ruler className="w-5 h-5" />
+        <div className="bg-[var(--surface)] rounded-2xl border border-[var(--outline-color)] p-5 shadow-xs space-y-3">
+          <div className="flex items-center gap-2.5 border-b border-[var(--outline-color)] pb-3">
+            <div className="p-2.5 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+              <Ruler className="w-5 h-5" strokeWidth={1.75} />
             </div>
             <div>
-              <span className="text-[10px] font-bold uppercase text-emerald-700 block">
-                REGLA: 100% PROPORCIONAL AL ÁREA (M²)
+              <span className="text-[10px] font-bold uppercase text-emerald-600 dark:text-emerald-400 block">
+                100% PROPORCIONAL AL ÁREA (M²)
               </span>
-              <h3 className="text-sm font-bold text-[#1D3557]">
+              <h3 className="text-sm font-bold text-[var(--text-main)]">
                 4. Vigilancia Privada & Barrido Aseo
               </h3>
             </div>
           </div>
 
           <div className="space-y-2.5 text-xs">
-            <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200">
-              <div className="flex items-center justify-between mb-1">
-                <span className="font-bold text-[#1D3557] flex items-center gap-1">
-                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+            <div className="p-2.5 rounded-xl bg-[var(--surface-alt)] border border-[var(--outline-color)]">
+              <div className="flex items-center justify-between gap-2 mb-1">
+                <span className="font-bold text-[var(--text-main)] flex items-center gap-1 shrink-0">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" strokeWidth={1.75} />
                   Vigilancia Neta:
                 </span>
                 <PrecisionDecimalInput
@@ -330,21 +373,21 @@ export function MasterReceiptsSimulatorView() {
                       },
                     })
                   }
-                  className="w-40 bg-white border border-slate-300 rounded px-2 py-1 font-mono font-bold text-right text-[#1D3557]"
+                  className="w-40 bg-[var(--surface)] border border-[var(--outline-color)] rounded px-2 py-1 font-mono font-bold text-right text-[var(--text-main)]"
                 />
               </div>
-              <div className="flex justify-between text-[11px] text-slate-600">
+              <div className="flex justify-between text-[11px] text-[var(--text-muted)]">
                 <span>Área: {formatDec(receipts.expensas.vigilancia.areaTotalM2, 2)} m²</span>
-                <strong className="font-mono text-emerald-700">
-                  Factor: ${formatDec(tarifaVigilancia, 2)} / m²
+                <strong className="font-mono text-emerald-600 dark:text-emerald-400">
+                  {formatCop(liveBagsSummary.tarifaVigilanciaM2, 2)} / m²
                 </strong>
               </div>
             </div>
 
-            <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200">
-              <div className="flex items-center justify-between mb-1">
-                <span className="font-bold text-[#1D3557] flex items-center gap-1">
-                  <Sparkles className="w-3.5 h-3.5 text-sky-600" />
+            <div className="p-2.5 rounded-xl bg-[var(--surface-alt)] border border-[var(--outline-color)]">
+              <div className="flex items-center justify-between gap-2 mb-1">
+                <span className="font-bold text-[var(--text-main)] flex items-center gap-1 shrink-0">
+                  <Sparkles className="w-3.5 h-3.5 text-sky-600" strokeWidth={1.75} />
                   Aseo Neto (20%):
                 </span>
                 <PrecisionDecimalInput
@@ -357,59 +400,62 @@ export function MasterReceiptsSimulatorView() {
                       ...receipts,
                       expensas: {
                         ...receipts.expensas,
-                        aseo: {
-                          ...receipts.expensas.aseo,
-                          valorNetoDistribuir: val,
-                        },
+                        aseo: { ...receipts.expensas.aseo, valorNetoDistribuir: val },
                       },
                     })
                   }
-                  className="w-40 bg-white border border-slate-300 rounded px-2 py-1 font-mono font-bold text-right text-[#1D3557]"
+                  className="w-40 bg-[var(--surface)] border border-[var(--outline-color)] rounded px-2 py-1 font-mono font-bold text-right text-[var(--text-main)]"
                 />
               </div>
-              <div className="flex justify-between text-[11px] text-slate-600">
+              <div className="flex justify-between text-[11px] text-[var(--text-muted)]">
                 <span>Área: {formatDec(receipts.expensas.aseo.areaTotalM2, 2)} m²</span>
-                <strong className="font-mono text-sky-700">
-                  Factor: ${formatDec(tarifaAseo, 2)} / m²
+                <strong className="font-mono text-sky-600 dark:text-sky-400">
+                  {formatCop(liveBagsSummary.tarifaAseoM2, 2)} / m²
                 </strong>
               </div>
             </div>
           </div>
         </div>
 
-        {/* RESIDUOS SÓLIDOS ECSA: FACTORES PONDERADOS NP (0.4), MP (1.2), P (SALDO) */}
-        <div className="bg-white rounded-2xl border-2 border-[#1D3557] p-5 shadow-sm space-y-3">
-          <div className="flex items-center gap-2.5 border-b border-slate-100 pb-3">
-            <div className="p-2.5 rounded-xl bg-red-50 text-[#E73A46] border border-red-200">
-              <Trash2 className="w-5 h-5" />
+        <div className="bg-[var(--surface)] rounded-2xl border-2 border-[#1E3A5F] dark:border-[#f7931b]/60 p-5 shadow-xs space-y-3">
+          <div className="flex items-center gap-2.5 border-b border-[var(--outline-color)] pb-3">
+            <div className="p-2.5 rounded-xl bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30">
+              <Trash2 className="w-5 h-5" strokeWidth={1.75} />
             </div>
             <div>
-              <span className="text-[10px] font-bold uppercase text-[#E73A46] block">
-                FACTOR PONDERADO POR VOLUMEN + ÁREA
+              <span className="text-[10px] font-bold uppercase text-rose-600 dark:text-rose-400 block">
+                VOLUMEN PGIRS + ÁREA (ART. 42)
               </span>
-              <h3 className="text-sm font-bold text-[#1D3557]">
+              <h3 className="text-sm font-bold text-[var(--text-main)]">
                 5. Residuos Sólidos ECSA (NP / MP / P)
               </h3>
             </div>
           </div>
 
           <div className="space-y-2 text-xs">
-            <div className="flex items-center justify-between">
-              <span className="text-slate-600 font-medium">Neto a Prorratear ECSA:</span>
-              <span className="font-mono font-bold text-[#1D3557]">
-                {formatCop(resCfg.valorNetoProrratear)}
-              </span>
-            </div>
-            <div className="flex items-center justify-between text-[11px] text-slate-500">
-              <span>Tarifa Base 100% por m²:</span>
-              <span className="font-mono font-semibold">${formatDec(tarifaBaseResM2, 2)} / m²</span>
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-[var(--text-muted)] font-medium shrink-0">Neto ECSA ($):</span>
+              <PrecisionDecimalInput
+                ariaLabel="Valor Neto Prorratear ECSA"
+                value={resCfg.valorNetoProrratear}
+                minDecimals={0}
+                maxDecimals={2}
+                onChange={(val) =>
+                  updateReceipts({
+                    ...receipts,
+                    expensas: {
+                      ...receipts.expensas,
+                      residuosEcsa: { ...resCfg, valorNetoProrratear: val },
+                    },
+                  })
+                }
+                className="w-44 bg-[var(--surface-alt)] border border-[var(--outline-color)] rounded px-2 py-1 font-mono font-bold text-right text-[var(--text-main)]"
+              />
             </div>
 
             <div className="grid grid-cols-2 gap-2 pt-1">
-              <div className="p-2 rounded-lg bg-slate-50 border border-slate-200">
-                <label className="text-[10px] font-bold text-slate-600 block">
-                  Factor NP (No Productor)
-                </label>
+              <div className="p-2 rounded-lg bg-[var(--surface-alt)] border border-[var(--outline-color)]">
+                <label className="text-[10px] font-bold text-[var(--text-muted)] block">Factor NP</label>
                 <PrecisionDecimalInput
                   ariaLabel="Factor NP"
                   value={resCfg.factorNP}
@@ -420,24 +466,19 @@ export function MasterReceiptsSimulatorView() {
                       ...receipts,
                       expensas: {
                         ...receipts.expensas,
-                        residuosEcsa: {
-                          ...resCfg,
-                          factorNP: val,
-                        },
+                        residuosEcsa: { ...resCfg, factorNP: val },
                       },
                     })
                   }
-                  className="w-full mt-1 bg-white border border-slate-300 rounded px-2 py-1 font-mono font-bold text-right text-[#1D3557]"
+                  className="w-full mt-1 bg-[var(--surface)] border border-[var(--outline-color)] rounded px-2 py-1 font-mono font-bold text-right text-[var(--text-main)]"
                 />
-                <span className="text-[10px] font-mono text-slate-500 block text-right mt-0.5">
-                  ${formatDec(tarifaNp, 2)} / m²
+                <span className="text-[10px] font-mono text-[var(--text-muted)] block text-right mt-0.5">
+                  {formatCop(liveBagsSummary.tarifaEfectivaNpM2, 2)}/m²
                 </span>
               </div>
 
-              <div className="p-2 rounded-lg bg-slate-50 border border-slate-200">
-                <label className="text-[10px] font-bold text-slate-600 block">
-                  Factor MP (Mediano Prod.)
-                </label>
+              <div className="p-2 rounded-lg bg-[var(--surface-alt)] border border-[var(--outline-color)]">
+                <label className="text-[10px] font-bold text-[var(--text-muted)] block">Factor MP</label>
                 <PrecisionDecimalInput
                   ariaLabel="Factor MP"
                   value={resCfg.factorMP}
@@ -448,40 +489,36 @@ export function MasterReceiptsSimulatorView() {
                       ...receipts,
                       expensas: {
                         ...receipts.expensas,
-                        residuosEcsa: {
-                          ...resCfg,
-                          factorMP: val,
-                        },
+                        residuosEcsa: { ...resCfg, factorMP: val },
                       },
                     })
                   }
-                  className="w-full mt-1 bg-white border border-slate-300 rounded px-2 py-1 font-mono font-bold text-right text-[#1D3557]"
+                  className="w-full mt-1 bg-[var(--surface)] border border-[var(--outline-color)] rounded px-2 py-1 font-mono font-bold text-right text-[var(--text-main)]"
                 />
-                <span className="text-[10px] font-mono text-slate-500 block text-right mt-0.5">
-                  ${formatDec(tarifaMp, 2)} / m²
+                <span className="text-[10px] font-mono text-[var(--text-muted)] block text-right mt-0.5">
+                  {formatCop(liveBagsSummary.tarifaEfectivaMpM2, 2)}/m²
                 </span>
               </div>
             </div>
 
-            <div className="p-2.5 rounded-xl bg-red-50/70 border border-red-200 flex items-center justify-between">
+            <div className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-between">
               <div>
-                <span className="font-bold text-[#1D3557] block flex items-center gap-1">
-                  <Scale className="w-3.5 h-3.5 text-[#E73A46]" />
-                  Categoría P (Perecederos):
+                <span className="font-bold text-[var(--text-main)] flex items-center gap-1">
+                  <Scale className="w-3.5 h-3.5 text-rose-500" strokeWidth={1.75} />
+                  Categoría P (Saldo):
                 </span>
-                <span className="text-[10px] text-slate-600">
-                  Absorbe bolsa restante ({formatCop(Math.round(bolsaP))})
+                <span className="text-[10px] text-[var(--text-muted)]">
+                  Bolsa P: {formatCop(liveBagsSummary.bolsaRestantePCop)}
                 </span>
               </div>
-              <span className="font-mono font-bold text-sm text-[#E73A46]">
-                ${formatDec(tarifaP, 2)} / m²
+              <span className="font-mono font-bold text-sm text-rose-600 dark:text-rose-400">
+                {formatCop(liveBagsSummary.tarifaEfectivaPM2, 2)} / m²
               </span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* AUDITORÍA DE LOS 38 MACROMEDIDORES DE ENERGÍA, 24 DE AGUA COMUNAL Y 16 BAÑOS PÚBLICOS */}
       <CommunalMacrometersAuditTable />
     </div>
   );

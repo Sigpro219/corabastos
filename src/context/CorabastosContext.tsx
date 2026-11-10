@@ -1,42 +1,28 @@
 "use client";
 
 import React, { createContext, useContext, useState, useMemo, useEffect, useCallback } from "react";
-import { doc, setDoc } from "firebase/firestore";
+import { doc, onSnapshot, setDoc, Unsubscribe } from "firebase/firestore";
 import rawSeedData from "@/data/corabastos-junio-2025.json";
-import { getFirebaseDb } from "@/lib/firebase";
+import { getFirebaseAuth, getFirebaseDb, onAuthStateChanged, signInAnonymously } from "@/lib/firebase";
 import {
-  CommunalEnergyMeter,
-  CommunalWaterMeter,
-  LocalUnitRecord,
-  MasterReceiptsConfig,
-  OccupancyStatus,
-  PublicBathroomMeter,
-  ReadingTaskState,
+  CommunalEnergyMeter, CommunalWaterMeter, FieldReadingUpdate, FieldReadingUpdateSchema,
+  FieldServiceType, isRedFriosModality, LocalUnitRecord, MasterReceiptsConfig,
+  MasterReceiptsConfigSchema, OccupancyStatus, OccupancyStatusSchema, PublicBathroomMeter,
+  ReadingTaskState, ReadingTaskStateSchema, UserRole, UserRoleSchema,
 } from "@/contracts/domain-contracts";
 import {
-  CommunalHierarchyBreakdown,
-  ComputedLocalLiquidation,
-  computeEnergyCommunalHierarchy,
-  computeWaterCommunalHierarchy,
-  recalculateAllLocales,
+  buildTaskKey, CommunalHierarchyBreakdown, ComputedLocalLiquidation,
+  computeEnergyCommunalHierarchy, computeLiveLiquidationBags, computeWaterCommunalHierarchy,
+  LiveLiquidationBagsSummary, normalizeMasterReceipts, recalculateAllLocales,
 } from "@/lib/liquidation-engine";
+import {
+  applyAtomicFieldReadingOverride, buildCutoffReadingTasks, buildSharedMeterSiblingsMap,
+  deriveTaskStateFromObservation, UnifiedReadingTask, validateFieldReadingSubmission,
+} from "@/lib/reading-tasks-engine";
+import { clearAllLocalPhotos } from "@/lib/photo-evidence-store";
 
-export type FieldServiceType =
-  | "ENERGIA"
-  | "AGUA"
-  | "MACRO_ENERGIA"
-  | "MACRO_AGUA"
-  | "BANO_PUBLICO";
-
-export interface FieldReadingUpdate {
-  codigo: string;
-  servicio: FieldServiceType;
-  lecturaActual: number;
-  observacion: string;
-  fotoCapturada?: boolean;
-  taskState?: ReadingTaskState;
-  timestamp: string;
-}
+export { buildTaskKey, deriveTaskStateFromObservation };
+export type { FieldReadingUpdate, FieldServiceType };
 
 interface SeedDatasetShape {
   masterReceiptsJunio2025: MasterReceiptsConfig;
@@ -48,8 +34,23 @@ interface SeedDatasetShape {
 
 const typedSeedData: SeedDatasetShape = rawSeedData;
 
-interface CorabastosContextValue {
+export interface FieldCadastralLookupItem {
+  codigo: string; bodegaId: string; tipoBodega: string; areaM2: number;
+  bloqueEnergia: string; modalidadEnergia: string; modalidadAcueducto: string;
+  categoriaResiduos: string; effectiveOccupancy: OccupancyStatus;
+  hasIndividualEnergyMeter: boolean; hasIndividualWaterMeter: boolean;
+  explicacionSinOdometro?: string;
+}
+
+export interface SaveReadingOutcome { ok: boolean; error?: string; }
+
+export interface CorabastosContextValue {
+  role: UserRole;
+  authenticateAuditorAdmin: (pin: string) => boolean;
+  switchToLecturista: () => void;
+  isCloudConnected: boolean;
   receipts: MasterReceiptsConfig;
+  liveBagsSummary: LiveLiquidationBagsSummary;
   updateReceipts: (next: MasterReceiptsConfig) => void;
   resetToOfficialJune2025: () => void;
   locales: ComputedLocalLiquidation[];
@@ -58,349 +59,478 @@ interface CorabastosContextValue {
   energyCommunal: CommunalHierarchyBreakdown[];
   waterCommunal: CommunalHierarchyBreakdown[];
   bathroomMeters: PublicBathroomMeter[];
-  saveFieldReading: (update: FieldReadingUpdate) => void;
+  fieldOverridesMap: Record<string, FieldReadingUpdate>;
+  occupancyMap: Record<string, OccupancyStatus>;
+  saveFieldReading: (update: FieldReadingUpdate, sharedCodigos?: string[]) => SaveReadingOutcome;
   recentFieldUpdates: FieldReadingUpdate[];
   completedTaskIds: Record<string, ReadingTaskState>;
   updateLocalOccupancy: (codigo: string, nextStatus: OccupancyStatus) => void;
   updateBodegaOccupancy: (bodegaId: string, nextStatus: OccupancyStatus) => void;
 }
 
-const STORAGE_KEY_OVERRIDES = "corabastos_os_v1_overrides";
-const STORAGE_KEY_RECEIPTS = "corabastos_os_v1_receipts";
-const STORAGE_KEY_TASKS = "corabastos_os_v1_cutoff_tasks";
-const STORAGE_KEY_OCCUPANCY = "corabastos_os_v1_occupancy_map";
+export interface CorabastosFieldCaptureContextValue {
+  role: UserRole; authenticateAuditorAdmin: (pin: string) => boolean; switchToLecturista: () => void;
+  isCloudConnected: boolean; tasks: UnifiedReadingTask[];
+  completedTaskIds: Record<string, ReadingTaskState>;
+  fieldOverridesMap: Record<string, FieldReadingUpdate>;
+  recentFieldUpdates: FieldReadingUpdate[];
+  saveFieldReading: (update: FieldReadingUpdate, sharedCodigos?: string[]) => SaveReadingOutcome;
+  lookupCadastralLocales: (query: string) => FieldCadastralLookupItem[];
+  cadastralByCode: Map<string, FieldCadastralLookupItem>;
+}
+
+const STORAGE_KEY_ROLE = "corabastos_os_v3_role";
+const STORAGE_KEY_OVERRIDES_MAP = "corabastos_os_v3_overrides_map";
+const STORAGE_KEY_RECENT = "corabastos_os_v3_recent_updates";
+const STORAGE_KEY_RECEIPTS = "corabastos_os_v3_receipts";
+const STORAGE_KEY_TASKS = "corabastos_os_v3_cutoff_tasks";
+const STORAGE_KEY_OCCUPANCY = "corabastos_os_v3_occupancy_map";
+const CUTOFF_COLLECTION = "corabastos_corte_2025_06";
+const CUTOFF_PERIODO = "2025-06";
 
 const CorabastosContext = createContext<CorabastosContextValue | null>(null);
 
-export function buildTaskKey(servicio: FieldServiceType, codigo: string): string {
-  return `${servicio}::${codigo}`;
-}
-
-function syncCloudCutoffState(docId: string, payload: Record<string, unknown>) {
-  const db = getFirebaseDb();
-  if (!db) return;
-  setDoc(doc(db, "corabastos_corte_2025_06", docId), {
-    ...payload,
-    updatedAt: new Date().toISOString(),
-  }, { merge: true }).catch((err) => {
-    console.warn("CorabastosContext: Firestore offline fallback active", err);
-  });
-}
-
 export function normalizeOccupancy(val?: string): OccupancyStatus {
-  if (val === "VACIO_CON_CONTRATO" || val === "VACIO_SIN_CONTRATO_CORPORACION") {
-    return val;
-  }
-  return "ACTIVO";
+  const parsed = OccupancyStatusSchema.safeParse(val);
+  return parsed.success ? parsed.data : "ACTIVO";
 }
 
-export function deriveTaskStateFromObservation(obs: string): ReadingTaskState {
-  const upper = obs.toUpperCase();
-  if (upper.includes("VACIO") || upper.includes("CERRADO") || upper.includes("NO PERMITIO")) {
-    return "CERRADO_SIN_ACCESO";
+function parseValidatedRecord<T>(
+  raw: unknown,
+  parseFn: (v: unknown) => { success: boolean; data?: T },
+  filterFn?: (val: T) => boolean
+): Record<string, T> {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return {};
+  const out: Record<string, T> = {};
+  for (const [k, v] of Object.entries(raw)) {
+    const res = parseFn(v);
+    if (res.success && res.data !== undefined && (!filterFn || filterFn(res.data))) {
+      out[k] = res.data;
+    }
   }
-  if (
-    upper.includes("DETENIDO") ||
-    upper.includes("TAPADO") ||
-    upper.includes("RETIRADO") ||
-    upper.includes("SUSPENDIDO") ||
-    upper.includes("REVISAR")
-  ) {
-    return "NOVEDAD_TECNICA";
+  return out;
+}
+
+function parseValidatedRecentList(raw: unknown): FieldReadingUpdate[] {
+  if (!Array.isArray(raw)) return [];
+  const out: FieldReadingUpdate[] = [];
+  for (const item of raw.slice(0, 100)) {
+    const parsed = FieldReadingUpdateSchema.safeParse(item);
+    if (parsed.success) out.push(parsed.data);
   }
-  return "COMPLETADA";
+  return out;
+}
+
+function safeSetLocalStorage(key: string, val: unknown): void {
+  try { localStorage.setItem(key, typeof val === "string" ? val : JSON.stringify(val)); } catch { /* noop */ }
+}
+
+function syncCloudCutoffDoc(
+  docId: "field_overrides" | "occupancy_state" | "master_receipts",
+  payload: Record<string, unknown>
+): void {
+  const db = getFirebaseDb();
+  const auth = getFirebaseAuth();
+  if (!db || !auth?.currentUser) return;
+  setDoc(doc(db, CUTOFF_COLLECTION, docId), {
+    ...payload,
+    periodo: CUTOFF_PERIODO,
+    updatedAt: new Date().toISOString(),
+    updatedBy: auth.currentUser.uid,
+  }).catch(() => { /* Fallback silencioso local */ });
 }
 
 export function CorabastosProvider({ children }: { children: React.ReactNode }) {
+  const [role, setRole] = useState<UserRole>("AUDITOR_ADMIN");
+  const [isCloudConnected, setIsCloudConnected] = useState<boolean>(false);
   const [receipts, setReceipts] = useState<MasterReceiptsConfig>(typedSeedData.masterReceiptsJunio2025);
-  const [baseLocales, setBaseLocales] = useState<LocalUnitRecord[]>(typedSeedData.locales);
-  const [energyMacroMeters, setEnergyMacroMeters] = useState<CommunalEnergyMeter[]>(
-    typedSeedData.energyCommunalMeters
-  );
-  const [waterMacroMeters, setWaterMacroMeters] = useState<CommunalWaterMeter[]>(
-    typedSeedData.waterCommunalMeters
-  );
-  const [bathroomMeters, setBathroomMeters] = useState<PublicBathroomMeter[]>(
-    typedSeedData.publicBathroomMeters
-  );
+  const [fieldOverridesMap, setFieldOverridesMap] = useState<Record<string, FieldReadingUpdate>>({});
+  const [occupancyMap, setOccupancyMap] = useState<Record<string, OccupancyStatus>>({});
   const [recentFieldUpdates, setRecentFieldUpdates] = useState<FieldReadingUpdate[]>([]);
   const [completedTaskIds, setCompletedTaskIds] = useState<Record<string, ReadingTaskState>>({});
 
+  const seedLocalByCode = useMemo(() => {
+    const m = new Map<string, LocalUnitRecord>();
+    for (const l of typedSeedData.locales) m.set(l.codigo, l);
+    return m;
+  }, []);
+
+  const sharedSiblingsMap = useMemo(() => buildSharedMeterSiblingsMap(typedSeedData.locales), []);
+
+  // 1. Hidratación determinista inmediata en F5 desde localStorage con aislamiento financiero LECTURISTA
   useEffect(() => {
     try {
-      const savedReceipts = localStorage.getItem(STORAGE_KEY_RECEIPTS);
-      if (savedReceipts) {
-        setReceipts(JSON.parse(savedReceipts) as MasterReceiptsConfig);
+      const roleParsed = UserRoleSchema.safeParse(localStorage.getItem(STORAGE_KEY_ROLE));
+      let effectiveRole: UserRole = "AUDITOR_ADMIN";
+      if (roleParsed.success) {
+        effectiveRole = roleParsed.data;
+        setRole(effectiveRole);
+      } else if (typeof window !== "undefined" && window.location.pathname.startsWith("/captura")) {
+        effectiveRole = "LECTURISTA";
+        setRole("LECTURISTA");
+        safeSetLocalStorage(STORAGE_KEY_ROLE, "LECTURISTA");
       }
-      const savedUpdates = localStorage.getItem(STORAGE_KEY_OVERRIDES);
-      if (savedUpdates) {
-        setRecentFieldUpdates(JSON.parse(savedUpdates) as FieldReadingUpdate[]);
+
+      const savedOverrides = localStorage.getItem(STORAGE_KEY_OVERRIDES_MAP);
+      if (savedOverrides) {
+        setFieldOverridesMap(parseValidatedRecord(JSON.parse(savedOverrides), (v) => FieldReadingUpdateSchema.safeParse(v)));
       }
       const savedTasks = localStorage.getItem(STORAGE_KEY_TASKS);
       if (savedTasks) {
-        setCompletedTaskIds(JSON.parse(savedTasks) as Record<string, ReadingTaskState>);
+        setCompletedTaskIds(parseValidatedRecord(JSON.parse(savedTasks), (v) => ReadingTaskStateSchema.safeParse(v)));
       }
-      const savedOccupancy = localStorage.getItem(STORAGE_KEY_OCCUPANCY);
-      if (savedOccupancy) {
-        const occMap = JSON.parse(savedOccupancy) as Record<string, OccupancyStatus>;
-        setBaseLocales((prev) =>
-          prev.map((l) => (occMap[l.codigo] ? { ...l, estadoOcupacion: occMap[l.codigo] } : l))
-        );
+      const savedRecent = localStorage.getItem(STORAGE_KEY_RECENT);
+      if (savedRecent) setRecentFieldUpdates(parseValidatedRecentList(JSON.parse(savedRecent)));
+
+      if (effectiveRole === "AUDITOR_ADMIN") {
+        const savedReceipts = localStorage.getItem(STORAGE_KEY_RECEIPTS);
+        if (savedReceipts) {
+          const parsed = MasterReceiptsConfigSchema.safeParse(JSON.parse(savedReceipts));
+          if (parsed.success) setReceipts(normalizeMasterReceipts(parsed.data));
+        }
+        const savedOcc = localStorage.getItem(STORAGE_KEY_OCCUPANCY);
+        if (savedOcc) {
+          setOccupancyMap(parseValidatedRecord(JSON.parse(savedOcc), (v) => OccupancyStatusSchema.safeParse(v), (s) => s !== "ACTIVO"));
+        }
+      } else {
+        localStorage.removeItem(STORAGE_KEY_RECEIPTS);
+        localStorage.removeItem(STORAGE_KEY_OCCUPANCY);
       }
-    } catch (err) {
-      console.warn("CorabastosContext: fallback to deterministic seed state", err);
-    }
+    } catch { /* Fallback limpio al estado semilla */ }
+  }, []);
+
+  // 2. Autenticación Firebase Auth (anónima/sesión) + suscripción campo field_overrides
+  useEffect(() => {
+    const auth = getFirebaseAuth();
+    const db = getFirebaseDb();
+    if (!auth || !db) return;
+
+    let unsubField: Unsubscribe | null = null;
+    const unsubAuth = onAuthStateChanged(auth, (user) => {
+      if (unsubField) { unsubField(); unsubField = null; }
+      if (!user) {
+        setIsCloudConnected(false);
+        signInAnonymously(auth).catch(() => setIsCloudConnected(false));
+        return;
+      }
+      setIsCloudConnected(true);
+      if (!user.isAnonymous && user.email) setRole("AUDITOR_ADMIN");
+
+      unsubField = onSnapshot(
+        doc(db, CUTOFF_COLLECTION, "field_overrides"),
+        (snap) => {
+          if (!snap.exists() || snap.metadata.hasPendingWrites) return;
+          const data = snap.data();
+          if ("overrides" in data) {
+            const valid = parseValidatedRecord(data.overrides, (v) => FieldReadingUpdateSchema.safeParse(v));
+            setFieldOverridesMap(valid);
+            safeSetLocalStorage(STORAGE_KEY_OVERRIDES_MAP, valid);
+          }
+          if ("completedTaskIds" in data) {
+            const validTasks = parseValidatedRecord(data.completedTaskIds, (v) => ReadingTaskStateSchema.safeParse(v));
+            setCompletedTaskIds(validTasks);
+            safeSetLocalStorage(STORAGE_KEY_TASKS, validTasks);
+          }
+          if ("recentFieldUpdates" in data) {
+            const validRecent = parseValidatedRecentList(data.recentFieldUpdates);
+            setRecentFieldUpdates(validRecent);
+            safeSetLocalStorage(STORAGE_KEY_RECENT, validRecent);
+          }
+        },
+        () => setIsCloudConnected(false)
+      );
+    });
+
+    return () => {
+      if (unsubField) unsubField();
+      unsubAuth();
+    };
+  }, []);
+
+  // 3. Suscripción financiera exclusiva AUDITOR_ADMIN (master_receipts + occupancy_state)
+  useEffect(() => {
+    const db = getFirebaseDb();
+    if (!db || !isCloudConnected || role !== "AUDITOR_ADMIN") return;
+    const unsubOcc = onSnapshot(
+      doc(db, CUTOFF_COLLECTION, "occupancy_state"),
+      (snap) => {
+        if (!snap.exists() || snap.metadata.hasPendingWrites) return;
+        const validOcc = parseValidatedRecord(snap.data().occupancyMap, (v) => OccupancyStatusSchema.safeParse(v), (s) => s !== "ACTIVO");
+        setOccupancyMap(validOcc);
+        safeSetLocalStorage(STORAGE_KEY_OCCUPANCY, validOcc);
+      },
+      () => { /* Sin privilegio o sin red */ }
+    );
+    const unsubRec = onSnapshot(
+      doc(db, CUTOFF_COLLECTION, "master_receipts"),
+      (snap) => {
+        if (!snap.exists() || snap.metadata.hasPendingWrites) return;
+        const parsed = MasterReceiptsConfigSchema.safeParse(snap.data().receipts);
+        if (parsed.success) {
+          const normalized = normalizeMasterReceipts(parsed.data);
+          setReceipts(normalized);
+          safeSetLocalStorage(STORAGE_KEY_RECEIPTS, normalized);
+        }
+      },
+      () => { /* Fallback local */ }
+    );
+    return () => { unsubOcc(); unsubRec(); };
+  }, [isCloudConnected, role]);
+
+  const authenticateAuditorAdmin = useCallback((pin: string): boolean => {
+    const expectedPin = process.env.NEXT_PUBLIC_CORABASTOS_ADMIN_PIN || "CORABASTOS2025";
+    if (pin.trim() !== expectedPin) return false;
+    setRole("AUDITOR_ADMIN");
+    safeSetLocalStorage(STORAGE_KEY_ROLE, "AUDITOR_ADMIN");
+    return true;
+  }, []);
+
+  const switchToLecturista = useCallback(() => {
+    setRole("LECTURISTA");
+    safeSetLocalStorage(STORAGE_KEY_ROLE, "LECTURISTA");
+    setReceipts(typedSeedData.masterReceiptsJunio2025);
+    setOccupancyMap({});
+    try {
+      localStorage.removeItem(STORAGE_KEY_RECEIPTS);
+      localStorage.removeItem(STORAGE_KEY_OCCUPANCY);
+    } catch { /* noop */ }
   }, []);
 
   const updateReceipts = useCallback((next: MasterReceiptsConfig) => {
-    setReceipts(next);
-    try {
-      localStorage.setItem(STORAGE_KEY_RECEIPTS, JSON.stringify(next));
-      syncCloudCutoffState("master_receipts", { receipts: next });
-    } catch (err) {
-      console.warn("CorabastosContext: failed to persist receipts", err);
-    }
-  }, []);
+    if (role === "LECTURISTA") return;
+    const normalized = normalizeMasterReceipts(next);
+    const parsed = MasterReceiptsConfigSchema.safeParse(normalized);
+    if (!parsed.success) return;
+    setReceipts(parsed.data);
+    safeSetLocalStorage(STORAGE_KEY_RECEIPTS, parsed.data);
+    syncCloudCutoffDoc("master_receipts", { receipts: parsed.data });
+  }, [role]);
 
   const updateLocalOccupancy = useCallback((codigo: string, nextStatus: OccupancyStatus) => {
-    setBaseLocales((prev) => {
-      const updated = prev.map((loc) => {
-        if (loc.codigo !== codigo) return loc;
-        if (nextStatus === "VACIO_CON_CONTRATO") {
-          return {
-            ...loc,
-            estadoOcupacion: nextStatus,
-            energiaLecturaAct: loc.energiaLecturaAnt,
-            energiaObs: "L, VACIO",
-            aguaLecturaAct: loc.aguaLecturaAnt,
-            aguaObs: "L, VACIO",
-          };
-        }
-        return { ...loc, estadoOcupacion: nextStatus };
-      });
-      try {
-        const occMap: Record<string, OccupancyStatus> = {};
-        for (const item of updated) {
-          const norm = normalizeOccupancy(item.estadoOcupacion);
-          if (norm !== "ACTIVO") {
-            occMap[item.codigo] = norm;
-          }
-        }
-        localStorage.setItem(STORAGE_KEY_OCCUPANCY, JSON.stringify(occMap));
-      } catch (err) {
-        console.warn("CorabastosContext: failed to persist local occupancy", err);
-      }
-      return updated;
+    if (role === "LECTURISTA") return;
+    const parsed = OccupancyStatusSchema.safeParse(nextStatus);
+    if (!parsed.success) return;
+    setOccupancyMap((prev) => {
+      const next = { ...prev };
+      if (parsed.data === "ACTIVO") delete next[codigo];
+      else next[codigo] = parsed.data;
+      safeSetLocalStorage(STORAGE_KEY_OCCUPANCY, next);
+      syncCloudCutoffDoc("occupancy_state", { occupancyMap: next });
+      return next;
     });
-  }, []);
+  }, [role]);
 
   const updateBodegaOccupancy = useCallback((bodegaId: string, nextStatus: OccupancyStatus) => {
-    setBaseLocales((prev) => {
-      const updated = prev.map((loc) => {
-        if (loc.bodegaId !== bodegaId) return loc;
-        if (nextStatus === "VACIO_CON_CONTRATO") {
-          return {
-            ...loc,
-            estadoOcupacion: nextStatus,
-            energiaLecturaAct: loc.energiaLecturaAnt,
-            energiaObs: "L, VACIO",
-            aguaLecturaAct: loc.aguaLecturaAnt,
-            aguaObs: "L, VACIO",
-          };
-        }
-        return { ...loc, estadoOcupacion: nextStatus };
+    if (role === "LECTURISTA") return;
+    const parsed = OccupancyStatusSchema.safeParse(nextStatus);
+    if (!parsed.success) return;
+    setOccupancyMap((prev) => {
+      const next = { ...prev };
+      for (const loc of typedSeedData.locales) {
+        if (loc.bodegaId !== bodegaId) continue;
+        if (parsed.data === "ACTIVO") delete next[loc.codigo];
+        else next[loc.codigo] = parsed.data;
+      }
+      safeSetLocalStorage(STORAGE_KEY_OCCUPANCY, next);
+      syncCloudCutoffDoc("occupancy_state", { occupancyMap: next });
+      return next;
+    });
+  }, [role]);
+
+  const resolveSeedPreviousReading = useCallback((servicio: FieldServiceType, codigo: string): number => {
+    if (servicio === "ENERGIA") return seedLocalByCode.get(codigo)?.energiaLecturaAnt ?? 0;
+    if (servicio === "AGUA") return seedLocalByCode.get(codigo)?.aguaLecturaAnt ?? 0;
+    if (servicio === "MACRO_ENERGIA") return typedSeedData.energyCommunalMeters.find((m) => m.codigo === codigo)?.lecturaAnterior ?? 0;
+    if (servicio === "MACRO_AGUA") return typedSeedData.waterCommunalMeters.find((m) => m.codigo === codigo)?.lecturaAnterior ?? 0;
+    return typedSeedData.publicBathroomMeters.find((b) => b.codigo === codigo)?.lecturaAnterior ?? 0;
+  }, [seedLocalByCode]);
+
+  const saveFieldReading = useCallback(
+    (update: FieldReadingUpdate, sharedCodigos?: string[]): SaveReadingOutcome => {
+      const candidate: FieldReadingUpdate = {
+        codigo: update.codigo,
+        servicio: update.servicio,
+        lecturaActual: update.lecturaActual,
+        observacion: update.observacion,
+        timestamp: update.timestamp || new Date().toISOString(),
+        ...(update.hasPhotoEvidence !== undefined || update.fotoCapturada !== undefined
+          ? { hasPhotoEvidence: Boolean(update.hasPhotoEvidence || update.fotoCapturada) }
+          : {}),
+        ...(update.photoLocalKey ? { photoLocalKey: update.photoLocalKey } : {}),
+        ...(update.photoStorageUrl ? { photoStorageUrl: update.photoStorageUrl } : {}),
+        ...(update.photoCapturedAt ? { photoCapturedAt: update.photoCapturedAt } : {}),
+        ...(update.taskState ? { taskState: update.taskState } : {}),
+      };
+
+      const zodCheck = FieldReadingUpdateSchema.safeParse(candidate);
+      if (!zodCheck.success) return { ok: false, error: zodCheck.error.issues[0]?.message || "Lectura inválida." };
+
+      const lecturaAnterior = resolveSeedPreviousReading(zodCheck.data.servicio, zodCheck.data.codigo);
+      const ruleCheck = validateFieldReadingSubmission({
+        lecturaAnterior,
+        lecturaActual: zodCheck.data.lecturaActual,
+        observacion: zodCheck.data.observacion,
+        hasPhotoEvidence: Boolean(zodCheck.data.hasPhotoEvidence),
       });
-      try {
-        const occMap: Record<string, OccupancyStatus> = {};
-        for (const item of updated) {
-          const norm = normalizeOccupancy(item.estadoOcupacion);
-          if (norm !== "ACTIVO") {
-            occMap[item.codigo] = norm;
-          }
-        }
-        localStorage.setItem(STORAGE_KEY_OCCUPANCY, JSON.stringify(occMap));
-      } catch (err) {
-        console.warn("CorabastosContext: failed to persist bodega occupancy", err);
-      }
-      return updated;
-    });
-  }, []);
+      if (!ruleCheck.valid) return { ok: false, error: ruleCheck.reason };
 
-  const saveFieldReading = useCallback((update: FieldReadingUpdate) => {
-    const taskState = update.taskState || deriveTaskStateFromObservation(update.observacion);
-    const taskKey = buildTaskKey(update.servicio, update.codigo);
+      const taskState = zodCheck.data.taskState || deriveTaskStateFromObservation(zodCheck.data.observacion);
+      const validUpdate: FieldReadingUpdate = { ...zodCheck.data, taskState };
 
-    setCompletedTaskIds((prev) => {
-      const next = { ...prev, [taskKey]: taskState };
-      try {
-        localStorage.setItem(STORAGE_KEY_TASKS, JSON.stringify(next));
-      } catch (err) {
-        console.warn("CorabastosContext: failed to persist completedTaskIds", err);
-      }
-      return next;
-    });
+      setFieldOverridesMap((prevOvr) => {
+        const { nextOverrides, nextCompleted } = applyAtomicFieldReadingOverride(
+          prevOvr, completedTaskIds, validUpdate, sharedCodigos, sharedSiblingsMap
+        );
+        const nextRecent = [
+          validUpdate,
+          ...recentFieldUpdates.filter((u) => !(u.codigo === validUpdate.codigo && u.servicio === validUpdate.servicio)),
+        ].slice(0, 100);
 
-    if (update.servicio === "ENERGIA") {
-      setBaseLocales((prev) =>
-        prev.map((loc) => {
-          if (loc.codigo !== update.codigo) return loc;
-          const nextOcupacion: OccupancyStatus =
-            taskState === "CERRADO_SIN_ACCESO"
-              ? "VACIO_CON_CONTRATO"
-              : normalizeOccupancy(loc.estadoOcupacion);
-          return {
-            ...loc,
-            energiaLecturaAct: update.lecturaActual,
-            energiaObs: update.observacion,
-            energiaTareaEstado: taskState,
-            estadoOcupacion: nextOcupacion,
-            energiaEstado:
-              taskState === "NOVEDAD_TECNICA" || update.observacion.includes("REVISAR") ? "REVISAR" : "OK",
-          };
-        })
-      );
-    } else if (update.servicio === "AGUA") {
-      setBaseLocales((prev) =>
-        prev.map((loc) => {
-          if (loc.codigo !== update.codigo) return loc;
-          const nextOcupacion: OccupancyStatus =
-            taskState === "CERRADO_SIN_ACCESO"
-              ? "VACIO_CON_CONTRATO"
-              : normalizeOccupancy(loc.estadoOcupacion);
-          return {
-            ...loc,
-            aguaLecturaAct: update.lecturaActual,
-            aguaObs: update.observacion,
-            aguaTareaEstado: taskState,
-            estadoOcupacion: nextOcupacion,
-            aguaEstado:
-              taskState === "NOVEDAD_TECNICA" || update.observacion.includes("REVISAR") ? "REVISAR" : "OK",
-          };
-        })
-      );
-    } else if (update.servicio === "MACRO_ENERGIA") {
-      setEnergyMacroMeters((prev) =>
-        prev.map((m) =>
-          m.codigo === update.codigo
-            ? { ...m, lecturaActual: update.lecturaActual, observacion: update.observacion }
-            : m
-        )
-      );
-    } else if (update.servicio === "MACRO_AGUA") {
-      setWaterMacroMeters((prev) =>
-        prev.map((m) =>
-          m.codigo === update.codigo
-            ? { ...m, lecturaActual: update.lecturaActual, observacion: update.observacion }
-            : m
-        )
-      );
-    } else if (update.servicio === "BANO_PUBLICO") {
-      setBathroomMeters((prev) =>
-        prev.map((b) =>
-          b.codigo === update.codigo
-            ? {
-                ...b,
-                lecturaActual: update.lecturaActual,
-                consumoM3: Math.max(0, update.lecturaActual - b.lecturaAnterior),
-              }
-            : b
-        )
-      );
-    }
-
-    setRecentFieldUpdates((prev) => {
-      const enrichedUpdate: FieldReadingUpdate = { ...update, taskState };
-      const next = [
-        enrichedUpdate,
-        ...prev.filter((u) => !(u.codigo === update.codigo && u.servicio === update.servicio)),
-      ].slice(0, 100);
-      try {
-        localStorage.setItem(STORAGE_KEY_OVERRIDES, JSON.stringify(next));
-        syncCloudCutoffState(`reading_${update.servicio}_${update.codigo}`, {
-          codigo: update.codigo,
-          servicio: update.servicio,
-          lecturaActual: update.lecturaActual,
-          observacion: update.observacion,
-          taskState,
-          timestamp: update.timestamp,
+        setCompletedTaskIds(nextCompleted);
+        setRecentFieldUpdates(nextRecent);
+        safeSetLocalStorage(STORAGE_KEY_OVERRIDES_MAP, nextOverrides);
+        safeSetLocalStorage(STORAGE_KEY_TASKS, nextCompleted);
+        safeSetLocalStorage(STORAGE_KEY_RECENT, nextRecent);
+        syncCloudCutoffDoc("field_overrides", {
+          overrides: nextOverrides,
+          completedTaskIds: nextCompleted,
+          recentFieldUpdates: nextRecent,
         });
-      } catch (err) {
-        console.warn("CorabastosContext: failed to persist recentFieldUpdates", err);
-      }
-      return next;
-    });
-  }, []);
+        return nextOverrides;
+      });
+
+      return { ok: true };
+    },
+    [completedTaskIds, recentFieldUpdates, resolveSeedPreviousReading, sharedSiblingsMap]
+  );
 
   const resetToOfficialJune2025 = useCallback(() => {
+    if (role === "LECTURISTA") return;
     setReceipts(typedSeedData.masterReceiptsJunio2025);
-    setBaseLocales(typedSeedData.locales);
-    setEnergyMacroMeters(typedSeedData.energyCommunalMeters);
-    setWaterMacroMeters(typedSeedData.waterCommunalMeters);
-    setBathroomMeters(typedSeedData.publicBathroomMeters);
+    setFieldOverridesMap({});
+    setOccupancyMap({});
     setRecentFieldUpdates([]);
     setCompletedTaskIds({});
     try {
-      localStorage.removeItem(STORAGE_KEY_OVERRIDES);
-      localStorage.removeItem(STORAGE_KEY_RECEIPTS);
-      localStorage.removeItem(STORAGE_KEY_TASKS);
-      localStorage.removeItem(STORAGE_KEY_OCCUPANCY);
-    } catch (err) {
-      console.warn("CorabastosContext: failed to clear storage keys", err);
-    }
-  }, []);
+      for (const k of [STORAGE_KEY_OVERRIDES_MAP, STORAGE_KEY_RECENT, STORAGE_KEY_RECEIPTS, STORAGE_KEY_TASKS, STORAGE_KEY_OCCUPANCY]) {
+        localStorage.removeItem(k);
+      }
+    } catch { /* noop */ }
+    void clearAllLocalPhotos();
+    syncCloudCutoffDoc("field_overrides", { overrides: {}, completedTaskIds: {}, recentFieldUpdates: [] });
+    syncCloudCutoffDoc("occupancy_state", { occupancyMap: {} });
+    syncCloudCutoffDoc("master_receipts", { receipts: typedSeedData.masterReceiptsJunio2025 });
+  }, [role]);
 
-  const locales = useMemo(() => recalculateAllLocales(baseLocales, receipts), [baseLocales, receipts]);
+  const locales = useMemo(
+    () =>
+      recalculateAllLocales(typedSeedData.locales, receipts, {
+        energyMacroMeters: typedSeedData.energyCommunalMeters,
+        waterMacroMeters: typedSeedData.waterCommunalMeters,
+        fieldOverridesMap,
+        occupancyMap,
+        seedReceipts: typedSeedData.masterReceiptsJunio2025,
+      }),
+    [receipts, fieldOverridesMap, occupancyMap]
+  );
 
   const localesByCode = useMemo(() => {
     const map = new Map<string, ComputedLocalLiquidation>();
-    for (const l of locales) {
-      map.set(l.codigo, l);
-    }
+    for (const l of locales) map.set(l.codigo, l);
     return map;
   }, [locales]);
 
   const bodegasList = useMemo(() => {
     const set = new Set<string>();
-    for (const l of locales) {
-      if (l.bodegaId) set.add(l.bodegaId);
-    }
+    for (const l of locales) if (l.bodegaId) set.add(l.bodegaId);
     return Array.from(set).sort();
   }, [locales]);
 
   const energyCommunal = useMemo(
-    () => computeEnergyCommunalHierarchy(energyMacroMeters, localesByCode),
-    [energyMacroMeters, localesByCode]
+    () => computeEnergyCommunalHierarchy(typedSeedData.energyCommunalMeters, localesByCode, fieldOverridesMap),
+    [localesByCode, fieldOverridesMap]
   );
 
   const waterCommunal = useMemo(
-    () => computeWaterCommunalHierarchy(waterMacroMeters, localesByCode),
-    [waterMacroMeters, localesByCode]
+    () => computeWaterCommunalHierarchy(typedSeedData.waterCommunalMeters, localesByCode, fieldOverridesMap),
+    [localesByCode, fieldOverridesMap]
+  );
+
+  const bathroomMeters = useMemo<PublicBathroomMeter[]>(
+    () =>
+      typedSeedData.publicBathroomMeters.map((b) => {
+        const ovr = fieldOverridesMap[buildTaskKey("BANO_PUBLICO", b.codigo)];
+        return ovr ? { ...b, lecturaActual: ovr.lecturaActual, consumoM3: Math.max(0, ovr.lecturaActual - b.lecturaAnterior) } : b;
+      }),
+    [fieldOverridesMap]
+  );
+
+  const liveBagsSummary = useMemo(
+    () => computeLiveLiquidationBags(locales, receipts, typedSeedData.masterReceiptsJunio2025),
+    [locales, receipts]
   );
 
   const value: CorabastosContextValue = {
-    receipts,
-    updateReceipts,
-    resetToOfficialJune2025,
-    locales,
-    localesByCode,
-    bodegasList,
-    energyCommunal,
-    waterCommunal,
-    bathroomMeters,
-    saveFieldReading,
-    recentFieldUpdates,
-    completedTaskIds,
-    updateLocalOccupancy,
-    updateBodegaOccupancy,
+    role, authenticateAuditorAdmin, switchToLecturista, isCloudConnected, receipts, liveBagsSummary, updateReceipts,
+    resetToOfficialJune2025, locales, localesByCode, bodegasList, energyCommunal, waterCommunal,
+    bathroomMeters, fieldOverridesMap, occupancyMap, saveFieldReading, recentFieldUpdates,
+    completedTaskIds, updateLocalOccupancy, updateBodegaOccupancy,
   };
 
   return <CorabastosContext.Provider value={value}>{children}</CorabastosContext.Provider>;
 }
 
-export function useCorabastos() {
+export function useCorabastos(): CorabastosContextValue {
   const ctx = useContext(CorabastosContext);
-  if (!ctx) {
-    throw new Error("useCorabastos must be used within CorabastosProvider");
-  }
+  if (!ctx) throw new Error("useCorabastos must be used within CorabastosProvider");
   return ctx;
+}
+
+export function useCorabastosFieldCapture(): CorabastosFieldCaptureContextValue {
+  const ctx = useCorabastos();
+  const tasks = useMemo(
+    () => buildCutoffReadingTasks(ctx.locales, ctx.energyCommunal, ctx.waterCommunal, ctx.bathroomMeters, ctx.completedTaskIds, ctx.fieldOverridesMap),
+    [ctx.locales, ctx.energyCommunal, ctx.waterCommunal, ctx.bathroomMeters, ctx.completedTaskIds, ctx.fieldOverridesMap]
+  );
+
+  const cadastralByCode = useMemo(() => {
+    const map = new Map<string, FieldCadastralLookupItem>();
+    for (const loc of ctx.locales) {
+      const hasE = loc.modalidadEnergia === "CONTADOR";
+      const hasW = loc.modalidadAcueducto === "CONTADOR";
+      const isRf = isRedFriosModality(loc.modalidadEnergia) || isRedFriosModality(loc.modalidadAcueducto);
+      map.set(loc.codigo, {
+        codigo: loc.codigo, bodegaId: loc.bodegaId, tipoBodega: loc.tipoBodega, areaM2: loc.areaM2,
+        bloqueEnergia: loc.bloqueEnergia, modalidadEnergia: loc.modalidadEnergia,
+        modalidadAcueducto: loc.modalidadAcueducto, categoriaResiduos: loc.categoriaResiduos,
+        effectiveOccupancy: loc.effectiveOccupancy, hasIndividualEnergyMeter: hasE, hasIndividualWaterMeter: hasW,
+        ...(!hasE && !hasW ? {
+          explicacionSinOdometro: isRf
+            ? "Puesto en Red de Fríos sin contador individual (liquidado por área m² sobre macromedidor de cadena de frío)."
+            : "Local sin odómetro individual (liquidado por macromedidor comunal de bodega o bolsa de prorrateo por área m²).",
+        } : {}),
+      });
+    }
+    return map;
+  }, [ctx.locales]);
+
+  const lookupCadastralLocales = useCallback((query: string): FieldCadastralLookupItem[] => {
+    const q = query.trim().toLowerCase();
+    if (!q) return [];
+    const res: FieldCadastralLookupItem[] = [];
+    for (const item of cadastralByCode.values()) {
+      if (item.codigo.toLowerCase().includes(q) || `bodega ${item.bodegaId}`.toLowerCase().includes(q) || item.tipoBodega.toLowerCase().includes(q)) {
+        res.push(item);
+        if (res.length >= 30) break;
+      }
+    }
+    return res;
+  }, [cadastralByCode]);
+
+  return {
+    role: ctx.role, authenticateAuditorAdmin: ctx.authenticateAuditorAdmin, switchToLecturista: ctx.switchToLecturista,
+    isCloudConnected: ctx.isCloudConnected, tasks, completedTaskIds: ctx.completedTaskIds,
+    fieldOverridesMap: ctx.fieldOverridesMap, recentFieldUpdates: ctx.recentFieldUpdates,
+    saveFieldReading: ctx.saveFieldReading, lookupCadastralLocales, cadastralByCode,
+  };
 }

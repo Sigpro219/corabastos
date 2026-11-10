@@ -3,9 +3,9 @@ import "./globals.css";
 import { CorabastosProvider } from "@/context/CorabastosContext";
 
 export const metadata: Metadata = {
-  title: "CORABASTOS OS · ERP Corporativo & Motor de Liquidación de Servicios Públicos",
+  title: "CORABASTOS · Liquidación de Servicios Públicos, Expensas & Captura de Medidores",
   description:
-    "Plataforma de Captura Móvil de Contadores en Terreno, Desacoplo Padre-Hijo de Macromedidores Comunales y Liquidación Exacta de Servicios Públicos y Expensas para 5.318 Locales.",
+    "Sistema de Captura Móvil de 1.688 Medidores Físicos, Desacoplo Padre-Hijo de 62 Macromedidores Comunales y Liquidación Exacta de Servicios Públicos y Expensas para 5.318 Locales de Corabastos S.A.",
   icons: {
     icon: "/corabastos-isotipo.svg",
   },
@@ -17,8 +17,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es">
-      <body className="antialiased min-h-screen bg-[#F8F9FA] text-[#1D3557]">
+    <html lang="es" suppressHydrationWarning>
+      <body className="antialiased min-h-screen bg-[var(--background)] text-[var(--text-main)] print:min-h-0 print:bg-white print:text-slate-950">
         <CorabastosProvider>{children}</CorabastosProvider>
       </body>
     </html>

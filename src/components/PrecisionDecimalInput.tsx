@@ -16,7 +16,7 @@ interface PrecisionDecimalInputProps {
 /**
  * Input Numérico Canónico Anti-Cero y Coma Decimal (es-CO).
  * Cumple REF-INPUT-NUMERICO-SIN-CERO-Y-COMA-DECIMAL.md y Ley Marcial SDD #8:
- * - Prohibido <input type="number">
+ * - Usa exclusivamente type="text" con inputMode="decimal" (sin inputs numéricos nativos)
  * - Cuando está desenfocado muestra formato colombiano con puntos de miles y coma decimal (ej. 1.073,08)
  * - Al enfocar selecciona todo y permite editar con coma (,) o punto (.) purgando ceros a la izquierda
  */
