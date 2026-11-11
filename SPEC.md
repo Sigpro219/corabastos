@@ -1,182 +1,174 @@
 # 🛡️ CORABASTOS — Sistema de Liquidación de Servicios Públicos, Expensas Comunes & Captura de Medidores (SPEC.md)
 
 > **Documento Canónico de Especificación (Spec-Anchored — SDD)**  
-> **Versión:** 3.1.0 (Poda Radical `/spacex` + Blindaje Forense Doble Ronda `/goldfish`: Eliminación de Módulos Fantasma, Cuadre Exacto `$3.621.554.642 COP`, Desacoplo Diferencial Padre-Hijo Anti-`NaN`/Anti-Hijos Cruzados, Deduplicación `/N` de `1.688` Medidores Físicos, Evidencia en Storage/IndexedDB sin Base64 en Firestore, Persistencia Bidireccional `F5 + onSnapshot` y Seguridad RBAC Zero-Trust)  
+> **Versión:** 4.5.0 (Arquitectura Ascendente Micro a Macro: Enrolamiento Georreferenciado 1-Tap, Fotos Duales de Nicho Luz/Agua, Aprendizaje Continuo EMA $\alpha = 0,35$ sobre Tiempos Reales $\Delta t$, Cronograma Exclusivo Entre Semana Lunes–Viernes en Jornadas de 8 Horas (`480 min`) sobre Base de `22 Días Hábiles/Mes` con Candado de `30 Días`, Captura Ágil de `4 Últimos Dígitos` con Guarda Anti-Rollover Fantasma (`reconstructReadingFromTrailingDigits` con frontera 70/30%) y Excepción de `5 Dígitos` en Alta Carga, Mapa de Calor Estricto de las 68 Bodegas (+ Chip Aislado de los 16 Baños Públicos), Bandas Históricas Auto-Alimentadas Normalizadas a Base 30 Días con Colchón Mínimo (`Deadband Floor`: 3 m³ Agua / 15 kWh Luz) y Auto-Adaptación por 2 Cortes Verificados Seguidos, e Informe de Anomalías con Re-Verificación Prioridad 0 a Ceguera Total en Terreno)  
 > **Fecha de Actualización:** 10 de Noviembre de 2026  
 > **Estado:** 🟢 VIGENTE & CONTRATO CANÓNICO DE EJECUCIÓN  
 > **Ubicación Física en Disco:** `c:\Projects\corabastos`  
 > **Puerto Dev Oficial:** `3013` (`next dev --turbopack -p 3013`)  
-> **Backend Cloud Oficial:** Firebase Project `mjm-sistema-2026-aee19` (`Auth` + `Firestore` + `Storage`)  
-> **Atlas Topológico Estructural:** Anexo pericial en [`PROJECT_ATLAS.md`](./PROJECT_ATLAS.md) *(Cláusula de Prelación: en caso de cualquier discrepancia durante la migración, prevalece taxativamente este `SPEC.md` v3.1.0 y el Atlas se regenera obligatoriamente al cierre conforme al §7).*  
-> **Principio Rector:** *«El código no contiene promesas comerciales falsas ni mocks cosméticos; solo implementa el alcance operativo real verificado contra el corte oficial de Corabastos S.A.»*
+> **URL Producción Activa:** `https://corabastos-servicios.web.app` (Sitio oficial en Firebase Project `mjm-sistema-2026-aee19`)  
+> **Vigencia Operativa Programada:** Ventana activa de 30 días hasta `2026-12-10T23:59:59-05:00` (`TrialExpirationGuard.tsx`, `firestore.rules`, `storage.rules`)  
+> **Atlas Topológico Estructural:** Anexo pericial en [`PROJECT_ATLAS.md`](./PROJECT_ATLAS.md) *(Cláusula de Prelación: prevalece taxativamente este `SPEC.md` v4.5.0).*  
+> **Principio Rector:** *«El dato nace en el barro del Gemba: primero se enrola y georreferencia el contador físico para establecer la ruta ideal; luego se captura el consumo con agilidad de 4 dígitos entre semana; y finalmente se gobierna todo el ciclo de Transferencias bajo la fecha de corte oficial sin promesas falsas ni mocks cosméticos.»*
 
 ---
 
-## 1. Identidad, Alcance Puro (`/spacex`) y Fuente de Datos Física
+## 🏛️ ARQUITECTURA ASCENDENTE: DE LO MICRO A LO MACRO (5 NIVELES OPERATIVOS)
 
-### 1.1 Misión Operativa Única
-El sistema resuelve de punta a punta la liquidación mensual de transferencia de servicios públicos y expensas comunes de la **Corporación de Abastos de Bogotá S.A. (Corabastos)** sobre sus **5.318 locales comerciales** (`126.125,15 m²` en **68 bodegas**):
-1. **Captura en Terreno (`/captura`):** Lectura móvil de los **1.688 medidores físicos únicos** (que gobiernan los **1.835 registros con medidor**: `62` macromedidores comunales, `16` baños públicos, `1.084` tareas físicas de energía cubriendo `1.219` registros `CONTADOR`, y `526` tareas físicas de acueducto cubriendo `538` registros `CONTADOR`), con fotografía probatoria HTML5 real y bloqueo de anomalías.
-2. **Desacoplo Automático Padre-Hijo Saneado:** Descuento diferencial automático de los contadores individuales hijos válidos de la misma bodega sobre los **38 macromedidores de energía** (`26` Aleros + `12` Bodegas) y **24 macromedidores de agua comunal**, propagando en tiempo real la variación de consumo neto por $m^2$ a los locales de cada bodega.
-3. **Motor Matemático Determinista:** Cálculo exacto de los **6 cobros reglamentarios** (`Energía Eléctrica`, `Acueducto y Alcantarillado`, `Barrido / Aseo`, `Residuos Sólidos ECSA NP/MP/P`, `Vigilancia Privada` y `Policía Nacional`) conforme al Reglamento Interno (Directiva de Gerencia No. 033-06, Arts. 42–47).
-4. **Auditoría Ejecutiva, Certificados 360° y Exportación Contable (`/`):** Sábana maestra con búsqueda omnisciente sobre los 5.318 puestos, gestión reversible de vacancia, simulador interactivo de recibos maestros, KPIs longitudinales reales (`Mayo 2025` vs `Junio 2025`), plano contable CSV e impresión de certificado individual en formato Carta (`Golden Print`).
+```mermaid
+flowchart BT
+    N1["NIVEL 1 (Micro — Gemba /captura): Enrolamiento GPS + Fotos Luz/Agua, Cronograma Lunes-Viernes (8h) y Captura Rápida de 4/5 Dígitos"]
+    N2["NIVEL 2 (Meso-Técnico): Desacoplo Diferencial Padre-Hijo por Bodega (62 Macromedidores)"]
+    N3["NIVEL 3 (Meso-Financiero): Motor Matemático de Liquidación Individual (6 Cobros Reglamentarios + Vacancia)"]
+    N4["NIVEL 4 (Macro-Operativo — Módulo TRANSFERENCIAS): Corte Mensual Editable, Inventario Doble Confirmación, Cronograma Tripartito, Lecturas Multi-Periodo y Digestor PDF IA"]
+    N5["NIVEL 5 (Macro-Ejecutivo — Salidas de TRANSFERENCIAS): Sábana 360° ($3.621.554.642 COP), Ficha Golden Print Carta, Archivo Plano de Facturación y BI Longitudinal"]
 
-### 1.2 Exclusiones Explícitas (Cero Módulos Fantasma y Cero Mocks)
-- **Eliminación de Anillos Comerciales Inoperativos:** Quedan excluidos de la interfaz, del Sidebar y del código cualquier pestaña o pantalla promocional de módulos futuros no construidos (`ErpRoadmapExpansionView.tsx`, facturación DIAN, contratos inmobiliarios, CMMS o PQRS) así como cualquier referencia textual a otros proyectos o clientes externos.
-- **Trazabilidad Física de Insumos en Disco:**
-  - El dataset canónico verificado en el repositorio es **`src/data/corabastos-junio-2025.json`** (`9.062.684 bytes`), pre-compilado a partir del corte oficial Junio 2025 y de las reglas del Título VII del Reglamento Interno (Directiva 033-06). No se requiere ni asume la presencia de archivos binarios `.xlsm` o `.pdf` externos dentro del árbol Git.
-- **Cero OCR Ficticio:** Queda prohibido simular reconocimiento óptico con temporizadores o inventar lecturas sintéticas. La evidencia fotográfica utiliza captura real de cámara/archivo (`<input type="file" accept="image/*" capture="environment">`) comprimida en cliente (`<canvas>` JPEG `<= 800px`).
-
----
-
-## 2. Leyes Marciales de Arquitectura e Ingeniería
-
-1. **Contratos Tipados & Validación Zod en Runtime (`src/contracts/domain-contracts.ts`):**
-   - Todo payload mutable que ingrese al estado o persistencia (`FieldReadingUpdate`, `MasterReceiptsConfig`, `OccupancyStatus`, `UserRole`) se valida en ejecución mediante `.safeParse()` de **Zod**.
-   - Normalización explícita de cadenas históricas del censo (`isRedFriosModality` unifica `'RED FRIOS'`, `'RED DE FRIOS'` y `'RED_FRIOS'`; las observaciones aceptan todas las variantes reales del corte Junio 2025).
-2. **Headless Core + Thin UI (`<= 600` líneas por archivo en `src/`):**
-   - Cero fórmulas de liquidación en componentes `.tsx`. Toda la aritmética reside en `src/lib/liquidation-engine.ts`, `src/lib/reading-tasks-engine.ts`, `src/lib/bi-kpis-engine.ts` y `src/lib/accounting-export.ts`.
-   - Ningún archivo de código fuente en `src/` (excluyendo el JSON semilla en `src/data/`) puede superar las **600 líneas**.
-3. **Navegación Única de 4 Vistas Operativas en Consola Ejecutiva (`src/app/page.tsx`):**
-   - El Sidebar izquierdo expone exclusivamente las **4 vistas operativas reales** sin barras de pestañas duplicadas y sin módulos en habilitación:
-     1. **`SABANA_360` (`1. Sábana 5.318 Locales & Cuenta 360°`)**
-     2. **`BODEGAS_68` (`2. Estado de 68 Bodegas & Vacancia`)**
-     3. **`RECIBOS_MACROS` (`3. Recibos Maestros & 62 Macromedidores`)**
-     4. **`AUDITORIA_BI` (`4. Inteligencia BI, Terreno & Metodología`)** — integra mediante selector limpio los `6 KPIs Longitudinales`, el `Monitor de Avance de Terreno` y la `Memoria de Cálculo Oficial`.
-4. **Frontera de Rol RBAC, Guardas de Mutación & Aislamiento Financiero (`/` vs `/captura`):**
-   - Roles tipados: `'AUDITOR_ADMIN'` y `'LECTURISTA'`.
-   - **Cuando la sesión activa es `'LECTURISTA'`:**
-     - El acceso a `/` redirige automáticamente a `/captura`.
-     - La ruta `/captura` consume únicamente datos técnicos físicos (`codigo`, `bodegaId`, `lecturaAnterior`, `lecturaActual`, `consumoAnteriorFisico`, `unidad`, `observacion`, `sharedCodigos`) y oculta el 100% de valores monetarios COP, recibos maestros, planos contables y enlaces de retorno a `/`.
-     - En `CorabastosContext`, las funciones administrativas (`updateReceipts`, `updateLocalOccupancy`, `updateBodegaOccupancy`, `resetToOfficialJune2025`) bloquean su ejecución si `role === 'LECTURISTA'`.
-   - **Ascenso a `'AUDITOR_ADMIN'`:** Exige validación de PIN administrativo contra `process.env.NEXT_PUBLIC_CORABASTOS_ADMIN_PIN || 'CORABASTOS2025'` (o sesión autenticada por correo administrativo en Firebase Auth).
-   - **Seguridad Firebase (`firestore.rules`, `storage.rules` y `firebase.json`):**
-     - Prohibido `allow read, write: if true;`. `firebase.json` declara proveedores `emailPassword: true` y `anonymous: true`.
-     - El cliente intenta autenticar sesión en Firebase Auth (`signInAnonymously` si no hay sesión activa) antes de operar sobre `/corabastos_corte_2025_06/{docId}` o `/tenants/corabastos/evidencias/{periodo}/{fileName}`; si el proveedor Cloud rechaza sesión anónima o no hay red, degrada limpiamente a operación local (`localStorage` + `IndexedDB`) sin bloquear la aplicación.
-5. **Estándar de Formato Numérico Colombiano (`es-CO`) con Firmas Compatibles (`src/lib/formatters.ts`):**
-   - Prohibido invocar `.toFixed()` o `.toLocaleString()` directamente en componentes `.tsx` o exportadores fuera de `src/lib/formatters.ts`.
-   - Firmas canónicas obligatorias:
-     - `formatCop(val: number, decimals = 0)`: Montos COP con punto de miles y signo `$` (`0` decimales por defecto para totales como `$3.621.554.642`; `2` decimales cuando se formatea una tarifa unitaria monetaria como `$720,48` o `$10.921,45`).
-     - `formatInt(val: number)`: Conteos y lecturas enteras con punto de miles (`5.318`).
-     - `formatDec(val: number, minDecimals = 1, maxDecimals = minDecimals)`: Respeta estrictamente el rango de decimales solicitado con coma decimal `,` (`1` decimal por defecto en UI general `165,7 m²`; `2` decimales en exportación contable CSV `AREA_M2` (`165,68`) y `PrecisionDecimalInput`; `4` decimales en factores técnicos por $m^2$ como `0,5411 kWh/m²` para jamás truncar aleros a `0,0`).
-     - `formatPct(val: number, decimals = 1)`: Porcentajes con coma decimal (`15,7%`).
-   - Prohibido `<input type="number">`; todo campo editable usa `<input type="text" inputMode="decimal">` (`PrecisionDecimalInput`).
-6. **Iconografía Vectorial Exclusiva `lucide-react`:**
-   - Cero emojis Unicode en componentes `.tsx` o reportes impresos. Todos los íconos provienen de `lucide-react` con `strokeWidth={1.75}`.
+    N1 --> N2
+    N2 --> N3
+    N3 --> N4
+    N4 --> N5
+```
 
 ---
 
-## 3. Reglas Matemáticas Exactas e Invariantes del Motor (`src/lib/liquidation-engine.ts`)
+## 📱 NIVEL 1 (Micro — Gemba): App Móvil de Enrolamiento, Cronograma Lunes–Viernes y Captura Rápida (`/captura`)
 
-### 3.1 Invariante 1 — Línea Base Cero-Desviación (`Junio 2025 = $3.621.554.642 COP`) y Prohibición de Columnas Agregadas Corruptas
-1. **Cuadre Exacto en $T=0$:** Con `fieldOverridesMap` vacío, `occupancyMap` vacío y `receipts` en sus valores semilla de Junio 2025, `recalculateAllLocales` reproduce con **`$0 COP` de diferencia** la suma exacta de los 5.318 locales:
-   - **Energía Total (`Principal + Bodega Popular`):** `$856.707.455 COP` (`$676.050.057 + $180.657.398`)
+### 1.1 Fase 1.A — Enrolamiento Georreferenciado & Línea Base en Gemba (Día Cero)
+1. **Cuarteto de Captura Inicial en Gemba (`MeterRouteSurveyItem` en `src/contracts/domain-contracts.ts`):**
+   - **Identidad de Bodega y Local (`bodegaId`, `codigo`):** Frontera topológica primaria que agrupa al macromedidor padre y a sus medidores hijos.
+   - **Coordenada GPS Real (`latitude`, `longitude`, `accuracyMeters`):** Capturada vía HTML5 Geolocation API mediante pulsación 1-Tap (*"Fijar Posición"*), acompañada de referencia de ubicación (`referenciaPasillo`).
+   - **Fotografías de Emplazamiento / Contadores (Hasta 2 Fotos por Parada):**
+     - **Foto del Contador de Luz (`hasPositionPhoto`, `positionPhotoLocalKey`, `positionPhotoStorageUrl`):** En todas las paradas con medición eléctrica.
+     - **Foto del Contador de Agua (`hasPositionPhotoWater`, `positionPhotoWaterLocalKey`, `positionPhotoWaterStorageUrl`):** Únicamente cuando el local o la bodega posee medidor físico de acueducto.
+   - **Tiempos Reales entre Tomas (`tiempoLlegadaMs`, `tiempoSalidaMs`, `duracionServicioSegundos`, `deltaTrasladoSegundos`):**
+     - Registra automáticamente la duración de servicio en el punto ($T_{\text{service}}$) y el tiempo de traslado desde la parada anterior ($\Delta t_{\text{walk}}$).
+
+### 1.2 Fase 1.B — Aprendizaje Continuo (ML EMA), Compactación en Jornadas de 8h (Solo Lunes–Viernes) y Candado de 30 Días
+1. **Aprendizaje Continuo Determinista (`emaDuracionServicioSegundos`, `emaDeltaTrasladoSegundos` con $\alpha = 0,35$):**
+   - La primera toma establece la **Línea Base Empírica** para trazar la **Ruta Ideal** (`1° → 2° → 3°...`).
+   - Cada toma subsecuente actualiza la media móvil exponencial ($\text{EMA}_t = 0,65 \cdot \text{EMA}_{t-1} + 0,35 \cdot X_t$ en `saveMeterRouteSurvey` y `buildCompositePhysicalStops`), ajustando el tiempo esperado por parada (`estimatedStopSeconds`) según la realidad del terreno.
+2. **Compactación en Jornadas de 8 Horas (`480 min` brutos) Exclusivamente Entre Semana (`Lunes a Viernes`):**
+   - **Prohibido programar lecturas en Sábado o Domingo (`soloEntreSemanaLunesViernes = true`).** El mes operativo base cuenta con **`22` días hábiles (`diasHabilesBaseMes = 22`)**.
+   - El motor [`computeWorkforceCapacityPlan()`](./src/lib/reading-tasks-engine.ts) empaqueta bodegas completas indivisibles en turnos completos de **8 horas** (`jornadaBrutaMinutos = 480`, `jornadaEfectivaMinutos` parametrizable, por defecto `420 min`), asignando a cada jornada un día hábil (`diaSemanaLabel` $\in \{\text{LUNES}, \text{MARTES}, \text{MIERCOLES}, \text{JUEVES}, \text{VIERNES}\}$ via `advanceWeekdaysUtcMs`).
+   - A medida que la Ruta Ideal ahorra tiempo, el operador **trabaja días completos de 8 horas pero menos días hábiles al mes** (`diasAhorradosVsMesCompleto = max(0, 22 - diasRequeridosAlMes)`).
+3. **Tres Restricciones Duras del Cronograma (`WorkforceShiftDayBucket`):**
+   - **Bodega Indivisible en el Mismo Día:** El macromedidor padre y todos sus hijos se leen el mismo día hábil.
+   - **Candado de 30 Días Ajustado a Día Hábil (`gapCicloLecturaDias = 30` + `snapUtcMsToWeekday`):** Cada bloque diario proyecta su siguiente lectura a `+30 días` ajustando automáticamente al día hábil más cercano si cae en fin de semana.
+   - **Flexibilidad Intra-Día:** El operador visualiza el protocolo del día con la secuencia sugerida de la Ruta Ideal, pero puede alterar el orden dentro del mismo día si un pasillo está temporalmente obstruido por descargue.
+
+### 1.3 Fase 1.C — Protocolo de Captura Rápida en Puesto: Selector Luz/Agua, 4 Últimos Dígitos (y 5 en Alta Carga) + Novedades
+1. **Diferenciación Físico-Catastral y Selector Rápido de Servicio en Parada (`CompositePhysicalStop`):**
+   - Todas las bodegas activas tienen medición de energía (`1.084` tareas individuales/compartidas + `38` macromedidores), pero solo **24 bodegas** tienen macromedidor o contadores individuales de agua (`526` tareas individuales/compartidas + `24` macromedidores); las otras **44 bodegas** comparten acometida o prorratean agua.
+   - Al llegar al puesto, la interfaz pre-selecciona según el mapeo (`[⚡ Solo Luz]`, `[⚡💧 Luz y Agua]` o `[💧 Solo Agua]`), permitiendo al operador conmutar con 1 toque si aplica, mientras preserva intactas las **1.688 tareas atómicas** subyacentes en `completedTaskIds` y `fieldOverridesMap` (Invariante 3 de BDD-Guard).
+2. **Captura Ágil por los 4 Últimos Dígitos (con Excepción de 5 Dígitos en Energía de Alta Carga):**
+   - **Regla Estándar (4 Últimos Dígitos):** Para maximizar velocidad en terreno, el operador toma la fotografía del contador e ingresa únicamente los **4 últimos dígitos** del odómetro.
+   - **Reconstrucción Automática con Acarreo (`reconstructReadingFromTrailingDigits` en `src/lib/reading-tasks-engine.ts`):**
+     $$\text{Módulo } M = 10^d \;(d \in \{4, 5\}), \quad \text{Prefijo} = \left\lfloor \frac{\text{LectAnt}}{M} \right\rfloor \cdot M, \quad \text{SufijoAnt} = \text{LectAnt} \bmod M$$
+     $$\text{LecturaReconstruida} = \begin{cases} \text{Prefijo} + \text{SufijoDigitado} & \text{si } \text{SufijoDigitado} \ge \text{SufijoAnt} \\ \text{Prefijo} + M + \text{SufijoDigitado} & \text{si } \text{SufijoDigitado} < \text{SufijoAnt (acarreo de millar)} \end{cases}$$
+   - **Excepción de 5 Dígitos (`requiresFiveDigitCapture`):** En los contadores de energía de alta carga (macromedidores `MACRO_ENERGIA` como `BOD COMUNAL 12` o locales con consumo $\ge 8.000\text{ kWh/mes}$ como `980004`, `850013`, `150010`), el sistema exige **5 dígitos** ($M = 100.000$) o permite conmutar `4D / 5D`.
+3. **Selector de Novedades, Validación en Caliente contra Banda Histórica y Re-Verificación a Ciegas:**
+   - **Validación en Caliente (`evaluateConsumptionAgainstBand` en `src/lib/historical-bands-engine.ts`):** Apenas el operador digita los 4 (o 5) últimos dígitos en el puesto, la app evalúa al instante si el consumo físico calculado ($kWh$ o $m^3$) se sale de la **Banda Histórica `[bandaMinFisica, bandaMaxFisica]`** del puesto. Si se sale (`requiereDobleValidacionMovil === true`), solicita confirmación inmediata en sitio o selección de novedad antes de pasar al siguiente puesto.
+   - **Tareas Prioritarias de Re-Verificación a Ciegas (`FieldReverificationTask` con `lecturaCiegaOculta = true`):** Cuando el administrador envía una anomalía a terreno desde `Transferencias`, se inyecta al inicio del cronograma móvil del operador una orden prioritaria que **oculta el número digitado en la primera toma** (`lecturaPrimeraTomaInterna`), exigiendo nueva lectura desde cero y segunda fotografía con timestamp y GPS.
+   - Si el medidor presenta anomalía (`DETENIDO`, `TAPADO`, `RETIRADO`, `SUSPENDIDO`, `REVISAR`) o el local está sin acceso (`L, CERRADO`, `L, VACIO`, `NO PERMITIO INGRESO`), el operador selecciona la novedad y adjunta la foto obligatoria.
+   - Cero cadenas Base64 en Firestore o `localStorage` (almacenamiento binario en `IndexedDB` + Firebase Storage `/tenants/corabastos/evidencias/...`).
+
+---
+
+## ⚡ NIVEL 2 (Meso-Técnico): Desacoplo Diferencial Padre-Hijo por Bodega (62 Macromedidores)
+
+1. **Saneamiento de Hijos Válidos por Bodega:**
+   $$\text{HijosVálidos}(m) = \text{uniq}(m.\text{hijosContadorCodigos}).\text{filter}(c \Rightarrow \text{local}(c)?.bodegaId === m.bodegaId)$$
+2. **Cálculo Diferencial Anclado al Neto Semilla (`consumoNetoKw` / `consumoNetoM3`):**
+   $$\text{ConsumoNetoActual}_m = \max\left(0,\; \text{ConsumoNetoSemilla}_m + \Delta\text{Padre}_m - \Delta\text{Hijos}_m\right)$$
+3. **Propagación por $m^2$ con Guarda Anti-`NaN` (`areaM2 === 0`, ej. `ACOM-16`):**
+   - Si el factor comunal por $m^2$ varía ($|\Delta\text{Factor}_m| > 10^{-7}$), actualiza el consumo comunal de cada local aplicable de esa bodega.
+
+---
+
+## 💰 NIVEL 3 (Meso-Financiero): Liquidación Individual del Local (Los 6 Cobros Reglamentarios)
+
+1. **Cuadre Exacto en $T=0$ (`Junio 2025 = $3.621.554.642 COP` con `$0 COP` de desviación):**
+   - **Energía Total (`Principal + Bodega Popular`):** `$856.707.455 COP`
    - **Acueducto y Alcantarillado:** `$239.477.169 COP`
    - **Barrido / Aseo:** `$173.508.673 COP`
-   - **Residuos Sólidos ECSA:** `$678.935.044 COP`
+   - **Residuos Sólidos ECSA (`NP/MP/P`):** `$678.935.044 COP`
    - **Vigilancia Privada:** `$1.457.539.601 COP`
    - **Policía Nacional:** `$215.386.700 COP`
-   - **Suma Total Exacta (6 Servicios):** **`$3.621.554.642 COP`**.
-2. **Prohibición de Usar `loc.totalJunioCop` y `loc.totalAnteriorCop` Crudos:**
-   - En la hoja `RESUMEN TOTAL` del Excel original, `totalJunioCop` duplicaba Alcantarillado y `totalAnteriorCop` (Mayo 2025) omitía Vigilancia y otros rubros en múltiples locales.
-   - Queda **prohibido** leer `loc.totalJunioCop` o `loc.totalAnteriorCop` para cálculos de variaciones `%`, tarjetas, modales o KPIs BI. En todo el sistema, el total oficial del mes anterior (`Mayo 2025`) de cada local $i$ se define canónicamente como la suma exacta de sus 6 rubros anteriores certificados:
-     $$\text{TotalMayoOficial}_i = (\text{energiaAnteriorCop}_i ?? 0) + (\text{acueductoAnteriorCop}_i ?? 0) + (\text{aseoAnteriorCop}_i ?? 0) + (\text{residuosAnteriorCop}_i ?? 0) + (\text{vigilanciaAnteriorCop}_i ?? 0) + (\text{policiaAnteriorCop}_i ?? 0)$$
-3. **Regla de No-Alteración de Registros Intactos en $T=0$:**
-   - **Vacancia gobernada exclusivamente por `occupancyMap`:** El estado dinámico de ocupación es `effectiveOccupancy = occupancyMap[loc.codigo] ?? 'ACTIVO'`. Cuando `occupancyMap` no tiene entrada para un local, se ignora el string histórico `loc.estadoOcupacion` pre-grabado en el JSON semilla (ej. `860006`, `860010`, `860011`), preservando intacta su liquidación oficial de Junio 2025.
-   - **Contingencia por medidor defectuoso condicionada a `override`:** Las reglas de conmutación a prorrateo por medidor defectuoso (`DETENIDO`, `TAPADO`, `RETIRADO`, `REVISAR`) solo aplican cuando ese medidor posee un `override` registrado en el corte activo (`fieldOverridesMap[taskKey] !== undefined`). Sin `override`, los locales conservan su base Junio 2025 escalada proporcionalmente si cambia la tarifa maestra.
-   - **Proporcionalidad Catastral en Residuos ECSA:** Igual que en **Aseo** y **Vigilancia**, cada local preserva su razón catastral base frente a la tarifa semilla de su categoría (`NP`, `MP`, `P`), garantizando `$0 COP` de desviación en los `34` locales con aforo especial en $T=0$ y escalamiento proporcional exacto al simular nuevas facturas.
-
-### 3.2 Invariante 2 — Cadena Causal Diferencial Padre-Hijo (Saneada contra Datos Sucios) y Bolsas de Prorrateo
-El pipeline se ejecuta en estricto orden topológico:
-
-1. **Paso 1 — Consumo Individual y Sincronización `/N`:**
-   - Si el medidor físico de un local `CONTADOR` tiene `override` activo, su consumo individual actual es $\frac{\max(0,\; \text{LecturaAct} - \text{LecturaAnt})}{N_{\text{compartido}}}$; si no tiene `override`, conserva su consumo semilla (`energiaConsumoIndivKw` / `aguaConsumoIndivM3`).
-2. **Paso 2 — Desacoplo Diferencial Padre-Hijo en los 62 Macromedidores (`38` Energía + `24` Agua):**
-   - **Saneamiento de Hijos Válidos:** Para eliminar arrastres de filas de otras bodegas y códigos repetidos del Excel (ej. `ECOM-27..38`), los hijos válidos de un macromedidor $m$ se filtran y deduplican exigiendo pertenencia a la misma bodega:
-     $$\text{HijosVálidos}(m) = \text{uniq}(m.\text{hijosContadorCodigos}).\text{filter}(c \Rightarrow \text{local}(c)?.bodegaId === m.bodegaId)$$
-   - **Cálculo Diferencial Anclado al Neto Semilla Oficial (`consumoNetoKw` / `consumoNetoM3`):**
-     - Si el macromedidor padre $m$ tiene `override` activo en terreno: $\text{BrutoEfectivo}_m = \max(0, \text{LectAct}_m - \text{LectAnt}_m)$ y $\Delta\text{Padre}_m = \text{BrutoEfectivo}_m - \max(0, \text{LectActSemilla}_m - \text{LectAntSemilla}_m)$. Si $m$ **no** tiene `override`, $\Delta\text{Padre}_m = 0$ (protegiendo macromedidores retirados/ajustados con `lecturaAnterior < 0` en el semilla, como `ECOM-27`, `ECOM-34`, `ECOM-35`, `ECOM-37`, `ACOM-14`).
-     - Variación de hijos válidos: $\Delta\text{Hijos}_m = \sum_{h \in \text{HijosVálidos}(m)} (\text{ConsumoIndivActual}_h - \text{ConsumoIndivSemilla}_h)$.
-     - Consumo Neto Comunal Actual:
-       $$\text{ConsumoNetoActual}_m = \max\left(0,\; \text{ConsumoNetoSemilla}_m + \Delta\text{Padre}_m - \Delta\text{Hijos}_m\right)$$
-   - **Guarda Anti-División por Cero en Área Comunal (`areaM2 === 0`, ej. `ACOM-16` Bodega 20):**
-     - Sea $\text{ÁreaEfectiva}_m = m.\text{areaM2} > 0 \;?\; m.\text{areaM2} : \sum_{k \in \text{Comunales}(m.bodegaId)} \text{areaM2}_k$.
-     - Si $\text{ÁreaEfectiva}_m > 0$, $\text{FactorActual}_m = \frac{\text{ConsumoNetoActual}_m}{\text{ÁreaEfectiva}_m}$ y $\Delta\text{Factor}_m = \frac{\text{ConsumoNetoActual}_m - \text{ConsumoNetoSemilla}_m}{\text{ÁreaEfectiva}_m}$; de lo contrario, $\text{FactorActual}_m = 0$ y $\Delta\text{Factor}_m = 0$ (jamás `Infinity` ni `NaN`).
-3. **Paso 3 — Propagación Diferencial a Locales de la Bodega:**
-   - Si $|\Delta\text{Factor}_m| > 10^{-7}$ en un macromedidor de `ALERO`, `BODEGA` (Energía) o `BODEGA` (Agua), a cada local aplicable $i$ de esa `bodegaId` se le actualiza su consumo comunal ($\max(0,\; \text{ConsumoComunalSemilla}_i + \text{areaM2}_i \times \Delta\text{Factor}_m)$), disparando el recálculo inmediato de `calcEnergiaCop` o `calcAcueductoCop`.
-4. **Paso 4 — Ecuaciones Exactas de las 5 Bolsas de Prorrateo y Red de Fríos:**
-   - **Energía Predio Matriz (`PRORRATEO`):** $\text{BolsaProrrateoAct} = \max\left(0,\; \text{bolsaProrrateoSemilla} + (\text{valorNetoServicioAct} - \text{valorNetoServicioSemilla}) - \Delta\text{CostoBaseMedidoYComunalPrincipal}\right)$. Los locales `PRORRATEO` de bloque `PRINCIPAL` escalan por la razón $\frac{\text{BolsaProrrateoAct}}{\text{bolsaProrrateoSemilla}}$ (ajustada por tarifa/CREG si cambió).
-   - **Energía Bodega Popular (`PRORRATEO`):** $\text{BolsaProrrateoBpAct} = \max\left(0,\; \text{bolsaProrrateoBpSemilla} + (\text{valorFacturaNetoBpAct} - \text{valorFacturaNetoBpSemilla}) - \Delta\text{CostoBaseContadorBP}\right)$, escalando proporcionalmente los locales `PRORRATEO` de bloque `BODEGA_POPULAR`.
-   - **Energía Red de Fríos (`RED FRIOS` en Bodega 55):** Escala proporcionalmente por la razón $\frac{\text{redFrios.valorNetoServicioAct}}{\text{redFrios.valorNetoServicioSemilla}}$.
-   - **Acueducto General (`PRORRATEO`):** $\text{BolsaProrrateoAguaAct} = \max\left(0,\; \text{bolsaProrrateoAguaSemilla} + (\text{valorFacturaGeneralAct} - \text{valorFacturaGeneralSemilla}) - \Delta\text{CostoBaseMedidoYComunalAgua}\right)$, escalando proporcionalmente los locales `PRORRATEO` de acueducto.
-   - **Acueducto Red de Fríos (`RED DE FRIOS` en Bodegas 55 y 98):** Escala proporcionalmente por la razón $\frac{\text{valorFacturaRedFriosAct}}{\text{valorFacturaRedFriosSemilla}}$.
-
-### 3.3 Invariante 3 — Contabilidad e Identidad Exacta de Vacancia Reversible (`occupancyMap`)
-El diccionario `occupancyMap: Record<string, OccupancyStatus>` opera sin mutar lecturas ni observaciones semilla, y mantiene **fijo** el divisor solidario de Policía (`localesActivosDivisor = 5.300` salvo edición explícita en Recibos Maestros) para no recargar a los vecinos activos:
-1. **`ACTIVO`:** Liquidación normal del corte (`calcTotalCop = rawTotalCop`, `calcAssumedCorporationCop = 0`).
-2. **`VACIO_CON_CONTRATO`:** Consumo individual `0 kWh` y `0 m³`; liquida Tope Mínimo de Energía + comunales/alero/alumbrado + CREG, Tope Mínimo de Acueducto (`1 m³`) + agua comunal, y las 4 expensas reglamentarias (`calcTotalCop = rawTotalCop`, `calcAssumedCorporationCop = 0`).
-3. **`VACIO_SIN_CONTRATO_CORPORACION` (Local restituido a Corabastos):**
-   - Los 6 campos individuales de rubro (`calcEnergiaCop`, `calcAcueductoCop`, `calcAseoCop`, `calcResiduosCop`, `calcVigilanciaCop`, `calcPoliciaCop`) conservan el **costo técnico causado por el inmueble** (alimentando con exactitud al peso el desglose por servicio del **KPI 2 de Absorción Corporativa**, sin re-estimaciones aproximadas).
-   - Se cumple la identidad contable estricta en Sábana, Certificado 360° y CSV Contable:
-     $$\sum_{s=1}^{6} \text{Rubro}_s = \underbrace{\text{calcTotalCop}}_{0\text{ (Facturable Comerciante)}} + \underbrace{\text{calcAssumedCorporationCop}}_{\text{rawTotalCop (Asumido Corporación)}}$$
+2. **Prohibición de `totalJunioCop` y `totalAnteriorCop` Crudos:** Uso exclusivo de `computeOfficialMayTotalCop`.
+3. **Identidad Contable de Vacancia Reversible (`occupancyMap`):**
+   - En `VACIO_SIN_CONTRATO_CORPORACION`: `calcTotalCop = 0` (facturable al comerciante) y `calcAssumedCorporationCop = rawTotalCop` (asumido por Corabastos), cuadrando al peso con el KPI 2.
 
 ---
 
-## 4. Cola Deduplicada de `1.688` Medidores Físicos y Terminal Móvil (`/captura`)
+## 🏛️ NIVEL 4 Y NIVEL 5 (Macro-Operativo & Ejecutivo): Módulo Maestro Único de **`Transferencias`**
 
-### 4.1 Algoritmo Determinista de Deduplicación `/N` (`1.688` Tareas sobre `1.835` Registros)
-1. **Zona 1 (`ZONA_1_MACROMEDIDORES`):** `62` tareas (`38` macromedidores de energía + `24` de agua).
-2. **Zona 2 (`ZONA_2_BANOS_PUBLICOS`):** `16` tareas (`16` medidores de baños públicos).
-3. **Zonas 3, 4 y 5 (`Comerciantes Principal`, `Bodega Popular`, `Red de Fríos Bodega 98`):**
-   - Solo generan tarea de lectura de odómetro los locales cuya modalidad del respectivo servicio (`modalidadEnergia` o `modalidadAcueducto`) sea estrictamente **`'CONTADOR'`** (`1.219` registros en Energía y `538` registros en Acueducto). Los `51` locales de Bodega `55` con modalidad `'RED FRIOS'` / `'RED DE FRIOS'` sin contador individual **no** entran en la cola de odómetros, pero son localizables en el buscador global de `/captura` con su ficha catastral explicativa.
-   - **Regla para `divisor <= 1`:** Prohibido agrupar. Cada par `(servicio, loc.codigo)` genera `1` tarea física independiente con `sharedCodigos = [loc.codigo]` (`1.021` individuales en Energía + `514` individuales en Acueducto).
-   - **Regla para `divisor > 1`:** Los registros `'CONTADOR'` ordenados por `codigo` se agrupan por la clave `servicio | bodegaId | lecturaSemillaAnt | lecturaSemillaAct | divisor` y se particionan en bloques consecutivos de tamaño máximo `divisor`, produciendo exactamente `63` medidores compartidos de Energía (`198` locales) y `12` medidores compartidos de Acueducto (`24` locales).
-   - **Total Invariante:** `62 + 16 + (1.021 + 63) + (514 + 12) = 1.688` tareas físicas únicas cubriendo los `1.835` registros con medidor.
+Toda la gestión administrativa y contable de la consola ejecutiva (`/`) se articula alrededor del módulo maestro **`Transferencias`**, gobernado transversalmente por la **Configuración de Fecha de Corte Mensual Editable (`TransferCutoffConfig` en `src/contracts/domain-contracts.ts`)**:
 
-### 4.2 Peaje de Validación y Evidencia Fotográfica Sin Desborde de Cuota
-- **Validación Anti-Negativos Estricta:** Si `lecturaActual < lecturaAnterior`, el botón Guardar se bloquea incondicionalmente salvo que `observacion` pertenezca al conjunto explícito `{'C, DETENIDO', 'M, DETENIDO', 'C, RETIRADO', 'REVISAR MEDIDOR'}` (el valor por defecto `'VERIFICADO POR IMAGEN'` **jamás** autoriza lecturas regresivas).
-- **Peaje Fotográfico Obligatorio en Novedades y Cierres:** Para cualquier observación de novedad técnica (`DETENIDO`, `TAPADO`, `RETIRADO`, `SUSPENDIDO`, `REVISAR`) o acceso impedido (`L, CERRADO`, `L, VACIO`, `NO PERMITIO INGRESO`), se exige `hasPhotoEvidence === true` antes de habilitar Guardar.
-- **Almacenamiento Binario Fuera de Firestore/`localStorage` (Protección Límite `1 MiB`):**
-  - **Prohibido guardar cadenas Base64 (`photoDataUrl`) dentro de `localStorage` o documentos de Firestore.**
-  - La foto comprimida en `<canvas>` (`JPEG <= 800px`) se guarda localmente en **`IndexedDB`** (`corabastos_photos_db`, clave `taskKey`) para previsualización offline inmediata y, cuando existe sesión Firebase Auth activa, se sube a **Firebase Storage** (`/tenants/corabastos/evidencias/2025-06/{sanitizedTaskKey}.jpg`).
-  - El registro `FieldReadingUpdate` en `localStorage` y Firestore solo almacena metadatos livianos (`hasPhotoEvidence: boolean`, `photoLocalKey?: string`, `photoStorageUrl?: string`, `photoCapturedAt?: string`).
-- **Sincronización Atómica `/N`:** Guardar una tarea con `sharedCodigos.length > 1` escribe atómicamente los `N` códigos hermanos en `fieldOverridesMap`.
+### 4.0 Eje Rector: Configuración Editable de Fecha de Corte por Mes (`TransferCutoffConfig`)
+- Cada periodo mensual (`periodo`, ej. `2025-06`) tiene fechas de corte editables en la configuración del sistema (`fechaCorteEnergiaIso`, `fechaCorteAcueductoIso`, `fechaExpedicionFichaIso`) para sincronizarse con el día real en que la empresa de energía (Enel) o de acueducto (EAAB) realiza la lectura de frontera y macromedidores.
+- Todo el módulo de **`Transferencias`** filtra, liquida, compara y emite documentos bajo la lógica de estos cortes mensuales.
+
+### 4.1 Sub-Módulo 1 — Inventario de Puestos Agrupados por Bodega (Editable con Doble Confirmación y Trazabilidad)
+- Visualización y gestión de los **5.318 puestos comerciales** agrupados en sus **68 bodegas**.
+- **Edición Controlada de Características por Puesto:** Permite editar características catastrales y operativas (`areaM2`, `modalidadEnergia`, `modalidadAcueducto`, `categoriaResiduos`, `estadoOcupacion`, `digitosContadorEnergia`).
+- **Doble Confirmación y Trazabilidad Inmutable (`PuestoInventoryAuditEntry`):** Toda modificación exige doble confirmación explícita (`confirmadoDoblePaso: true`) y justificación obligatoria (`motivoJustificacion`), registrando `valorAnterior`, `valorNuevo`, `actorUid` y `timestampIso` en la bitácora de auditoría (`audit_log`).
+
+### 4.2 Sub-Módulo 2 — Cronograma Integral de 3 Hitos (Estilo MJM) & Mapa de Calor de las 68 Bodegas por Grupo de Lectura
+1. **Calendario Ejecutivo de 3 Hitos Mensuales:**
+   - **Hito 1 — Lectura Interna en Terreno:** Jornadas de 8 horas de Lunes a Viernes alineadas con la fecha de corte y el gap de 30 días.
+   - **Hito 2 — Facturación del Servicio:** Recepción, cargue y conciliación de los recibos maestros de los operadores de servicios públicos.
+   - **Hito 3 — Expedición de Documento de "Ficha":** Fecha de emisión de las fichas individuales de transferencia por puesto y cierre contable del corte.
+2. **Mapa de Calor Interactivo de las 68 Bodegas por Grupo de Lectura (`BodegaHeatmapCell` y `BodegaHeatmapLens` en `src/contracts/domain-contracts.ts`):**
+   - Una vez conformados los grupos diarios de lectura (`WorkforceShiftDayBucket`), la interfaz despliega la matriz térmica de las **68 bodegas** agrupadas por su jornada asignada (`Día 1 · Lunes`, `Día 2 · Martes`, etc.), con **3 lentes intercambiables en 1 clic**:
+     1. **Lente `AVANCE_RUTA` (Ejecución en Tiempo Real):**
+        - `VERDE_OPTIMO`: Bodega 100% evacuada (macromedidor padre + hijos leídos sin anomalías críticas).
+        - `AMBAR_EN_CURSO`: Bodega en lectura activa ($1\% - 99\%$ de avance).
+        - `AZUL_PROGRAMADA`: Bodega programada para su grupo de lectura entre semana ($0\%$ leído aún).
+        - `ROJO_CRITICO`: Bodega con medidores detenidos, tapados o locales cerrados que exigen segunda visita.
+     2. **Lente `CONSUMO_FUGAS` (Desacoplo Padre vs. Hijos & Variación Intermensual):**
+        - Resalta en calor rojo las bodegas con salto atípico de consumo comunal ($> +20\%$) o alta brecha $\text{Macromedidor} - \sum \text{Hijos}$ (posibles fugas o conexiones directas).
+     3. **Lente `TIEMPO_OPERACION` (Fricción en Gemba medida por ML):**
+        - Colorea cada bodega según `segundosPromedioPorParada` aprendidos por EMA ($\alpha = 0,35$), evidenciando cuellos de botella físicos (contadores en altura o congestión de cargue).
+   - **Drill-Down Instantáneo:** Al hacer clic en cualquier celda de bodega del mapa de calor, se despliega la ficha del grupo de lectura con su macromedidor padre, la secuencia `1° → 2° → 3°` de sus puestos, fotografías de evidencia y estado de cada contador.
+
+### 4.3 Sub-Módulo 3 — Visor de Lecturas de Uno o Varios Periodos Agrupados
+- Consulta y comparación transversal de lecturas seleccionando **uno o múltiples periodos de corte** simultáneamente (ej. `Mayo 2025` vs `Junio 2025`), agrupadas por **Bodega**, **Zona Operativa** o **Macromedidor**, con variación física ($kWh$, $m^3$, $\%$), estado metrológico y evidencia fotográfica.
+
+### 4.4 Sub-Módulo 4 — Cargue y Configuración de Recibos y Macromedidores vía PDF + Digestión IA (Refacción `frufresco`)
+- Ensamble del protocolo **`REF-INGESTA-EMAIL-IA-DIGESTOR-ERP`** (mesa de auditoría de documentos):
+  - Permite cargar los archivos PDF de las facturas globales (Enel, EAAB, ECSA, Vigilancia, Policía) y soportes de los **62 macromedidores**.
+  - El digestor IA/heurístico extrae fechas de lectura del operador (sugiriendo la fecha de corte del periodo), consumos brutos, tarifas unitarias y valores netos, pre-llenando el simulador de recibos maestros (`MasterReceiptsConfig`) para revisión y confirmación humana antes de irrigar las 5 bolsas de prorrateo.
+
+### 4.5 Sub-Módulo 5 — Sábana 360°, Expedición de "Ficha" Golden Print y Archivo Plano de Facturación
+- **Sábana Maestra 360°:** Tabla sticky (`borderCollapse: 'separate'`) con partición exacta De Morgan (`1.295 CONTADOR + 4.023 COMUNAL = 5.318`).
+- **Documento "Ficha" Individual (`#golden-print-certificate`):** Estado de cuenta y certificado de transferencia imprimible en formato Carta vertical (`@media print` con `.app-print-hide`).
+- **Generación de Archivo Plano de Facturación (`buildSabanaCsvContent`):** Exportación CSV/plano contable (`es-CO`) con las 5.318 filas listas para ejecutar la facturación a cada puesto comercial.
+
+### 4.6 Sub-Módulo 6 — Bandas Históricas Auto-Alimentadas (`[BandaMin, BandaMax]`), Informe de Anomalías y Re-Verificación en Campo
+1. **Bandas en Unidades Físicas ($kWh$ / $m^3$) + Proyección en Pesos ($COP$):**
+   - La banda de cada puesto (`HistoricalConsumptionBandProfile` en `src/contracts/domain-contracts.ts`) se calcula y alimenta en **unidades físicas reales ($kWh$ y $m^3$)** para que los incrementos tarifarios de Enel o EAAB no disparen falsas alarmas de consumo, proyectando su impacto monetario (`impactoDesviacionCop`) con la tarifa vigente del corte.
+   - **Colchón Mínimo Anti-Ruido (`Deadband Floor`):** Se establece un piso mínimo absoluto de `3 m³` para agua y `15 kWh` para energía (`MIN_DEADBAND_FLOOR_M3`, `MIN_DEADBAND_FLOOR_KWH` en `src/lib/historical-bands-engine.ts`) por debajo del cual no se disparan anomalías para evitar falsos positivos en locales secos.
+2. **Normalización por Días Reales de Corte ($\text{Base 30 Días}$) y Alimentación Mensual:**
+   - Para neutralizar las variaciones de calendario de los cortes editables (ej. cortes de 27 días vs. 34 días), el consumo físico se normaliza a base 30 días ($\text{ConsumoNorm30d} = C_t \times \frac{30}{\Delta\text{díasCorte}}$) antes de evaluar y alimentar la serie.
+   - En cada cierre de corte mensual en `Transferencias`, la serie histórica conserva hasta `12` periodos (`HISTORICAL_WINDOW_MAX_PERIODS = 12`) y actualiza su **Media Histórica Aprendida ($\mu_t$)** mediante EMA con $\beta = 0,25$ ($\mu_t = 0,75 \cdot \mu_{t-1} + 0,25 \cdot C_t$).
+   - Corredor semilla ($\pm 30\%$) para $<3$ cortes y ajuste por desviación estándar ($\pm 1,5\sigma_t$, acotado entre $\pm 20\%$ y $\pm 35\%$) para $\ge 3$ cortes.
+3. **Válvula de Higiene Estadística, Auto-Adaptación y Re-Anclaje:**
+   - Meses con novedades metrológicas (`DETENIDO`, `TAPADO`, `RETIRADO`, `SUSPENDIDO`) o vacancia (`VACIO`) no alimentan la media $\mu_t$.
+   - **Regla de Auto-Adaptación por 2 Cortes Verificados Seguidos:** Si un puesto incrementa su consumo y es verificado en campo con foto consecutivamente durante 2 cortes (`verificadoEnCampoConsecutivo: true`), la válvula se abre automáticamente para asimilar el nuevo nivel de consumo sin intervención manual.
+   - Si un local cambia de giro o arrendatario, se re-ancla la línea base (`reanchorHistoricalBandBaseline`) con doble confirmación y trazabilidad.
+4. **Informe de Anomalías y Re-Verificación a Ciegas Total (Prioridad 0 en `/captura`):**
+   - Lista puestos con `SOBRECONSUMO_CRITICO` ($> \text{BandaMax}$) o `SUBCONSUMO_ATIPICO` ($< \text{BandaMin}$).
+   - Al pulsar *"Enviar a Re-Verificación en Campo"*, genera una `FieldReverificationTask` con **`prioridadCero: true`** que se fija arriba del todo en la app móvil.
+   - **Protocolo de Ceguera Total:** Oculta tanto la primera lectura como la lectura anterior y la banda esperada, exigiendo ingresar la lectura completa mirando el odómetro y capturar foto obligatoria con timestamp y GPS posteriores a la orden.
+   - Al resolverse, confronta lado a lado **Lectura 1 / Foto 1 vs. Lectura 2 / Foto 2** en la mesa de decisiones de `Transferencias`.
 
 ---
 
-## 5. Persistencia Híbrida Bidireccional (`localStorage` + `Firestore onSnapshot`)
+## 🔒 LEYES MARCIALES DE INGENIERÍA Y VERIFICACIÓN (`BDD-GUARD`)
 
-1. **Hidratación Completa en `F5` (`localStorage`):**
-   - Se persiste el diccionario completo `fieldOverridesMap: Record<string, FieldReadingUpdate>` (sin `.slice(0, 100)`), `occupancyMap` y `receipts`.
-   - Al montar o recargar (`F5`), `CorabastosContext` deriva el estado aplicando `fieldOverridesMap` directamente sobre `locales`, `energyCommunalMeters`, `waterCommunalMeters` y `publicBathroomMeters`, preservando el 100% de los cálculos.
-2. **Sincronización Cloud en Tiempo Real (`Firestore onSnapshot`):**
-   - Con sesión autenticada en Firebase Auth, `CorabastosContext` mantiene listeners `onSnapshot` sobre `field_overrides`, `occupancy_state` y `master_receipts` en `/corabastos_corte_2025_06`, sincronizando en vivo `/captura` $\leftrightarrow$ `/`.
-   - `resetToOfficialJune2025()` (solo rol `'AUDITOR_ADMIN'`) limpia `localStorage`, `IndexedDB` de fotos del corte y actualiza en vacío los tres documentos de `/corabastos_corte_2025_06`.
-
----
-
-## 6. Estándares de Interfaz, Modo Oscuro y Certificado Golden Print PDF
-
-1. **Sábana Sticky sin Fugas ni Truncamientos (`src/components/LiquidationMatrixView.tsx`):**
-   - Tabla con `borderCollapse: 'separate', borderSpacing: 0` sin desborde horizontal.
-   - El filtro de Modalidad evalúa `modalidadEnergia`, `modalidadAcueducto` y `modalidadGeneral`, incluyendo los locales de Bodega Popular.
-   - `LocalAccountModal` recibe el registro vivo desde `localesByCode.get(selectedCode)` (nunca una copia congelada en `useState`), e incluye la línea contable explícita de `Asumido Corporación` cuando el local está restituido.
-2. **Modo Día / Modo Noche Real (`.dark`):**
-   - Variables CSS semánticas en `src/app/globals.css` y soporte en vistas/tablas para alto contraste en ambos modos.
-3. **Certificado Individual Golden Print PDF (`@media print`):**
-   - Al abrir e imprimir el Certificado 360° (`window.print()`), el contenedor de fondo de la consola lleva `.app-print-hide` (`display: none !important` en `@media print`), dejando únicamente `#golden-print-certificate` visible en formato Carta vertical (`@page { size: letter portrait; }`) sin arrastrar tablas de fondo ni páginas en blanco.
-
----
-
-## 7. Verificación Determinista (`BDD-Guard`), Build y Regeneración del Atlas
-
-Todo entregable debe aprobar con `EXIT 0`:
-1. `npx.cmd tsc --noEmit` (TypeScript estricto, cero `any`, cero `@ts-ignore`).
-2. `node scripts/verify-corabastos-invariants.mjs`:
-   - Invariante 1: Suma base Junio 2025 en `5.318` locales = `$3.621.554.642 COP` (`$0` desviación en los 6 servicios) y cálculo limpio de `TotalMayoOficial` sin el bug de `totalAnteriorCop`.
-   - Invariante 2: Mutación diferencial Padre-Hijo (incluyendo macromedidores con `areaM2 === 0` como `ACOM-16`, lecturas anteriores negativas como `ECOM-27` e hijos saneados por `bodegaId`) propagando variación real en COP sin `NaN`/`Infinity`.
-   - Invariante 3: Conteo exacto de `1.688` tareas físicas únicas (`62 + 16 + 1.084 + 526`) cubriendo `1.835` registros y sincronización atómica `/N`.
-   - Invariante 4: Vacancia reversible (`ACTIVO -> VACIO_CON_CONTRATO -> VACIO_SIN_CONTRATO_CORPORACION -> ACTIVO`) verificando `calcTotalCop === 0`, `calcAssumedCorporationCop === rawTotalCop` y restauración exacta al volver a `ACTIVO`.
-   - Invariante 5: Precisión `es-CO` en CSV (`AREA_M2` con 2 decimales), tarifas con `formatCop(val, 2)` y factores con `formatDec(val, 4)`.
-3. `cmd.exe /c "npm run build"` (Build de producción Next.js 16 en verde).
-4. **Actualización Obligatoria del Anexo Pericial [`PROJECT_ATLAS.md`](./PROJECT_ATLAS.md):** Regeneración completa reflejando la topología v3.1.0 podada, conteos reales de líneas y `0` Estrellas Rojas abiertas.
+1. **TypeScript Estricto & Límite de Líneas:** Cero `any`, cero `@ts-ignore`, cero casts forzados; todo archivo en `src/` (excepto el JSON semilla) `<= 590` líneas.
+2. **Formato `es-CO` e Iconografía:** Uso exclusivo de `src/lib/formatters.ts` y `lucide-react` con `strokeWidth={1.75}`.
+3. **Aprobación Mecánica Obligatoria (`EXIT 0`):**
+   - `npx.cmd tsc --noEmit`
+   - `node scripts/verify-corabastos-invariants.mjs`
+   - `cmd.exe /c "npm run build"`

@@ -223,6 +223,11 @@ export function FieldRouteNavigator({
                     : "bg-slate-800 text-slate-200 hover:bg-slate-700"
                 }`}
               >
+                {t.routeSurvey && (
+                  <span className="px-1 py-0.5 rounded bg-emerald-500/30 text-[10px] font-black">
+                    {formatInt(t.routeSurvey.ordenBodega)}°
+                  </span>
+                )}
                 {isEnergy ? (
                   <Zap className="w-3 h-3 text-amber-500" strokeWidth={1.75} />
                 ) : (

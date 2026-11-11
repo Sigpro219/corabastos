@@ -1,8 +1,8 @@
 # 🧭 Atlas Topológico Estructural & Matriz de Correspondencia E2E
 ## Proyecto: Corabastos — Sistema de Liquidación de Servicios Públicos, Expensas Comunes & Captura de Medidores
 ## Marco Normativo: Vinculado a SPEC.md (Versión 3.1.0 — Secciones §1 a §7)
-## Fecha de Levantamiento: 2026-11-10T13:58:00-05:00
-## Cobertura Forense: 100% de los bytes inspeccionados (30 archivos en `src/`: 29 archivos fuente `<= 586` líneas + 1 dataset JSON oficial, `9.466.833` bytes totales)
+## Fecha de Levantamiento: 2026-11-10T19:38:00-05:00
+## Cobertura Forense: 100% de los bytes inspeccionados (31 archivos en `src/`: 30 archivos fuente `<= 586` líneas + 1 dataset JSON oficial, `9.470.511` bytes totales)
 
 > **Vínculo Constitucional con el SDD:**  
 > Este Atlas constituye el anexo pericial y radiografía física del [`SPEC.md`](./SPEC.md) **v3.1.0**. Certifica la correspondencia exacta entre los requerimientos contractuales y los bytes reales desplegados en disco tras la poda `/spacex`, la auditoría pre-código de doble ronda `/goldfish` y la verificación mecánica `BDD-Guard`.
@@ -78,13 +78,13 @@ flowchart TD
 - **Servicios & Almacén Binario:** `src/lib/reading-tasks-engine.ts` (277 L), `src/lib/photo-evidence-store.ts` (144 L).
 - **Cumplimiento Contractual:** 🟢 **100% Conforme.** `1.688` odómetros físicos únicos (`62 + 16 + 1.084 + 526`) sobre `1.835` registros con llave física canónica única en `completedTaskIds`, cámara HTML5 real comprimida en `<canvas>` hacia `IndexedDB` + Firebase Storage (cero Base64 en Firestore/`localStorage`), bloqueo estricto de odómetros regresivos, sincronización atómica `/N` y aislamiento RBAC vía `useCorabastosFieldCapture()`.
 
-#### Dominio D03: Persistencia Híbrida `F5 + Firestore onSnapshot` y Seguridad Zero-Trust (Responde a SPEC §2.4, §5)
-- **Estado & Cloud:** `src/context/CorabastosContext.tsx` (537 L), `src/lib/firebase.ts` (88 L).
-- **Reglas Cloud:** `firestore.rules` (488 L), `storage.rules` (16 L), `firebase.json` (28 L).
-- **Cumplimiento Contractual:** 🟢 **100% Conforme.** Hidratación íntegra de `fieldOverridesMap`, `occupancyMap` y `receipts` en `F5`, sincronización bidireccional `onSnapshot` segregada por rol (`LECTURISTA` aislado de `master_receipts` y `occupancy_state` tanto en cliente como en `canReadActiveCutoffDoc` de `firestore.rules`).
+#### Dominio D03: Persistencia Híbrida `F5 + Firestore onSnapshot`, Seguridad Zero-Trust y Vigencia de 30 Días (Responde a SPEC §2.4, §5)
+- **Estado & Cloud:** `src/context/CorabastosContext.tsx` (537 L), `src/lib/firebase.ts` (88 L), `src/components/TrialExpirationGuard.tsx` (99 L).
+- **Reglas Cloud:** `firestore.rules` (492 L), `storage.rules` (21 L), `firebase.json` (28 L), `next.config.ts` (14 L — `output: "export"`).
+- **Cumplimiento Contractual:** 🟢 **100% Conforme.** Hidratación íntegra de `fieldOverridesMap`, `occupancyMap` y `receipts` en `F5`, sincronización bidireccional `onSnapshot` segregada por rol (`LECTURISTA` aislado de `master_receipts` y `occupancy_state` tanto en cliente como en `canReadActiveCutoffDoc` de `firestore.rules`), exportación estática en `out/` y corte automático de 30 días (`2026-12-10T23:59:59-05:00` en UI + `request.time < timestamp.date(2026, 12, 11)` en Firestore/Storage).
 
 #### Dominio D04: Consola Ejecutiva de 4 Vistas, Modo Oscuro y Golden Print PDF (Responde a SPEC §1.2, §2.3, §2.6, §6)
-- **Shell & Navegación:** `src/app/layout.tsx` (27 L), `src/app/globals.css` (116 L), `src/app/page.tsx` (552 L), `src/components/UtilitiesErpModuleView.tsx` (95 L), `src/components/CorabastosBrandLogo.tsx` (100 L), `src/components/PrecisionDecimalInput.tsx` (73 L).
+- **Shell & Navegación:** `src/app/layout.tsx` (30 L), `src/app/globals.css` (116 L), `src/app/page.tsx` (552 L), `src/components/UtilitiesErpModuleView.tsx` (95 L), `src/components/CorabastosBrandLogo.tsx` (100 L), `src/components/PrecisionDecimalInput.tsx` (73 L), `src/components/TrialExpirationGuard.tsx` (99 L).
 - **4 Vistas Operativas & Certificado:**
   1. `SABANA_360`: `src/components/LiquidationMatrixView.tsx` (564 L) + `src/components/SabanaSummaryCards.tsx` (68 L).
   2. `BODEGAS_68`: `src/components/BodegasStatusView.tsx` (470 L).
@@ -112,8 +112,8 @@ flowchart TD
 ### 4. 🎯 Verificación Mecánica Reproducible (`BDD-Guard` & Build)
 
 - **Compilador Estático:** `cmd.exe /c "npx tsc --noEmit"` $\rightarrow$ `EXIT 0`
-- **Fusible de Invariantes:** `node scripts/verify-corabastos-invariants.mjs` $\rightarrow$ `EXIT 0` (5/5 invariantes matemáticas y de higiene estática sobre los 29 archivos fuente).
-- **Build de Producción:** `cmd.exe /c "npm run build"` $\rightarrow$ `EXIT 0`
+- **Fusible de Invariantes:** `node scripts/verify-corabastos-invariants.mjs` $\rightarrow$ `EXIT 0` (5/5 invariantes matemáticas y de higiene estática sobre los 30 archivos fuente).
+- **Build de Producción (`out/`):** `cmd.exe /c "npm run build"` $\rightarrow$ `EXIT 0`
 
 ---
 

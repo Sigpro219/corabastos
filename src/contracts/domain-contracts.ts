@@ -1,13 +1,7 @@
 import { z } from "zod";
 
 export const BillingModalitySchema = z.enum([
-  "CONTADOR",
-  "COMUNAL",
-  "PRORRATEO",
-  "RED DE FRIOS",
-  "RED FRIOS",
-  "RED_FRIOS",
-  "BASICOS",
+  "CONTADOR", "COMUNAL", "PRORRATEO", "RED DE FRIOS", "RED FRIOS", "RED_FRIOS", "BASICOS",
 ]);
 export type BillingModality = z.infer<typeof BillingModalitySchema>;
 
@@ -15,22 +9,10 @@ export const WasteVolumeCategorySchema = z.enum(["NP", "MP", "P", "BASICOS"]);
 export type WasteVolumeCategory = z.infer<typeof WasteVolumeCategorySchema>;
 
 export const MeterObservationCodeSchema = z.enum([
-  "VERIFICADO POR IMAGEN",
-  "C, DETENIDO",
-  "M, DETENIDO",
-  "C, TAPADO",
-  "M, TAPADO",
-  "C, RETIRADO",
-  "M, RETIRADO",
-  "C, SUSPENDIDO",
-  "M, SUSPENDIDO",
-  "L, VACIO",
-  "L, CERRADO",
-  "NO PERMITIO INGRESO",
-  "ALMACENAMIENTO DE PRODUCTOS",
-  "REVISAR MEDIDOR",
-  "NUEVO",
-  "SIN NOVEDAD",
+  "VERIFICADO POR IMAGEN", "C, DETENIDO", "M, DETENIDO", "C, TAPADO", "M, TAPADO",
+  "C, RETIRADO", "M, RETIRADO", "C, SUSPENDIDO", "M, SUSPENDIDO", "L, VACIO",
+  "L, CERRADO", "NO PERMITIO INGRESO", "ALMACENAMIENTO DE PRODUCTOS", "REVISAR MEDIDOR",
+  "NUEVO", "SIN NOVEDAD",
 ]);
 export type MeterObservationCode = z.infer<typeof MeterObservationCodeSchema>;
 
@@ -106,6 +88,112 @@ export const FieldReadingUpdateSchema = z
 
 export type FieldReadingUpdate = z.infer<typeof FieldReadingUpdateSchema>;
 
+export const MeterRouteSurveyItemSchema = z
+  .object({
+    taskKey: z.string().min(1).max(80).refine(noBase64Guard, "Base64 prohibido"),
+    codigo: z.string().min(1).max(40).refine(noBase64Guard, "Base64 prohibido"),
+    bodegaId: z.string().min(1).max(20),
+    servicio: FieldServiceTypeSchema,
+    ordenBodega: z.number().int().min(1).max(10000),
+    ordenGlobal: z.number().int().min(1).max(10000),
+    latitude: z.number().finite().min(-90).max(90).optional(),
+    longitude: z.number().finite().min(-180).max(180).optional(),
+    accuracyMeters: z.number().finite().min(0).max(50000).optional(),
+    hasPositionPhoto: z.boolean().optional(),
+    referenciaPasillo: z.string().max(200).refine(noBase64Guard, "Base64 prohibido").optional(),
+    positionPhotoLocalKey: z.string().min(1).max(200).refine(noBase64Guard, "Base64 prohibido").optional(),
+    positionPhotoStorageUrl: z.string().url().max(1024).refine(noBase64Guard, "Base64 prohibido").optional(),
+    hasPositionPhotoWater: z.boolean().optional(),
+    positionPhotoWaterLocalKey: z.string().min(1).max(200).refine(noBase64Guard, "Base64 prohibido").optional(),
+    positionPhotoWaterStorageUrl: z.string().url().max(1024).refine(noBase64Guard, "Base64 prohibido").optional(),
+    tiempoLlegadaMs: z.number().int().min(0).optional(),
+    tiempoSalidaMs: z.number().int().min(0).optional(),
+    duracionServicioSegundos: z.number().finite().min(0).max(86400).optional(),
+    deltaTrasladoSegundos: z.number().finite().min(0).max(86400).optional(),
+    ciclosObservadosCount: z.number().int().min(1).max(1000).optional(),
+    emaDuracionServicioSegundos: z.number().finite().min(0).max(86400).optional(),
+    emaDeltaTrasladoSegundos: z.number().finite().min(0).max(86400).optional(),
+    surveyedAt: z.string().min(1).max(64).refine(noBase64Guard, "Base64 prohibido"),
+  })
+  .strict();
+
+export type MeterRouteSurveyItem = z.infer<typeof MeterRouteSurveyItemSchema>;
+
+export interface CompositePhysicalStop {
+  stopKey: string;
+  bodegaId: string;
+  codigo: string;
+  zonaId: ReadingZoneId;
+  hasEnergyMeter: boolean;
+  hasWaterMeter: boolean;
+  energyTaskKey?: string;
+  waterTaskKey?: string;
+  sharedCodigos: string[];
+  estimatedStopSeconds: number;
+}
+
+export const WorkforceShiftDayBucketSchema = z
+  .object({
+    diaIndice: z.number().int().min(1).max(31),
+    diaSemanaLabel: z.enum(["LUNES", "MARTES", "MIERCOLES", "JUEVES", "VIERNES"]),
+    fechaAnclaIso: z.string().min(10).max(40),
+    fechaProximoCiclo30dIso: z.string().min(10).max(40),
+    bodegasAsignadas: z.array(z.string().min(1).max(20)),
+    paradasFisicasCount: z.number().int().min(0),
+    tareasAtomicasCount: z.number().int().min(0),
+    minutosEstimadosJornada: z.number().finite().min(0),
+    utilizacionJornada8hPct: z.number().finite().min(0).max(200),
+  })
+  .strict();
+
+export type WorkforceShiftDayBucket = z.infer<typeof WorkforceShiftDayBucketSchema>;
+
+export const WorkforceCapacityPlanSchema = z
+  .object({
+    jornadaBrutaMinutos: z.literal(480),
+    jornadaEfectivaMinutos: z.number().int().min(60).max(480),
+    soloEntreSemanaLunesViernes: z.literal(true),
+    diasHabilesBaseMes: z.literal(22),
+    gapCicloLecturaDias: z.literal(30),
+    operadoresAsignados: z.number().int().min(1).max(20),
+    tiempoTotalRutaMinutos: z.number().finite().min(0),
+    diasRequeridosAlMes: z.number().int().min(1).max(31),
+    diasAhorradosVsMesCompleto: z.number().int().min(0).max(30),
+    cronogramaDiario: z.array(WorkforceShiftDayBucketSchema),
+  })
+  .strict();
+
+export type WorkforceCapacityPlan = z.infer<typeof WorkforceCapacityPlanSchema>;
+
+export const TransferCutoffConfigSchema = z
+  .object({
+    periodo: z.string().min(4).max(30),
+    nombrePeriodo: z.string().min(1).max(100),
+    fechaCorteEnergiaIso: z.string().min(10).max(40),
+    fechaCorteAcueductoIso: z.string().min(10).max(40),
+    fechaExpedicionFichaIso: z.string().min(10).max(40),
+    updatedAt: z.string().min(10).max(40),
+    updatedBy: z.string().min(1).max(128),
+  })
+  .strict();
+export type TransferCutoffConfig = z.infer<typeof TransferCutoffConfigSchema>;
+
+export const PuestoInventoryAuditEntrySchema = z
+  .object({
+    auditId: z.string().min(1).max(80),
+    codigoLocal: z.string().min(1).max(40),
+    bodegaId: z.string().min(1).max(20),
+    campoModificado: z.enum(["areaM2", "modalidadEnergia", "modalidadAcueducto", "categoriaResiduos", "estadoOcupacion", "digitosContadorEnergia"]),
+    valorAnterior: z.string().max(120),
+    valorNuevo: z.string().max(120),
+    motivoJustificacion: z.string().min(5).max(300).refine(noBase64Guard, "Base64 prohibido"),
+    confirmadoDoblePaso: z.literal(true),
+    actorUid: z.string().min(1).max(128),
+    timestampIso: z.string().min(10).max(40),
+  })
+  .strict();
+export type PuestoInventoryAuditEntry = z.infer<typeof PuestoInventoryAuditEntrySchema>;
+
 const finiteNum = z.number().finite();
 const nonNegNum = z.number().finite().min(0);
 
@@ -116,108 +204,45 @@ export const MasterReceiptsConfigSchema = z
     energia: z.object({
       tarifaKwh: nonNegNum,
       principal: z.object({
-        valorConsumoFactura: nonNegNum,
-        alumbradoFactura20Pct: nonNegNum,
-        cregFactura20Pct: nonNegNum,
-        totalFactura: nonNegNum,
-        asumidoCorporacion: nonNegNum,
-        asumidoCovial: nonNegNum,
-        valorNetoServicio: nonNegNum,
-        bolsaProrrateo: nonNegNum,
-        areaProrrateoM2: nonNegNum,
-        topeMinimaCop: nonNegNum,
+        valorConsumoFactura: nonNegNum, alumbradoFactura20Pct: nonNegNum, cregFactura20Pct: nonNegNum,
+        totalFactura: nonNegNum, asumidoCorporacion: nonNegNum, asumidoCovial: nonNegNum,
+        valorNetoServicio: nonNegNum, bolsaProrrateo: nonNegNum, areaProrrateoM2: nonNegNum, topeMinimaCop: nonNegNum,
       }),
-      redFrios: z.object({
-        valorFacturaTotal: nonNegNum,
-        valorNetoServicio: nonNegNum,
-        creg20Pct: nonNegNum,
-      }),
+      redFrios: z.object({ valorFacturaTotal: nonNegNum, valorNetoServicio: nonNegNum, creg20Pct: nonNegNum }),
       bodegaPopular: z.object({
-        valorConsumoFactura: nonNegNum,
-        consumoComunal20Pct: nonNegNum,
-        valorFacturaNeto: nonNegNum,
-        cregFactura: nonNegNum,
-        tasaCregPct: nonNegNum,
-        totalFactura: nonNegNum,
-        areaTotalM2: nonNegNum,
-        areaProrrateoM2: nonNegNum,
-        bolsaProrrateo: nonNegNum,
-        topeMinimaCop: nonNegNum,
+        valorConsumoFactura: nonNegNum, consumoComunal20Pct: nonNegNum, valorFacturaNeto: nonNegNum,
+        cregFactura: nonNegNum, tasaCregPct: nonNegNum, totalFactura: nonNegNum,
+        areaTotalM2: nonNegNum, areaProrrateoM2: nonNegNum, bolsaProrrateo: nonNegNum, topeMinimaCop: nonNegNum,
       }),
-      alumbradoGeneral: z.object({
-        bolsaTotal: nonNegNum,
-        areaTotalM2: nonNegNum,
-        tarifaPorM2: nonNegNum,
-      }),
+      alumbradoGeneral: z.object({ bolsaTotal: nonNegNum, areaTotalM2: nonNegNum, tarifaPorM2: nonNegNum }),
     }),
     acueducto: z.object({
-      tarifaM3: nonNegNum,
-      consumoTotalM3: nonNegNum,
-      valorFacturaGeneral: nonNegNum,
-      valorFacturaRedFrios: nonNegNum,
-      areaRedFriosM2: nonNegNum,
-      asumidoCorporacion: nonNegNum,
-      asumidoCovial: nonNegNum,
-      notasCredito: finiteNum,
-      bolsaProrrateo: nonNegNum,
-      areaProrrateoM2: nonNegNum,
-      bolsaAguaComunalGeneral: nonNegNum,
-      areaComunalGeneralM2: nonNegNum,
-      topeMinimaCop: nonNegNum,
+      tarifaM3: nonNegNum, consumoTotalM3: nonNegNum, valorFacturaGeneral: nonNegNum,
+      valorFacturaRedFrios: nonNegNum, areaRedFriosM2: nonNegNum, asumidoCorporacion: nonNegNum,
+      asumidoCovial: nonNegNum, notasCredito: finiteNum, bolsaProrrateo: nonNegNum,
+      areaProrrateoM2: nonNegNum, bolsaAguaComunalGeneral: nonNegNum, areaComunalGeneralM2: nonNegNum, topeMinimaCop: nonNegNum,
     }),
     expensas: z.object({
-      policia: z.object({
-        valorFactura: nonNegNum,
-        localesActivosDivisor: nonNegNum,
-        cuotaFijaPorLocal: nonNegNum,
-        regla: z.string().min(1),
-      }),
+      policia: z.object({ valorFactura: nonNegNum, localesActivosDivisor: nonNegNum, cuotaFijaPorLocal: nonNegNum, regla: z.string().min(1) }),
       vigilancia: z.object({
-        valorFacturaBruto: nonNegNum,
-        notasDebito: finiteNum,
-        valorNetoDistribuir: nonNegNum,
-        areaTotalM2: nonNegNum,
-        tarifaPorM2: nonNegNum,
-        regla: z.string().min(1),
+        valorFacturaBruto: nonNegNum, notasDebito: finiteNum, valorNetoDistribuir: nonNegNum,
+        areaTotalM2: nonNegNum, tarifaPorM2: nonNegNum, regla: z.string().min(1),
       }),
       aseo: z.object({
-        valorFacturaOperacionTotal: nonNegNum,
-        porcentajeComerciantes: nonNegNum,
-        valorNetoDistribuir: nonNegNum,
-        areaTotalM2: nonNegNum,
-        tarifaPorM2: nonNegNum,
-        regla: z.string().min(1),
+        valorFacturaOperacionTotal: nonNegNum, porcentajeComerciantes: nonNegNum,
+        valorNetoDistribuir: nonNegNum, areaTotalM2: nonNegNum, tarifaPorM2: nonNegNum, regla: z.string().min(1),
       }),
       residuosEcsa: z.object({
-        valorFacturaBruto: nonNegNum,
-        valorBasicos: nonNegNum,
-        notasDebito: finiteNum,
-        valorNetoProrratear: nonNegNum,
-        areaTotalProrrateoM2: nonNegNum,
-        areaNpM2: nonNegNum,
-        areaMpM2: nonNegNum,
-        areaPM2: nonNegNum,
-        factorNP: nonNegNum,
-        factorMP: nonNegNum,
-        tarifaBaseM2: nonNegNum,
-        tarifaEfectivaNpM2: nonNegNum,
-        tarifaEfectivaMpM2: nonNegNum,
-        tarifaEfectivaPM2: nonNegNum,
-        regla: z.string().min(1),
+        valorFacturaBruto: nonNegNum, valorBasicos: nonNegNum, notasDebito: finiteNum, valorNetoProrratear: nonNegNum,
+        areaTotalProrrateoM2: nonNegNum, areaNpM2: nonNegNum, areaMpM2: nonNegNum, areaPM2: nonNegNum,
+        factorNP: nonNegNum, factorMP: nonNegNum, tarifaBaseM2: nonNegNum,
+        tarifaEfectivaNpM2: nonNegNum, tarifaEfectivaMpM2: nonNegNum, tarifaEfectivaPM2: nonNegNum, regla: z.string().min(1),
       }),
     }),
     conciliacionFinanzas: z.object({
-      energiaFinanzas: nonNegNum,
-      energiaLiquidado: nonNegNum,
-      acueductoFinanzas: nonNegNum,
-      acueductoLiquidado: nonNegNum,
-      aseoResiduosFinanzas: nonNegNum,
-      aseoResiduosLiquidado: nonNegNum,
-      vigilanciaFinanzas: nonNegNum,
-      vigilanciaLiquidado: nonNegNum,
-      policiaFinanzas: nonNegNum,
-      policiaLiquidado: nonNegNum,
-      granTotalLiquidado: nonNegNum,
+      energiaFinanzas: nonNegNum, energiaLiquidado: nonNegNum, acueductoFinanzas: nonNegNum, acueductoLiquidado: nonNegNum,
+      aseoResiduosFinanzas: nonNegNum, aseoResiduosLiquidado: nonNegNum, vigilanciaFinanzas: nonNegNum, vigilanciaLiquidado: nonNegNum,
+      policiaFinanzas: nonNegNum, policiaLiquidado: nonNegNum, granTotalLiquidado: nonNegNum,
     }),
   })
   .strict();
@@ -225,44 +250,19 @@ export const MasterReceiptsConfigSchema = z
 export type MasterReceiptsConfig = z.infer<typeof MasterReceiptsConfigSchema>;
 
 export interface CommunalEnergyMeter {
-  id: string;
-  codigo: string;
-  bodegaId: string;
-  lecturaAnterior: number;
-  lecturaActual: number;
-  consumoNetoKw: number;
-  consumoAnteriorKw: number;
-  variacionPct: number;
-  tipo: "ALERO" | "BODEGA" | string;
-  areaM2: number;
-  contadorSerie: string;
-  observacion: string;
-  hijosContadorCodigos: string[];
+  id: string; codigo: string; bodegaId: string; lecturaAnterior: number; lecturaActual: number;
+  consumoNetoKw: number; consumoAnteriorKw: number; variacionPct: number; tipo: "ALERO" | "BODEGA" | string;
+  areaM2: number; contadorSerie: string; observacion: string; hijosContadorCodigos: string[];
 }
 
 export interface CommunalWaterMeter {
-  id: string;
-  codigo: string;
-  bodegaId: string;
-  lecturaAnterior: number;
-  lecturaActual: number;
-  consumoNetoM3: number;
-  consumoAnteriorM3: number;
-  variacionPct: number;
-  tipo: string;
-  areaM2: number;
-  contadorSerie: string;
-  observacion: string;
-  hijosContadorCodigos: string[];
+  id: string; codigo: string; bodegaId: string; lecturaAnterior: number; lecturaActual: number;
+  consumoNetoM3: number; consumoAnteriorM3: number; variacionPct: number; tipo: string;
+  areaM2: number; contadorSerie: string; observacion: string; hijosContadorCodigos: string[];
 }
 
 export interface PublicBathroomMeter {
-  id: string;
-  codigo: string;
-  contadorSerie: string;
-  lecturaActual: number;
-  lecturaAnterior: number;
-  consumoM3: number;
+  id: string; codigo: string; contadorSerie: string; lecturaActual: number; lecturaAnterior: number; consumoM3: number;
 }
 
 export interface LocalUnitRecord {
@@ -419,102 +419,117 @@ export const JUNE_2025_REFERENCE_RECEIPTS: MasterReceiptsConfig = {
 // ============================================================================
 
 export interface BiMacrometerLeakKpiItem {
-  id: string;
-  servicio: "ENERGIA" | "ACUEDUCTO";
-  bodegaId: string;
-  nombre: string;
-  medidorSerie: string;
-  consumoBruto: number;
-  descuentoHijos: number;
-  consumoNetoComunal: number;
-  consumoAnteriorComunal: number;
-  porcentajeComunalSobreBruto: number;
-  variacionIntermensualPct: number;
-  alertaFugaActiva: boolean;
-  unidad: "kWh" | "m³";
+  id: string; servicio: "ENERGIA" | "ACUEDUCTO"; bodegaId: string; nombre: string; medidorSerie: string;
+  consumoBruto: number; descuentoHijos: number; consumoNetoComunal: number; consumoAnteriorComunal: number;
+  porcentajeComunalSobreBruto: number; variacionIntermensualPct: number; alertaFugaActiva: boolean; unidad: "kWh" | "m³";
 }
 
 export interface BiFinancialAbsorptionItem {
-  servicio: string;
-  vFinanzasCop: number;
-  vLiquidadoComerciantesCop: number;
-  asumidoCorporacionFijoCop: number;
-  asumidoVacanciaSinContratoCop: number;
-  brechaNetaCop: number;
-  porcentajeRecuperacionPct: number;
+  servicio: string; vFinanzasCop: number; vLiquidadoComerciantesCop: number; asumidoCorporacionFijoCop: number;
+  asumidoVacanciaSinContratoCop: number; brechaNetaCop: number; porcentajeRecuperacionPct: number;
 }
 
 export interface BiMetrologicalHealthItem {
-  causal: string;
-  categoria: "OPERATIVO" | "DETENIDO" | "TAPADO" | "RETIRADO_REVISAR" | "CERRADO_VACIO";
-  cantidadEnergia: number;
-  cantidadAcueducto: number;
-  totalMedidores: number;
-  areaAfectadaM2: number;
-  facturacionMigradaProrrateoCop: number;
+  causal: string; categoria: "OPERATIVO" | "DETENIDO" | "TAPADO" | "RETIRADO_REVISAR" | "CERRADO_VACIO";
+  cantidadEnergia: number; cantidadAcueducto: number; totalMedidores: number; areaAfectadaM2: number; facturacionMigradaProrrateoCop: number;
 }
 
 export interface BiBodegaIntensityBenchmark {
-  bodegaId: string;
-  tipoPrincipal: string;
-  totalLocales: number;
-  areaTotalM2: number;
-  kwhPorM2: number;
-  m3PorM2: number;
-  copPorM2Actual: number;
-  copPorM2Anterior: number;
-  variacionCopPct: number;
-  totalActualCop: number;
-  totalAnteriorCop: number;
+  bodegaId: string; tipoPrincipal: string; totalLocales: number; areaTotalM2: number; kwhPorM2: number; m3PorM2: number;
+  copPorM2Actual: number; copPorM2Anterior: number; variacionCopPct: number; totalActualCop: number; totalAnteriorCop: number;
 }
 
 export interface BiParetoLocalItem {
-  codigoLocal: string;
-  bodegaId: string;
-  tipoLocal: string;
-  areaM2: number;
-  kwhActual: number;
-  kwhAnterior: number;
-  m3Actual: number;
-  m3Anterior: number;
-  totalActualCop: number;
-  totalAnteriorCop: number;
-  promedioMaxCop: number;
-  saltoMensualCop: number;
-  saltoMensualPct: number;
-  excedeBandaPromedioMax: boolean;
+  codigoLocal: string; bodegaId: string; tipoLocal: string; areaM2: number; kwhActual: number; kwhAnterior: number;
+  m3Actual: number; m3Anterior: number; totalActualCop: number; totalAnteriorCop: number; promedioMaxCop: number;
+  saltoMensualCop: number; saltoMensualPct: number; excedeBandaPromedioMax: boolean;
 }
 
 export interface BiLongitudinalCutoffPoint {
-  corteId: string;
-  etiqueta: string;
-  totalFacturadoRealCop: number;
-  energiaTotalCop: number;
-  acueductoTotalCop: number;
-  expensasTotalCop: number;
-  vigilanciaTotalCop: number;
-  residuosTotalCop: number;
-  aseoTotalCop: number;
-  policiaTotalCop: number;
-  consumoFisicoEnergiaKwh: number;
-  consumoFisicoAguaM3: number;
-  tarifaKwhPrincipalCop: number;
-  tarifaM3AguaCop: number;
-  tarifaM2VigilanciaCop: number;
-  tarifaM2ResiduosP: number;
-  indicePerdidaComunalPct: number;
-  saludMetrologicaPct: number;
+  corteId: string; etiqueta: string; totalFacturadoRealCop: number; energiaTotalCop: number; acueductoTotalCop: number;
+  expensasTotalCop: number; vigilanciaTotalCop: number; residuosTotalCop: number; aseoTotalCop: number; policiaTotalCop: number;
+  consumoFisicoEnergiaKwh: number; consumoFisicoAguaM3: number; tarifaKwhPrincipalCop: number; tarifaM3AguaCop: number;
+  tarifaM2VigilanciaCop: number; tarifaM2ResiduosP: number; indicePerdidaComunalPct: number; saludMetrologicaPct: number;
 }
 
 export interface BiZoneSlaSummary {
-  zonaId: string;
-  etiqueta: string;
-  totalTareas: number;
-  completadas: number;
-  pendientes: number;
-  novedadesTecnicas: number;
-  cerradosSinAcceso: number;
-  avancePct: number;
+  zonaId: string; etiqueta: string; totalTareas: number; completadas: number;
+  pendientes: number; novedadesTecnicas: number; cerradosSinAcceso: number; avancePct: number;
+}
+
+export type BodegaHeatmapLens = "AVANCE_RUTA" | "CONSUMO_FUGAS" | "TIEMPO_OPERACION";
+export type BodegaThermalSeverity = "VERDE_OPTIMO" | "AMBAR_EN_CURSO" | "AZUL_PROGRAMADA" | "ROJO_CRITICO";
+
+export interface BodegaHeatmapCell {
+  bodegaId: string; diaIndiceAsignado: number; diaSemanaLabel: WorkforceShiftDayBucket["diaSemanaLabel"];
+  paradasFisicasTotales: number; paradasEvacuadas: number; avanceLecturaPct: number;
+  novedadesCount: number; variacionConsumoPct: number; segundosPromedioPorParada: number; severidadActiva: BodegaThermalSeverity;
+}
+
+export type AnomalyAlertSeverity = "DENTRO_DE_BANDA" | "SOBRECONSUMO_CRITICO" | "SUBCONSUMO_ATIPICO";
+export type AnomalyResolutionDecision =
+  | "PENDIENTE_REVISION"
+  | "EN_REVERIFICACION_CAMPO"
+  | "VERIFICADO_EN_CAMPO"
+  | "APROBADO_ALIMENTA_BANDA"
+  | "APROBADO_EVENTO_AISLADO_SIN_BANDA"
+  | "LIQUIDADO_PROMEDIO_HISTORICO";
+
+export interface HistoricalConsumptionBandProfile {
+  codigoLocal: string;
+  bodegaId: string;
+  servicio: "ENERGIA" | "AGUA";
+  mediaAprendidaEma: number;
+  desviacionEstandar: number;
+  bandaMinFisica: number;
+  bandaMaxFisica: number;
+  cortesValidosCount: number;
+  ventanaHistorica: { periodo: string; consumoFisico: number; alimentaBanda: boolean }[];
+  ultimoReanclajeIso?: string;
+  reancladoPorUid?: string;
+}
+
+export const FieldReverificationTaskSchema = z
+  .object({
+    reverifyId: z.string().min(1).max(80),
+    taskKey: z.string().min(1).max(80).refine(noBase64Guard, "Base64 prohibido"),
+    codigoLocal: z.string().min(1).max(40),
+    bodegaId: z.string().min(1).max(20),
+    servicio: FieldServiceTypeSchema,
+    motivoInspeccion: z.enum(["REVALIDAR_DIGITOS_FOTO", "INSPECCIONAR_POSIBLE_FUGA", "VERIFICAR_MEDIDOR_DETENIDO_MANIPULADO"]),
+    lecturaCiegaOculta: z.literal(true),
+    lecturaPrimeraTomaInterna: nonNegNum,
+    lecturaSegundaToma: nonNegNum.optional(),
+    fotoSegundaTomaLocalKey: z.string().min(1).max(200).refine(noBase64Guard, "Base64 prohibido").optional(),
+    fotoSegundaTomaStorageUrl: z.string().url().max(1024).refine(noBase64Guard, "Base64 prohibido").optional(),
+    observacionSegundaToma: z.string().max(400).refine(noBase64Guard, "Base64 prohibido").optional(),
+    estado: z.enum(["PENDIENTE_CAMPO", "VERIFICADO_CAMPO"]),
+    prioridadCero: z.literal(true),
+    operadorPrimeraTomaUid: z.string().min(1).max(128).optional(),
+    operadorSegundaTomaUid: z.string().min(1).max(128).optional(),
+    solicitadoPorUid: z.string().min(1).max(128),
+    solicitadoAtIso: z.string().min(10).max(40),
+    resueltoAtIso: z.string().min(10).max(40).optional(),
+  })
+  .strict();
+export type FieldReverificationTask = z.infer<typeof FieldReverificationTaskSchema>;
+
+export interface ConsumptionAnomalyReportItem {
+  anomalyId: string;
+  periodo: string;
+  codigoLocal: string;
+  bodegaId: string;
+  servicio: "ENERGIA" | "AGUA";
+  unidad: "kWh" | "m³";
+  consumoActualFisico: number;
+  bandaMinHistorica: number;
+  bandaMaxHistorica: number;
+  mediaHistoricaEma: number;
+  desviacionBandaPct: number;
+  impactoDesviacionCop: number;
+  severidad: AnomalyAlertSeverity;
+  decisionEstado: AnomalyResolutionDecision;
+  reverificacionCampo?: FieldReverificationTask;
 }
 
 export interface BiLongitudinalReport {

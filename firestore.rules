@@ -25,6 +25,14 @@ rules_version = '2';
 //        * periodo: string (optional, 1..30 chars)
 //        * updatedBy: string (optional, <= 128 chars, must match auth.uid)
 //
+//    - Document ID: "route_survey"
+//      Read/Write Role: LECTURISTA or AUDITOR_ADMIN (or unassigned role claim)
+//      Fields (<= 10 keys):
+//        * surveyMap: map (optional, <= 2500 keys; taskKey -> MeterRouteSurveyItem)
+//        * updatedAt: string (required, ISO 8601, 19..40 chars)
+//        * periodo: string (optional, 1..30 chars)
+//        * updatedBy: string (optional, <= 128 chars, must match auth.uid)
+//
 //    - Document ID: "occupancy_state"
 //      Read/Write Role: AUDITOR_ADMIN only when 'role' claim exists (LECTURISTA denied)
 //      Fields (<= 10 keys):
@@ -83,9 +91,14 @@ service cloud.firestore {
     // Helper Functions
     // ===============================================================
 
+    // Enforce 30-day deployment expiration window (active through 2026-12-10; expires 2026-12-11T00:00:00Z)
+    function isWithinTrialWindow() {
+      return request.time < timestamp.date(2026, 12, 11);
+    }
+
     // Check if the user is authenticated via Firebase Auth
     function isAuthenticated() {
-      return request.auth != null;
+      return request.auth != null && isWithinTrialWindow();
     }
 
     // Check if user owns the resource (for user-scoped documents)
@@ -253,7 +266,23 @@ service cloud.firestore {
              isValidOptionalString('periodo', 1, 30);
     }
 
-    // 2. Validator for "occupancy_state"
+    // 2. Validator for "route_survey"
+    function isValidRouteSurveyDoc(data) {
+      return hasMaxKeyCount(10) &&
+             hasRequiredFields(['updatedAt']) &&
+             hasOnlyAllowedFields([
+               'surveyMap',
+               'updatedAt',
+               'updatedBy',
+               'periodo'
+             ]) &&
+             isValidDateString(data.updatedAt) &&
+             (!('surveyMap' in data) ||
+              (data.surveyMap is map && data.surveyMap.size() <= 2500)) &&
+             isValidOptionalString('periodo', 1, 30);
+    }
+
+    // 3. Validator for "occupancy_state"
     function isValidOccupancyStateDoc(data) {
       return hasMaxKeyCount(10) &&
              hasRequiredFields(['occupancyMap', 'updatedAt']) &&
@@ -269,7 +298,7 @@ service cloud.firestore {
              isValidOptionalString('periodo', 1, 30);
     }
 
-    // 3. Validator for "master_receipts"
+    // 4. Validator for "master_receipts"
     function isValidMasterReceiptsDoc(data) {
       return hasMaxKeyCount(10) &&
              hasRequiredFields(['receipts', 'updatedAt']) &&
@@ -314,7 +343,7 @@ service cloud.firestore {
              isValidOptionalString('periodo', 1, 30);
     }
 
-    // 4. Validator for "audit_log"
+    // 5. Validator for "audit_log"
     function isValidAuditLogDoc(data) {
       return hasMaxKeyCount(10) &&
              hasRequiredFields(['updatedAt']) &&
@@ -336,7 +365,7 @@ service cloud.firestore {
              isValidOptionalString('periodo', 1, 30);
     }
 
-    // 5. Validator for unitary field reading documents ("reading_{taskId}")
+    // 6. Validator for unitary field reading documents ("reading_{taskId}")
     function isValidReadingLogDoc(data) {
       return hasMaxKeyCount(10) &&
              hasRequiredFields([
@@ -388,6 +417,9 @@ service cloud.firestore {
       return (docId == 'field_overrides' &&
               canWriteFieldCapture() &&
               isValidFieldOverridesDoc(data)) ||
+             (docId == 'route_survey' &&
+              canWriteFieldCapture() &&
+              isValidRouteSurveyDoc(data)) ||
              (docId == 'occupancy_state' &&
               isAuditorAdmin() &&
               isValidOccupancyStateDoc(data)) ||
@@ -405,10 +437,10 @@ service cloud.firestore {
     // Role-scoped read authorization for active cutoff documents.
     // Restricts financial/administrative state ('master_receipts', 'occupancy_state')
     // to AUDITOR_ADMIN (denying 'LECTURISTA'), while granting read access on field
-    // capture/log documents ('field_overrides', 'audit_log', 'reading_*') via canWriteFieldCapture().
+    // capture/log documents ('field_overrides', 'route_survey', 'audit_log', 'reading_*') via canWriteFieldCapture().
     function canReadActiveCutoffDoc(docId) {
       return (docId in ['master_receipts', 'occupancy_state'] && isAuditorAdmin()) ||
-             ((docId in ['field_overrides', 'audit_log'] || isReadingDocId(docId)) &&
+             ((docId in ['field_overrides', 'route_survey', 'audit_log'] || isReadingDocId(docId)) &&
               canWriteFieldCapture());
     }
 

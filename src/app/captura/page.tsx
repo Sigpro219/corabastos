@@ -12,12 +12,15 @@ import { getLocalPhotoUrl, persistFieldEvidencePhoto } from "@/lib/photo-evidenc
 import { formatDec, formatInt, sanitizeDecimalInputString } from "@/lib/formatters";
 import { FieldRouteNavigator } from "@/components/FieldRouteNavigator";
 import { OperatorTaskCaptureCard } from "@/components/OperatorTaskCaptureCard";
+import { RoutePlannerSurveyCard } from "@/components/RoutePlannerSurveyCard";
 import { CorabastosBrandLogo } from "@/components/CorabastosBrandLogo";
 import {
   Camera,
   CheckCircle2,
+  ClipboardCheck,
   Cloud,
   CloudOff,
+  Compass,
   Info,
   KeyRound,
   LayoutDashboard,
@@ -34,9 +37,13 @@ export default function OperadorTerrenoCapturePage() {
     tasks: allTasks,
     recentFieldUpdates,
     saveFieldReading,
+    saveMeterRouteSurvey,
+    removeMeterFromRouteSurvey,
     lookupCadastralLocales,
   } = useCorabastosFieldCapture();
 
+  const [captureMode, setCaptureMode] = useState<"PLANEADOR_RUTA" | "LECTURA_MENSUAL">("PLANEADOR_RUTA");
+  const [surveyToast, setSurveyToast] = useState<string | null>(null);
   const [selectedZone, setSelectedZone] = useState<ReadingZoneId>("ZONA_3_COMERCIANTES_PRINCIPAL");
   const [selectedBodega, setSelectedBodega] = useState<string>("ALL");
   const [serviceFilter, setServiceFilter] = useState<"ALL" | "ENERGIA" | "AGUA">("ALL");
@@ -255,6 +262,18 @@ export default function OperadorTerrenoCapturePage() {
     setTimeout(() => setSaveToast(null), 2600);
   };
 
+  const handleSaveSurveyStop = (payload: Parameters<typeof saveMeterRouteSurvey>[0]) => {
+    const nextUnsurveyed =
+      filteredTasks.find((t) => t.taskKey !== payload.taskKey && t.routeSurvey === undefined) ||
+      filteredTasks.find((t) => t.taskKey !== payload.taskKey) ||
+      null;
+    const outcome = saveMeterRouteSurvey(payload);
+    if (!outcome.ok) return;
+    setSurveyToast(`Contador ${payload.codigo} fijado en la Ruta Ideal de Bodega ${payload.bodegaId}.`);
+    if (nextUnsurveyed) selectTask(nextUnsurveyed);
+    setTimeout(() => setSurveyToast(null), 2600);
+  };
+
   const handleUnlockPinSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (authenticateAuditorAdmin(pinValue)) {
@@ -346,6 +365,33 @@ export default function OperadorTerrenoCapturePage() {
       </header>
 
       <main className="flex-1 max-w-4xl w-full mx-auto p-3 sm:p-5 space-y-4">
+        <div className="bg-slate-900/90 border border-white/10 rounded-2xl p-1.5 grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+          <button
+            type="button"
+            onClick={() => setCaptureMode("PLANEADOR_RUTA")}
+            className={`py-2.5 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-2 cursor-pointer transition-all ${
+              captureMode === "PLANEADOR_RUTA"
+                ? "bg-emerald-500 text-slate-950 shadow-md"
+                : "text-slate-300 hover:bg-slate-800"
+            }`}
+          >
+            <Compass className="w-4 h-4" strokeWidth={1.75} />
+            <span>1. Modo Planeador & Georreferenciación (Lanzamiento)</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setCaptureMode("LECTURA_MENSUAL")}
+            className={`py-2.5 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-2 cursor-pointer transition-all ${
+              captureMode === "LECTURA_MENSUAL"
+                ? "bg-sky-400 text-slate-950 shadow-md"
+                : "text-slate-300 hover:bg-slate-800"
+            }`}
+          >
+            <ClipboardCheck className="w-4 h-4" strokeWidth={1.75} />
+            <span>2. Toma de Lecturas Mensuales (Operación Regular)</span>
+          </button>
+        </div>
+
         <FieldRouteNavigator
           allTasksCount={allTasks.length}
           zoneCounts={zoneCounts}
@@ -373,21 +419,33 @@ export default function OperadorTerrenoCapturePage() {
         />
 
         {activeTask ? (
-          <OperatorTaskCaptureCard
-            activeTask={activeTask}
-            inputReading={inputReading}
-            setInputReading={setInputReading}
-            selectedObs={selectedObs}
-            setSelectedObs={setSelectedObs}
-            hasPhotoEvidence={hasPhotoEvidence}
-            photoPreviewUrl={photoPreviewUrl}
-            isUploadingPhoto={isUploadingPhoto}
-            photoError={photoError}
-            onCapturePhotoFile={handleCapturePhotoFile}
-            handleSaveTask={handleSaveTask}
-            saveToast={saveToast}
-            saveError={saveError}
-          />
+          captureMode === "PLANEADOR_RUTA" ? (
+            <RoutePlannerSurveyCard
+              activeTask={activeTask}
+              allTasks={allTasks}
+              bodegaTasks={filteredTasks}
+              onSaveSurveyStop={handleSaveSurveyStop}
+              onRemoveSurveyStop={removeMeterFromRouteSurvey}
+              onSelectTask={selectTask}
+              surveyToast={surveyToast}
+            />
+          ) : (
+            <OperatorTaskCaptureCard
+              activeTask={activeTask}
+              inputReading={inputReading}
+              setInputReading={setInputReading}
+              selectedObs={selectedObs}
+              setSelectedObs={setSelectedObs}
+              hasPhotoEvidence={hasPhotoEvidence}
+              photoPreviewUrl={photoPreviewUrl}
+              isUploadingPhoto={isUploadingPhoto}
+              photoError={photoError}
+              onCapturePhotoFile={handleCapturePhotoFile}
+              handleSaveTask={handleSaveTask}
+              saveToast={saveToast}
+              saveError={saveError}
+            />
+          )
         ) : cadastralLookupResults.length === 0 ? (
           <div className="bg-slate-900/90 border border-emerald-500/30 rounded-2xl p-8 text-center space-y-2">
             <CheckCircle2 className="w-10 h-10 text-emerald-400 mx-auto" strokeWidth={1.75} />

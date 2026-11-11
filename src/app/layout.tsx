@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { CorabastosProvider } from "@/context/CorabastosContext";
+import { TrialExpirationGuard } from "@/components/TrialExpirationGuard";
 
 export const metadata: Metadata = {
   title: "CORABASTOS · Liquidación de Servicios Públicos, Expensas & Captura de Medidores",
@@ -19,7 +20,9 @@ export default function RootLayout({
   return (
     <html lang="es" suppressHydrationWarning>
       <body className="antialiased min-h-screen bg-[var(--background)] text-[var(--text-main)] print:min-h-0 print:bg-white print:text-slate-950">
-        <CorabastosProvider>{children}</CorabastosProvider>
+        <TrialExpirationGuard>
+          <CorabastosProvider>{children}</CorabastosProvider>
+        </TrialExpirationGuard>
       </body>
     </html>
   );

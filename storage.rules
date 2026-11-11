@@ -1,9 +1,15 @@
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
+    // 30-day deployment expiration window (expires after 2026-12-10T23:59:59-05:00)
+    function isWithinTrialWindow() {
+      return request.time < timestamp.date(2026, 12, 11);
+    }
+
     match /tenants/corabastos/evidencias/{periodo}/{fileName} {
-      allow read: if request.auth != null;
+      allow read: if request.auth != null && isWithinTrialWindow();
       allow create, update: if request.auth != null
+        && isWithinTrialWindow()
         && request.resource.size < 5 * 1024 * 1024
         && request.resource.contentType.matches('image/.*');
       allow delete: if false;

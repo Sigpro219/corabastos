@@ -12,6 +12,7 @@
     "rules": "storage.rules"
   },
   "hosting": {
+    "site": "corabastos-servicios",
     "public": "out",
     "ignore": [
       "firebase.json",
