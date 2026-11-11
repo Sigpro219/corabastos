@@ -17,6 +17,7 @@ import {
   BarChart3,
   Bell,
   Building2,
+  Calendar,
   ChevronRight,
   Cloud,
   CloudOff,
@@ -394,11 +395,12 @@ export default function CorabastosExecutiveShellPage() {
             </div>
 
             <div className="flex items-center gap-2">
-              <div className="hidden xl:flex items-center gap-2 bg-[var(--surface-alt)] px-3 py-1 rounded-lg border border-[var(--outline-color)] text-[11px]">
-                <span className="text-[9.5px] font-mono uppercase text-[var(--text-muted)]">
-                  Corte {receipts.nombrePeriodo}:
+              <div className="flex items-center gap-2 bg-emerald-50 dark:bg-emerald-950/40 px-3 py-1 rounded-lg border border-emerald-300 dark:border-emerald-700/50 text-[11px]">
+                <span className="text-[10px] font-mono uppercase font-bold text-emerald-800 dark:text-emerald-300 flex items-center gap-1">
+                  <Calendar size={12} strokeWidth={1.75} />
+                  Corte: 27 de Noviembre 2026
                 </span>
-                <span className="font-mono font-black text-emerald-600 dark:text-emerald-400 tabular-nums">
+                <span className="hidden sm:inline font-mono font-black text-emerald-700 dark:text-emerald-400 tabular-nums border-l border-emerald-300 dark:border-emerald-700 pl-2">
                   {formatCop(totalLiquidadoMes)} COP
                 </span>
               </div>

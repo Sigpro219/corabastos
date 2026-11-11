@@ -365,31 +365,45 @@ export default function OperadorTerrenoCapturePage() {
       </header>
 
       <main className="flex-1 max-w-4xl w-full mx-auto p-3 sm:p-5 space-y-4">
-        <div className="bg-slate-900/90 border border-white/10 rounded-2xl p-1.5 grid grid-cols-1 sm:grid-cols-2 gap-1.5">
-          <button
-            type="button"
-            onClick={() => setCaptureMode("PLANEADOR_RUTA")}
-            className={`py-2.5 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-2 cursor-pointer transition-all ${
-              captureMode === "PLANEADOR_RUTA"
-                ? "bg-emerald-500 text-slate-950 shadow-md"
-                : "text-slate-300 hover:bg-slate-800"
-            }`}
-          >
-            <Compass className="w-4 h-4" strokeWidth={1.75} />
-            <span>1. Modo Planeador & Georreferenciación (Lanzamiento)</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setCaptureMode("LECTURA_MENSUAL")}
-            className={`py-2.5 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-2 cursor-pointer transition-all ${
-              captureMode === "LECTURA_MENSUAL"
-                ? "bg-sky-400 text-slate-950 shadow-md"
-                : "text-slate-300 hover:bg-slate-800"
-            }`}
-          >
-            <ClipboardCheck className="w-4 h-4" strokeWidth={1.75} />
-            <span>2. Toma de Lecturas Mensuales (Operación Regular)</span>
-          </button>
+        {/* Banner de Operación en Gemba - Corte 27 Noviembre 2026 */}
+        <div className="bg-slate-900 border border-emerald-500/30 rounded-2xl p-3 flex flex-wrap items-center justify-between gap-3 shadow-sm">
+          <div className="flex items-center gap-2.5">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+            <div>
+              <span className="text-xs font-mono font-bold text-white block">
+                Corte Oficial en Terreno: 27 de Noviembre 2026
+              </span>
+              <span className="text-[11px] text-slate-400 block">
+                34 Bodegas Evacuadas · 34 Bodegas Programadas hacia el corte
+              </span>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setCaptureMode("LECTURA_MENSUAL")}
+              className={`py-1.5 px-3 rounded-xl font-bold text-xs flex items-center gap-1.5 cursor-pointer transition-all ${
+                captureMode === "LECTURA_MENSUAL"
+                  ? "bg-emerald-500 text-slate-950 shadow-md"
+                  : "text-slate-400 hover:text-white"
+              }`}
+            >
+              <ClipboardCheck className="w-3.5 h-3.5" strokeWidth={1.75} />
+              <span>Toma de Lecturas</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setCaptureMode("PLANEADOR_RUTA")}
+              className={`py-1.5 px-3 rounded-xl font-bold text-xs flex items-center gap-1.5 cursor-pointer transition-all ${
+                captureMode === "PLANEADOR_RUTA"
+                  ? "bg-emerald-500 text-slate-950 shadow-md"
+                  : "text-slate-400 hover:text-white"
+              }`}
+            >
+              <Compass className="w-3.5 h-3.5" strokeWidth={1.75} />
+              <span>Enrolamiento GPS</span>
+            </button>
+          </div>
         </div>
 
         <FieldRouteNavigator
