@@ -55,6 +55,8 @@ export default function CorabastosExecutiveShellPage() {
     waterCommunal,
     bathroomMeters,
     receipts,
+    activePeriodId,
+    setActivePeriodId,
     completedTaskIds,
     fieldOverridesMap,
     resetToOfficialJune2025,
@@ -395,12 +397,27 @@ export default function CorabastosExecutiveShellPage() {
             </div>
 
             <div className="flex items-center gap-2">
-              <div className="flex items-center gap-2 bg-emerald-50 dark:bg-emerald-950/40 px-3 py-1 rounded-lg border border-emerald-300 dark:border-emerald-700/50 text-[11px]">
-                <span className="text-[10px] font-mono uppercase font-bold text-emerald-800 dark:text-emerald-300 flex items-center gap-1">
-                  <Calendar size={12} strokeWidth={1.75} />
-                  Corte: 27 de Noviembre 2026
+              {/* Selector Global de Periodo de Corte */}
+              <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-300 dark:border-slate-700 text-xs">
+                <span className="text-[10px] font-mono font-bold uppercase text-slate-500 pl-1.5 flex items-center gap-1">
+                  <Calendar size={12} strokeWidth={1.75} className="text-emerald-500" />
+                  Corte:
                 </span>
-                <span className="hidden sm:inline font-mono font-black text-emerald-700 dark:text-emerald-400 tabular-nums border-l border-emerald-300 dark:border-emerald-700 pl-2">
+                <select
+                  value={activePeriodId}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === "2026-11" || val === "2025-06" || val === "2025-05") {
+                      setActivePeriodId(val);
+                    }
+                  }}
+                  className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg px-2 py-1 text-[11px] font-mono font-bold text-slate-900 dark:text-emerald-400 focus:outline-none cursor-pointer"
+                >
+                  <option value="2026-11">27 Nov 2026 (En Ejecución: 34 Bodegas)</option>
+                  <option value="2025-06">Junio 2025 (Corte Oficial 100%)</option>
+                  <option value="2025-05">Mayo 2025 (Periodo Previo)</option>
+                </select>
+                <span className="hidden sm:inline font-mono font-black text-emerald-700 dark:text-emerald-400 tabular-nums border-l border-slate-300 dark:border-slate-700 pl-2 pr-1.5">
                   {formatCop(totalLiquidadoMes)} COP
                 </span>
               </div>

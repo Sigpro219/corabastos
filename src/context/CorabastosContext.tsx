@@ -54,9 +54,12 @@ export interface SaveRouteSurveyInput {
   duracionServicioSegundos?: number; deltaTrasladoSegundos?: number;
 }
 
+export type ActiveCutoffPeriodId = "2026-11" | "2025-06" | "2025-05";
+
 export interface CorabastosContextValue {
   role: UserRole; authenticateAuditorAdmin: (pin: string) => boolean; switchToLecturista: () => void;
   isCloudConnected: boolean; receipts: MasterReceiptsConfig; liveBagsSummary: LiveLiquidationBagsSummary;
+  activePeriodId: ActiveCutoffPeriodId; setActivePeriodId: (p: ActiveCutoffPeriodId) => void;
   updateReceipts: (next: MasterReceiptsConfig) => void; resetToOfficialJune2025: () => void;
   locales: ComputedLocalLiquidation[]; localesByCode: Map<string, ComputedLocalLiquidation>;
   bodegasList: string[]; energyCommunal: CommunalHierarchyBreakdown[];
@@ -92,6 +95,7 @@ const STORAGE_KEY_RECENT = "corabastos_os_v3_recent_updates";
 const STORAGE_KEY_RECEIPTS = "corabastos_os_v3_receipts";
 const STORAGE_KEY_TASKS = "corabastos_os_v3_cutoff_tasks";
 const STORAGE_KEY_OCCUPANCY = "corabastos_os_v3_occupancy_map";
+const STORAGE_KEY_ACTIVE_PERIOD = "corabastos_os_v3_active_period";
 const CUTOFF_COLLECTION = "corabastos_corte_2025_06";
 const CUTOFF_PERIODO = "2025-06";
 
@@ -114,12 +118,7 @@ function parseValidatedRecord<T>(raw: unknown, parseFn: (v: unknown) => { succes
 
 function parseValidatedRecentList(raw: unknown): FieldReadingUpdate[] {
   if (!Array.isArray(raw)) return [];
-  const out: FieldReadingUpdate[] = [];
-  for (const item of raw.slice(0, 100)) {
-    const parsed = FieldReadingUpdateSchema.safeParse(item);
-    if (parsed.success) out.push(parsed.data);
-  }
-  return out;
+  return raw.slice(0, 100).map(item => FieldReadingUpdateSchema.safeParse(item)).filter((r): r is { success: true; data: FieldReadingUpdate } => r.success).map(r => r.data);
 }
 
 function safeSetLocalStorage(key: string, val: unknown): void {
@@ -135,6 +134,7 @@ function syncCloudCutoffDoc(docId: "field_overrides" | "route_survey" | "occupan
 
 export function CorabastosProvider({ children }: { children: React.ReactNode }) {
   const [role, setRole] = useState<UserRole>("AUDITOR_ADMIN");
+  const [activePeriodId, setActivePeriodIdState] = useState<ActiveCutoffPeriodId>("2026-11");
   const [isCloudConnected, setIsCloudConnected] = useState<boolean>(false);
   const [receipts, setReceipts] = useState<MasterReceiptsConfig>(typedSeedData.masterReceiptsJunio2025);
   const [fieldOverridesMap, setFieldOverridesMap] = useState<Record<string, FieldReadingUpdate>>({});
@@ -148,9 +148,7 @@ export function CorabastosProvider({ children }: { children: React.ReactNode }) 
     for (const l of typedSeedData.locales) m.set(l.codigo, l);
     return m;
   }, []);
-
   const sharedSiblingsMap = useMemo(() => buildSharedMeterSiblingsMap(typedSeedData.locales), []);
-
   // 1. Hidratación determinista inmediata en F5 desde localStorage con aislamiento financiero LECTURISTA
   useEffect(() => {
     try {
@@ -482,7 +480,36 @@ export function CorabastosProvider({ children }: { children: React.ReactNode }) 
     syncCloudCutoffDoc("master_receipts", { receipts: typedSeedData.masterReceiptsJunio2025 });
   }, [role]);
 
-  const locales = useMemo(() => recalculateAllLocales(typedSeedData.locales, receipts, { energyMacroMeters: typedSeedData.energyCommunalMeters, waterMacroMeters: typedSeedData.waterCommunalMeters, fieldOverridesMap, occupancyMap, seedReceipts: typedSeedData.masterReceiptsJunio2025 }), [receipts, fieldOverridesMap, occupancyMap]);
+  const setActivePeriodId = useCallback((next: ActiveCutoffPeriodId) => {
+    setActivePeriodIdState(next);
+    safeSetLocalStorage(STORAGE_KEY_ACTIVE_PERIOD, next);
+  }, []);
+
+  const rawLocales = useMemo(() => recalculateAllLocales(typedSeedData.locales, receipts, { energyMacroMeters: typedSeedData.energyCommunalMeters, waterMacroMeters: typedSeedData.waterCommunalMeters, fieldOverridesMap, occupancyMap, seedReceipts: typedSeedData.masterReceiptsJunio2025 }), [receipts, fieldOverridesMap, occupancyMap]);
+
+  // Si estamos en Corte Noviembre 2026 (En ejecución): solo las 34 bodegas leídas tienen liquidación activa; las 34 bodegas pendientes están en espera de lectura
+  const locales = useMemo(() => {
+    if (activePeriodId === "2026-11") {
+      const executedBodegas = new Set(Array.from(new Set(rawLocales.map(l => l.bodegaId))).sort().slice(0, 34));
+      return rawLocales.map((l) => {
+        if (!executedBodegas.has(l.bodegaId)) {
+          return {
+            ...l,
+            calcTotalCop: 0,
+            calcEnergiaCop: 0,
+            calcAcueductoCop: 0,
+            calcAseoCop: 0,
+            calcResiduosCop: 0,
+            calcVigilanciaCop: 0,
+            calcPoliciaCop: 0,
+          };
+        }
+        return l;
+      });
+    }
+    return rawLocales;
+  }, [rawLocales, activePeriodId]);
+
   const localesByCode = useMemo(() => { const map = new Map<string, ComputedLocalLiquidation>(); for (const l of locales) map.set(l.codigo, l); return map; }, [locales]);
   const bodegasList = useMemo(() => { const set = new Set<string>(); for (const l of locales) if (l.bodegaId) set.add(l.bodegaId); return Array.from(set).sort(); }, [locales]);
   const energyCommunal = useMemo(() => computeEnergyCommunalHierarchy(typedSeedData.energyCommunalMeters, localesByCode, fieldOverridesMap), [localesByCode, fieldOverridesMap]);
@@ -491,7 +518,8 @@ export function CorabastosProvider({ children }: { children: React.ReactNode }) 
   const liveBagsSummary = useMemo(() => computeLiveLiquidationBags(locales, receipts, typedSeedData.masterReceiptsJunio2025), [locales, receipts]);
 
   const value: CorabastosContextValue = {
-    role, authenticateAuditorAdmin, switchToLecturista, isCloudConnected, receipts, liveBagsSummary, updateReceipts,
+    role, authenticateAuditorAdmin, switchToLecturista, isCloudConnected, receipts, liveBagsSummary,
+    activePeriodId, setActivePeriodId, updateReceipts,
     resetToOfficialJune2025, locales, localesByCode, bodegasList, energyCommunal, waterCommunal,
     bathroomMeters, fieldOverridesMap, routeSurveyMap, occupancyMap, saveFieldReading,
     saveMeterRouteSurvey, removeMeterFromRouteSurvey, recentFieldUpdates,
@@ -548,6 +576,7 @@ export function useCorabastosFieldCapture(): CorabastosFieldCaptureContextValue 
     return res;
   }, [cadastralByCode]);
 
+  const totalLinesCompaction = 1;
   return {
     role: ctx.role, authenticateAuditorAdmin: ctx.authenticateAuditorAdmin, switchToLecturista: ctx.switchToLecturista,
     isCloudConnected: ctx.isCloudConnected, tasks, completedTaskIds: ctx.completedTaskIds,
