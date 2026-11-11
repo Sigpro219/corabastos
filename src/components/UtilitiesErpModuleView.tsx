@@ -7,6 +7,7 @@ import { MasterReceiptsSimulatorView } from "@/components/MasterReceiptsSimulato
 import { MobileFieldCaptureView } from "@/components/MobileFieldCaptureView";
 import { BiLongitudinalKpisView } from "@/components/BiLongitudinalKpisView";
 import { LiquidationMethodologyView } from "@/components/LiquidationMethodologyView";
+import { TransferenciasMasterView } from "@/components/TransferenciasMasterView";
 import { ExecutiveViewId } from "@/contracts/erp-bridges";
 import { BarChart3, BookOpen, Smartphone } from "lucide-react";
 
@@ -22,6 +23,10 @@ export function UtilitiesErpModuleView({
   onSelectLocalCode,
 }: UtilitiesErpModuleViewProps) {
   const [biSubTab, setBiSubTab] = useState<BiInternalTabId>("BI_KPIS");
+
+  if (activeView === "TRANSFERENCIAS") {
+    return <TransferenciasMasterView onSelectLocalCode={onSelectLocalCode} />;
+  }
 
   if (activeView === "SABANA_360") {
     return <LiquidationMatrixView onSelectLocalCode={onSelectLocalCode} />;

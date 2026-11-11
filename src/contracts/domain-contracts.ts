@@ -17,6 +17,7 @@ export const MeterObservationCodeSchema = z.enum([
 export type MeterObservationCode = z.infer<typeof MeterObservationCodeSchema>;
 
 export const ExecutiveViewIdSchema = z.enum([
+  "TRANSFERENCIAS",
   "SABANA_360",
   "BODEGAS_68",
   "RECIBOS_MACROS",

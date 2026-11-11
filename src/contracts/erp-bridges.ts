@@ -14,6 +14,7 @@ export const EXECUTIVE_OPERATIONAL_VIEWS: ReadonlyArray<{
   shortLabel: string;
   title: string;
 }> = [
+  { id: "TRANSFERENCIAS", shortLabel: "0. Transferencias", title: "0. Módulo Maestro de Transferencias & Cortes" },
   { id: "SABANA_360", shortLabel: "1. Sábana 5.318 Locales", title: "1. Sábana 5.318 Locales & Cuenta 360°" },
   { id: "BODEGAS_68", shortLabel: "2. Estado 68 Bodegas", title: "2. Estado de 68 Bodegas & Vacancia" },
   { id: "RECIBOS_MACROS", shortLabel: "3. Recibos & 62 Macros", title: "3. Recibos Maestros & 62 Macromedidores" },

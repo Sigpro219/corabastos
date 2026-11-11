@@ -20,6 +20,7 @@ import {
   ChevronRight,
   Cloud,
   CloudOff,
+  Flame,
   KeyRound,
   Lock,
   Menu,
@@ -33,6 +34,7 @@ import {
 } from "lucide-react";
 
 const VIEW_ICONS: Record<ExecutiveViewId, React.ReactNode> = {
+  TRANSFERENCIAS: <Flame size={16} strokeWidth={1.75} />,
   SABANA_360: <TableProperties size={16} strokeWidth={1.75} />,
   BODEGAS_68: <Building2 size={16} strokeWidth={1.75} />,
   RECIBOS_MACROS: <SlidersHorizontal size={16} strokeWidth={1.75} />,

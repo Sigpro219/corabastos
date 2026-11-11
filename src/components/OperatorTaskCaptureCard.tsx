@@ -224,14 +224,20 @@ export function OperatorTaskCaptureCard({
           </div>
 
           <div>
-            <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1">
-              2. Lectura Actual Odómetro ({activeTask.unidad})
-            </label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600">
+                2. Lectura Odómetro ({activeTask.unidad})
+              </label>
+              <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-700">
+                Captura 4 Dígitos Rápida
+              </span>
+            </div>
             <input
               type="text"
               inputMode="decimal"
               aria-label="Lectura Actual Odómetro"
               value={inputReading}
+              placeholder="Ej: 5890"
               onFocus={(e) => e.currentTarget.select()}
               onChange={(e) => {
                 const { displayRaw } = sanitizeDecimalInputString(e.target.value);
@@ -242,6 +248,9 @@ export function OperatorTaskCaptureCard({
               }}
               className="w-full h-14 px-4 rounded-xl border-2 border-slate-300 font-mono text-2xl font-black text-slate-900 tabular-nums focus:outline-none focus:border-slate-900"
             />
+            <span className="block text-[10px] text-slate-500 mt-1">
+              Digita solo los últimos 4 dígitos. Acarreo y guarda anti-salto automáticos.
+            </span>
           </div>
         </div>
 
