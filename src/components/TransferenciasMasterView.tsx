@@ -30,13 +30,13 @@ export function TransferenciasMasterView({
 }) {
   const { receipts, bodegasList, locales } = useCorabastos();
 
-  // 1. Configuración de Fecha de Corte Editable
+  // 1. Configuración de Fecha de Corte Editable (Demo Noviembre 2026 al día 27)
   const [cutoffConfig, setCutoffConfig] = useState<TransferCutoffConfig>({
-    periodo: receipts.periodo || "2025-06",
-    nombrePeriodo: receipts.nombrePeriodo || "JUNIO 2025",
-    fechaCorteEnergiaIso: "2025-06-20",
-    fechaCorteAcueductoIso: "2025-06-18",
-    fechaExpedicionFichaIso: "2025-06-30",
+    periodo: "2026-11",
+    nombrePeriodo: "NOVIEMBRE 2026 (CORTE AL 27)",
+    fechaCorteEnergiaIso: "2026-11-27",
+    fechaCorteAcueductoIso: "2026-11-27",
+    fechaExpedicionFichaIso: "2026-11-30",
     updatedAt: new Date().toISOString(),
     updatedBy: "ADMIN_FINANZAS",
   });
@@ -49,18 +49,23 @@ export function TransferenciasMasterView({
   const [anomalySearch, setAnomalySearch] = useState("");
   const [reverifyToast, setReverifyToast] = useState<string | null>(null);
 
-  // Muestra de celdas de calor para las 68 bodegas
+  // Muestra de celdas de calor para las 68 bodegas basada en el corte Noviembre 2026
+  // Las primeras 34 bodegas (leídas del 1 al 10 de Nov) están evacuadas/ejecutadas
+  // Las siguientes 34 bodegas (programadas del 11 al 27 de Noviembre) están pendientes hacia el corte
   const heatmapCells: BodegaHeatmapCell[] = useMemo(() => {
     return bodegasList.map((bId, idx) => {
       const bLocales = locales.filter((l) => l.bodegaId === bId);
       const paradasTotales = bLocales.length;
-      const paradasEvacuadas = Math.round(paradasTotales * 0.85);
+      const isAlreadyRead = idx < 34; // Mitad ejecutada en campo
+      const paradasEvacuadas = isAlreadyRead ? paradasTotales : 0;
       const avanceLecturaPct = paradasTotales > 0 ? Math.round((paradasEvacuadas / paradasTotales) * 100) : 100;
       const diaIndice = (idx % 22) + 1;
       const daysLabels: BodegaHeatmapCell["diaSemanaLabel"][] = [
         "LUNES", "MARTES", "MIERCOLES", "JUEVES", "VIERNES",
       ];
       const diaSemanaLabel = daysLabels[idx % 5];
+
+      const tieneAnomalia = isAlreadyRead && (bId === "15" || bId === "21" || bId === "08");
 
       return {
         bodegaId: bId,
@@ -69,15 +74,14 @@ export function TransferenciasMasterView({
         paradasFisicasTotales: paradasTotales,
         paradasEvacuadas,
         avanceLecturaPct,
-        novedadesCount: idx % 7 === 0 ? 3 : 0,
-        variacionConsumoPct: idx % 5 === 0 ? 24.5 : 4.2,
+        novedadesCount: tieneAnomalia ? 2 : 0,
+        variacionConsumoPct: tieneAnomalia ? 38.5 : isAlreadyRead ? 3.8 : 0,
         segundosPromedioPorParada: 75 + (idx % 20) * 3,
-        severidadActiva:
-          idx % 7 === 0
-            ? "ROJO_CRITICO"
-            : avanceLecturaPct === 100
-            ? "VERDE_OPTIMO"
-            : "AMBAR_EN_CURSO",
+        severidadActiva: tieneAnomalia
+          ? "ROJO_CRITICO"
+          : isAlreadyRead
+          ? "VERDE_OPTIMO"
+          : "AZUL_PROGRAMADA",
       };
     });
   }, [bodegasList, locales]);
@@ -302,6 +306,8 @@ export function TransferenciasMasterView({
                     ? "bg-rose-50 border-rose-300 text-rose-950 hover:bg-rose-100"
                     : c.severidadActiva === "VERDE_OPTIMO"
                     ? "bg-emerald-50 border-emerald-300 text-emerald-950 hover:bg-emerald-100"
+                    : c.severidadActiva === "AZUL_PROGRAMADA"
+                    ? "bg-sky-50 border-sky-300 text-sky-950 hover:bg-sky-100"
                     : "bg-amber-50 border-amber-300 text-amber-950 hover:bg-amber-100"
                   : activeLens === "CONSUMO_FUGAS"
                   ? c.variacionConsumoPct > 20
